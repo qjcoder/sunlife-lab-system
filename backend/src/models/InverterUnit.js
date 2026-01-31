@@ -1,38 +1,69 @@
 import mongoose from "mongoose";
 
+/**
+ * INVERTER UNIT (Physical Device)
+ *
+ * Represents a single physical inverter manufactured in factory.
+ * Identified uniquely by serialNumber.
+ *
+ * Lifecycle:
+ * Factory → Dispatch → Dealer → Sale → Warranty → Service
+ */
 const inverterUnitSchema = new mongoose.Schema(
   {
+    // Unique physical serial number (QR / barcode)
     serialNumber: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
+      index: true,
     },
 
+    // Reference to inverter model (SL-Sky 4kW, 6kW, etc.)
     inverterModel: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "InverterModel",
-      required: true
+      required: true,
     },
 
+    // Dealer who currently owns this unit (after dispatch)
+    dealer: {
+      type: String,
+      index: true,
+      default: null,
+    },
+
+    // Factory dispatch reference
+    dispatch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "InverterDispatch",
+      default: null,
+    },
+
+    // Sale details (filled ONLY when sold to end customer)
     saleInvoiceNo: {
       type: String,
-      required: true
+      default: null,
     },
 
     saleDate: {
       type: Date,
-      required: true
+      default: null,
     },
 
     customerName: {
-      type: String
+      type: String,
+      default: null,
     },
 
     customerContact: {
-      type: String
-    }
+      type: String,
+      default: null,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true, // createdAt = factory registration date
+  }
 );
 
 export default mongoose.model("InverterUnit", inverterUnitSchema);

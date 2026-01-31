@@ -1,43 +1,65 @@
 import mongoose from "mongoose";
 
+/**
+ * SERVICE JOB
+ *
+ * Represents ONE service visit for a sold inverter
+ */
 const serviceJobSchema = new mongoose.Schema(
   {
+    // 🔗 Physical inverter being serviced
     inverterUnit: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "InverterUnit",
-      required: true
+      required: true,
+      index: true,
     },
 
+    // Service center handling this job
     serviceCenter: {
       type: String,
-      required: true
+      required: true,
+      index: true,
     },
 
+    // Fault reported by customer / technician
     reportedFault: {
-      type: String
+      type: String,
+      trim: true,
     },
 
+    // Date of site visit
     visitDate: {
       type: Date,
-      required: true
+      required: true,
+      index: true,
     },
 
     /**
-     * Warranty snapshot at time of visit
-     * Calculated automatically, not user input
+     * WARRANTY SNAPSHOT
+     * Locked at time of visit
      */
     warrantyStatus: {
       parts: {
         type: Boolean,
-        required: true
+        required: true,
       },
       service: {
         type: Boolean,
-        required: true
-      }
-    }
+        required: true,
+      },
+    },
+
+    // User who created this service job
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true, // createdAt = job created time
+  }
 );
 
 export default mongoose.model("ServiceJob", serviceJobSchema);
