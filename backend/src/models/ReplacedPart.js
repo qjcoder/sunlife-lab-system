@@ -6,7 +6,7 @@ import mongoose from "mongoose";
  * Represents a single part replacement or repair
  * performed during a service job on an inverter unit.
  *
- * This model is the audit backbone for:
+ * This is the core audit model for:
  * Factory → Dispatch → Service Center → Inverter → Warranty
  */
 const replacedPartSchema = new mongoose.Schema(
@@ -68,7 +68,6 @@ const replacedPartSchema = new mongoose.Schema(
 
     // 🚚 Source dispatch from factory
     // Enforces that every replacement comes from dispatched stock
-    // Prevents unauthorized / ghost replacements
     dispatch: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "PartDispatch",
@@ -82,11 +81,12 @@ const replacedPartSchema = new mongoose.Schema(
 );
 
 /**
- * Compound index for warranty enforcement & reporting
+ * Compound index
  * ----------------------------------------------------
- * Enables fast queries like:
- * - How many times was a part replaced on an inverter?
- * - Enforce max replacement limits
+ * Enables:
+ * - Fast warranty enforcement
+ * - Failure analytics
+ * - Replacement limit checks
  */
 replacedPartSchema.index({
   inverterUnit: 1,

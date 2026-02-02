@@ -7,6 +7,16 @@ dotenv.config();
 async function createAdmin() {
   await mongoose.connect(process.env.MONGO_URI);
 
+  // ✅ Prevent duplicate admin
+  const exists = await User.findOne({
+    email: "admin@sunlife.com",
+  });
+
+  if (exists) {
+    console.log("⚠️ Factory Admin already exists");
+    process.exit(0);
+  }
+
   const user = new User({
     name: "Factory Admin",
     email: "admin@sunlife.com",
@@ -14,7 +24,7 @@ async function createAdmin() {
     active: true,
   });
 
-  // ✅ ONLY THIS — hashes ONCE
+  // ✅ Hash ONCE
   await user.setPassword("password");
 
   await user.save();
@@ -24,6 +34,6 @@ async function createAdmin() {
 }
 
 createAdmin().catch((err) => {
-  console.error(err);
+  console.error("❌ Admin creation failed:", err);
   process.exit(1);
 });

@@ -26,9 +26,9 @@ export const login = async (req, res) => {
     }
 
     // 🔍 DEBUG (KEEP TEMPORARILY)
-    console.log("LOGIN USER =", user.email);
-    console.log("PASSWORD RECEIVED =", password);
-    console.log("PASSWORD HASH =", user.passwordHash);
+    // console.log("LOGIN USER =", user.email);
+    // console.log("PASSWORD RECEIVED =", password);
+    // console.log("PASSWORD HASH =", user.passwordHash);
 
     // 3️⃣ Verify password
     const passwordValid = await user.verifyPassword(password);

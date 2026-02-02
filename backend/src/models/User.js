@@ -2,12 +2,16 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
 /**
- * User Schema
- * Handles authentication & role-based access
+ * USER SCHEMA
+ *
+ * Represents all authenticated actors in system:
+ * - FACTORY_ADMIN
+ * - DEALER
+ * - SERVICE_CENTER
  */
 const userSchema = new mongoose.Schema(
   {
-    // Display name (used for service center matching)
+    // Display name
     name: {
       type: String,
       required: true,
@@ -23,47 +27,46 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // 🔐 Hashed password (bcrypt)
+    // Hashed password ONLY
     passwordHash: {
       type: String,
       required: true,
     },
 
-    // User role in system
+    // Role-based access control
     role: {
       type: String,
-      enum: ["FACTORY_ADMIN", "SERVICE_CENTER"],
+      enum: ["FACTORY_ADMIN", "DEALER", "SERVICE_CENTER"],
       required: true,
     },
 
-    // Soft enable/disable login
+    // Soft-disable account
     active: {
       type: Boolean,
       default: true,
     },
   },
-  {
-    timestamps: true, // createdAt / updatedAt
-  }
+  { timestamps: true }
 );
 
 /**
+ * ----------------------------------------------------
+ * PASSWORD HELPERS
+ * ----------------------------------------------------
+ */
+
+/**
  * Hash and store password
+ * ⚠️ MUST be called manually
  */
 userSchema.methods.setPassword = async function (password) {
-  if (!password) {
-    throw new Error("Password is required");
-  }
   this.passwordHash = await bcrypt.hash(password, 10);
 };
 
 /**
- * Verify plain password against stored hash
+ * Verify password during login
  */
 userSchema.methods.verifyPassword = async function (password) {
-  if (!password || !this.passwordHash) {
-    return false;
-  }
   return bcrypt.compare(password, this.passwordHash);
 };
 
