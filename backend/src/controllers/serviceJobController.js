@@ -5,28 +5,37 @@ import ReplacedPart from "../models/ReplacedPart.js";
 import { calculateWarrantyStatus } from "../services/warrantyService.js";
 
 /**
+ * ====================================================
  * CREATE SERVICE JOB
+ * ====================================================
  *
- * - Represents one service visit
+ * RULES:
+ * - Inverter MUST be sold
  * - Warranty is SNAPSHOTTED at visitDate
+ * - Service center identity is SYSTEM controlled
  *
  * ACCESS:
- * SERVICE_CENTER only
+ * - SERVICE_CENTER only
  */
 export const createServiceJob = async (req, res) => {
   try {
-    const { serialNumber, serviceCenter, reportedFault, visitDate } = req.body;
+    const { serialNumber, reportedFault, visitDate, remarks } = req.body;
 
-    // 1️⃣ Validate input
-    if (!serialNumber || !serviceCenter || !visitDate) {
+    /* --------------------------------------------------
+     * 1️⃣ Validate input
+     * -------------------------------------------------- */
+    if (!serialNumber || !reportedFault || !visitDate) {
       return res.status(400).json({
-        message: "serialNumber, serviceCenter, and visitDate are required",
+        message: "serialNumber, reportedFault, and visitDate are required",
       });
     }
 
-    // 2️⃣ Find inverter by serial number
+    /* --------------------------------------------------
+     * 2️⃣ Load inverter (authoritative)
+     * -------------------------------------------------- */
     const inverterUnit = await InverterUnit.findOne({ serialNumber })
-      .populate("inverterModel");
+      .populate("inverterModel")
+      .lean();
 
     if (!inverterUnit) {
       return res.status(404).json({
@@ -34,28 +43,44 @@ export const createServiceJob = async (req, res) => {
       });
     }
 
-    // ❗ 3️⃣ Prevent service before sale
+    /* --------------------------------------------------
+     * 3️⃣ HARD BLOCK — must be SOLD
+     * -------------------------------------------------- */
     if (!inverterUnit.saleDate) {
       return res.status(403).json({
         message: "Service job cannot be created before inverter sale",
       });
     }
 
-    // 4️⃣ Calculate warranty snapshot at visit date
+    /* --------------------------------------------------
+     * 4️⃣ WARRANTY SNAPSHOT (at visit date)
+     * -------------------------------------------------- */
     const warrantyStatus = calculateWarrantyStatus(
       inverterUnit.saleDate,
       inverterUnit.inverterModel.warranty,
       visitDate
     );
 
-    // 5️⃣ Create service job
+    const serviceType =
+      warrantyStatus.parts === true ? "FREE" : "PAID";
+
+    /* --------------------------------------------------
+     * 5️⃣ Create service job (IMMUTABLE FACT)
+     * -------------------------------------------------- */
     const serviceJob = await ServiceJob.create({
       inverterUnit: inverterUnit._id,
-      serviceCenter,
+      serialNumber: inverterUnit.serialNumber,
+
+      serviceCenter: req.user.name, // 🔒 authoritative
       reportedFault,
-      visitDate,
-      warrantyStatus,
-      createdBy: req.user.userId, // 🔐 audit trail
+      visitDate: new Date(visitDate),
+      remarks: remarks || null,
+
+      warrantyStatus, // snapshot
+      serviceType,    // derived
+
+      createdBy: req.user.userId,
+      roleAtCreation: req.user.role,
     });
 
     return res.status(201).json({
@@ -71,41 +96,44 @@ export const createServiceJob = async (req, res) => {
 };
 
 /**
- * LIST SERVICE JOBS (D1)
- *
- * Filters:
- * - date range
- * - service center
- * - warranty status
- * - inverter serial number
+ * ====================================================
+ * LIST SERVICE JOBS
+ * ====================================================
  */
 export const listServiceJobs = async (req, res) => {
   try {
     const { fromDate, toDate, serviceCenter, warranty, serialNumber } = req.query;
     const query = {};
 
-    // 🔐 Role-based visibility
+    /* --------------------------------------------------
+     * Role-based visibility
+     * -------------------------------------------------- */
     if (req.user.role === "SERVICE_CENTER") {
       query.serviceCenter = req.user.name;
     }
 
-    // Factory admin filter
     if (serviceCenter && req.user.role === "FACTORY_ADMIN") {
       query.serviceCenter = serviceCenter;
     }
 
-    // Date range
+    /* --------------------------------------------------
+     * Date filters
+     * -------------------------------------------------- */
     if (fromDate || toDate) {
       query.visitDate = {};
       if (fromDate) query.visitDate.$gte = new Date(fromDate);
       if (toDate) query.visitDate.$lte = new Date(toDate);
     }
 
-    // Warranty filter
+    /* --------------------------------------------------
+     * Warranty filter
+     * -------------------------------------------------- */
     if (warranty === "in") query["warrantyStatus.parts"] = true;
     if (warranty === "out") query["warrantyStatus.parts"] = false;
 
-    // Serial number filter
+    /* --------------------------------------------------
+     * Serial filter
+     * -------------------------------------------------- */
     if (serialNumber) {
       const inverter = await InverterUnit.findOne({ serialNumber });
       if (!inverter) return res.json({ count: 0, data: [] });
@@ -130,12 +158,9 @@ export const listServiceJobs = async (req, res) => {
 };
 
 /**
- * SERVICE JOB DETAILS (D2)
- *
- * Returns:
- * - Service job
- * - Inverter + model
- * - Replaced parts
+ * ====================================================
+ * SERVICE JOB DETAILS
+ * ====================================================
  */
 export const getServiceJobDetails = async (req, res) => {
   try {
@@ -147,7 +172,6 @@ export const getServiceJobDetails = async (req, res) => {
 
     const query = { _id: serviceJobId };
 
-    // 🔐 Restrict service center access
     if (req.user.role === "SERVICE_CENTER") {
       query.serviceCenter = req.user.name;
     }
@@ -156,7 +180,8 @@ export const getServiceJobDetails = async (req, res) => {
       .populate({
         path: "inverterUnit",
         populate: { path: "inverterModel" },
-      });
+      })
+      .lean();
 
     if (!serviceJob) {
       return res.status(404).json({
@@ -166,7 +191,7 @@ export const getServiceJobDetails = async (req, res) => {
 
     const replacedParts = await ReplacedPart.find({
       serviceJob: serviceJob._id,
-    });
+    }).lean();
 
     return res.json({
       serviceJob,

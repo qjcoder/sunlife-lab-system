@@ -1,29 +1,30 @@
 import express from "express";
-import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
-import { createInverterDispatch } from "../controllers/inverterDispatchController.js";
+import {
+  createInverterDispatch,
+} from "../controllers/inverterDispatchController.js";
+import {
+  requireAuth,
+  requireRole,
+} from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 /**
+ * ====================================================
  * INVERTER DISPATCH ROUTES
+ * ====================================================
  *
- * Handles bulk movement of inverter units
- * from Factory → Dealer
- *
- * Base URL:
- * /api/inverter-dispatches
+ * Factory → Dealer inverter movement
+ * (Ownership transfer, NOT sale)
  */
 
 /**
- * CREATE INVERTER DISPATCH
+ * CREATE DISPATCH
  *
- * Factory admin sends multiple inverter units to a dealer
- *
- * METHOD: POST
- * URL: /api/inverter-dispatches
+ * POST /api/inverter-dispatches
  *
  * ROLE:
- * FACTORY_ADMIN only
+ * - FACTORY_ADMIN
  */
 router.post(
   "/",

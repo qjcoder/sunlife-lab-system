@@ -12,7 +12,6 @@ import mongoose from "mongoose";
 const replacedPartSchema = new mongoose.Schema(
   {
     // 🔗 Service job where this part was replaced
-    // One service job can have multiple replaced parts
     serviceJob: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ServiceJob",
@@ -21,7 +20,6 @@ const replacedPartSchema = new mongoose.Schema(
     },
 
     // 🔗 Inverter unit on which replacement happened
-    // Enables inverter lifecycle & warranty tracking
     inverterUnit: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "InverterUnit",
@@ -45,7 +43,6 @@ const replacedPartSchema = new mongoose.Schema(
     },
 
     // 📦 Quantity consumed in this replacement
-    // Always ≥ 1
     quantity: {
       type: Number,
       default: 1,
@@ -56,6 +53,7 @@ const replacedPartSchema = new mongoose.Schema(
     replacementDate: {
       type: Date,
       required: true,
+      index: true,
     },
 
     // 🔧 Replacement vs Repair
@@ -64,6 +62,7 @@ const replacedPartSchema = new mongoose.Schema(
       type: String,
       enum: ["REPLACEMENT", "REPAIR"],
       default: "REPLACEMENT",
+      required: true,
     },
 
     // 🚚 Source dispatch from factory
@@ -74,24 +73,58 @@ const replacedPartSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+
+    /* ====================================================
+     * WARRANTY & COST LIABILITY (NEW — STEP 9.1)
+     * ====================================================
+     * These fields are DERIVED by controller logic.
+     * NEVER sent directly from client.
+     */
+
+    // 💰 Who bears the cost of this replacement
+    costLiability: {
+      type: String,
+      enum: ["FACTORY", "CUSTOMER"],
+      required: true,
+      index: true,
+    },
+
+    // 🧾 Whether this replacement is eligible
+    // for factory warranty reimbursement
+    warrantyClaimEligible: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
   {
-    timestamps: true, // createdAt / updatedAt for full audit trail
+    timestamps: true, // Full audit trail
   }
 );
 
 /**
- * Compound index
- * ----------------------------------------------------
- * Enables:
- * - Fast warranty enforcement
- * - Failure analytics
- * - Replacement limit checks
+ * ====================================================
+ * INDEXES
+ * ====================================================
  */
+
+// Warranty enforcement & abuse prevention
 replacedPartSchema.index({
   inverterUnit: 1,
   partCode: 1,
   replacementType: 1,
+});
+
+// Warranty claim reporting
+replacedPartSchema.index({
+  warrantyClaimEligible: 1,
+  replacementDate: -1,
+});
+
+// Cost analytics
+replacedPartSchema.index({
+  partCode: 1,
+  costLiability: 1,
 });
 
 export default mongoose.model("ReplacedPart", replacedPartSchema);

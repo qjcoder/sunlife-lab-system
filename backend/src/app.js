@@ -4,46 +4,9 @@ import dotenv from "dotenv";
 
 /**
  * ====================================================
- * Route Imports
+ * Environment Setup
  * ====================================================
- * Each route group represents a clear business module.
- * Naming reflects domain intent (no generic routes).
  */
-
-// Authentication & user login (Admin / Dealer / Service Center)
-import authRoutes from "./routes/authRoutes.js";
-
-// Inverter master data (Brand / Product Line / Variant)
-import inverterModelRoutes from "./routes/inverterModelRoutes.js";
-
-// Factory → Dealer inverter dispatch (physical units)
-import inverterDispatchRoutes from "./routes/inverterDispatchRoutes.js";
-
-//Dealer Inverter Stock Details
-import inverterStockRoutes from "./routes/inverterStockRoutes.js";
-
-
-// Dealer → Customer inverter sale (warranty starts here)
-import inverterSaleRoutes from "./routes/inverterSaleRoutes.js";
-
-// Inverter lifecycle view (Factory → Sale → Service → Replacement)
-import inverterRoutes from "./routes/inverterRoutes.js";
-
-// Factory → Service Center spare parts dispatch
-import partDispatchRoutes from "./routes/partDispatchRoutes.js";
-
-// Service Center stock (derived from dispatch − replacement)
-import serviceCenterStockRoutes from "./routes/serviceCenterStockRoutes.js";
-
-// Service job management + replaced parts (nested)
-import serviceJobRoutes from "./routes/serviceJobRoutes.js";
-
-// Service Center account creation (Admin only)
-import serviceCenterRoutes from "./routes/serviceCenterRoutes.js";
-
-// Dealer account creation (Admin only)
-import dealerRoutes from "./routes/dealerRoutes.js";
-
 dotenv.config();
 
 const app = express();
@@ -53,57 +16,93 @@ const app = express();
  * Global Middlewares
  * ====================================================
  */
-
-// Enable CORS (frontend, Postman, integrations)
 app.use(cors());
-
-// Parse JSON request bodies
 app.use(express.json());
 
 /**
  * ====================================================
- * API Routes
+ * Route Imports (Domain-Based Architecture)
+ * Order strictly follows REAL inverter lifecycle
  * ====================================================
  */
 
-// 🔐 Authentication & token issuance
+// 🔐 Authentication
+import authRoutes from "./routes/authRoutes.js";
+
+// 👤 Account Management
+import dealerRoutes from "./routes/dealerRoutes.js";
+import serviceCenterRoutes from "./routes/serviceCenterRoutes.js";
+
+// 🏭 Factory Master Data
+import inverterModelRoutes from "./routes/inverterModelRoutes.js";
+
+// 🏭 Factory → Physical Inverter Registration
+import inverterRoutes from "./routes/inverterRoutes.js";
+
+// 🚚 Physical Inverter Movement
+// Factory → Dealer
+import inverterDispatchRoutes from "./routes/inverterDispatchRoutes.js";
+
+// Dealer → Sub-Dealer
+import dealerTransferRoutes from "./routes/dealerTransferRoutes.js";
+
+// 📦 Stock Views (READ-ONLY)
+import factoryInverterStockRoutes from "./routes/factoryInverterStockRoutes.js";
+import dealerInverterStockRoutes from "./routes/dealerInverterStockRoutes.js";
+
+// 💰 Sales (Warranty STARTS here)
+import inverterSaleRoutes from "./routes/inverterSaleRoutes.js";
+
+// 📦 Spare Parts Flow
+import partDispatchRoutes from "./routes/partDispatchRoutes.js";
+import serviceCenterStockRoutes from "./routes/serviceCenterStockRoutes.js";
+
+// 🛠 Service & Warranty
+import serviceJobRoutes from "./routes/serviceJobRoutes.js";
+
+/**
+ * ====================================================
+ * API Route Registration
+ * ====================================================
+ */
+
+// 🔐 Authentication
 app.use("/api/auth", authRoutes);
 
-// 🏭 Inverter models (Factory master data)
-app.use("/api/inverter-models", inverterModelRoutes);
-
-// 🚚 Inverter dispatches (Factory → Dealer)
-app.use("/api/inverter-dispatches", inverterDispatchRoutes);
-
-// Inverter physical stock (Factory / Dealer)
-app.use("/api/inverter-stock", inverterStockRoutes);
-
-// 💰 Dealer → Customer inverter sale
-app.use("/api/inverter-sales", inverterSaleRoutes);
-
-// 🔍 Inverter lifecycle API
-app.use("/api/inverters", inverterRoutes);
-
-// 📦 Spare parts dispatch (Factory → Service Center)
-app.use("/api/part-dispatches", partDispatchRoutes);
-
-// 📊 Service center spare parts stock
-app.use("/api/service-center-stock", serviceCenterStockRoutes);
-
-// 🛠 Service jobs + replaced parts
-app.use("/api/service-jobs", serviceJobRoutes);
-
-// 👷 Service center account management
+// 👤 Accounts & Hierarchy
+app.use("/api/dealers", dealerRoutes);
 app.use("/api/service-centers", serviceCenterRoutes);
 
-// 🏪 Dealer account management
-app.use("/api/dealers", dealerRoutes);
+// 🏭 Inverter Models
+app.use("/api/inverter-models", inverterModelRoutes);
+
+// 🏭 Inverter Registration
+app.use("/api/inverters", inverterRoutes);
+
+// 🚚 Factory → Dealer Dispatch
+app.use("/api/inverter-dispatches", inverterDispatchRoutes);
+
+// 🔁 Dealer → Sub-Dealer Transfer
+app.use("/api/dealer-transfers", dealerTransferRoutes);
+
+// 📦 Stock Views
+app.use("/api/factory-inverter-stock", factoryInverterStockRoutes);
+app.use("/api/dealer-inverter-stock", dealerInverterStockRoutes);
+
+// 💰 Sales (Dealer / Sub-Dealer / Factory)
+app.use("/api/inverter-sales", inverterSaleRoutes);
+
+// 📦 Spare Parts
+app.use("/api/part-dispatches", partDispatchRoutes);
+app.use("/api/service-center-stock", serviceCenterStockRoutes);
+
+// 🛠 Service Jobs & Replacements
+app.use("/api/service-jobs", serviceJobRoutes);
 
 /**
  * ====================================================
  * Health Check
  * ====================================================
- * Used for uptime monitoring & diagnostics
  */
 app.get("/health", (req, res) => {
   res.json({
