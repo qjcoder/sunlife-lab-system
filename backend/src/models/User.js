@@ -4,21 +4,20 @@ import bcrypt from "bcrypt";
 /**
  * USER SCHEMA
  *
- * Represents all authenticated actors in system:
+ * Represents all authenticated actors:
  * - FACTORY_ADMIN
  * - DEALER
+ * - SUB_DEALER
  * - SERVICE_CENTER
  */
 const userSchema = new mongoose.Schema(
   {
-    // Display name
     name: {
       type: String,
       required: true,
       trim: true,
     },
 
-    // Login email (unique)
     email: {
       type: String,
       required: true,
@@ -27,20 +26,28 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Hashed password ONLY
     passwordHash: {
       type: String,
       required: true,
     },
 
-    // Role-based access control
     role: {
       type: String,
-      enum: ["FACTORY_ADMIN", "DEALER", "SERVICE_CENTER"],
+      enum: ["FACTORY_ADMIN", "DEALER", "SUB_DEALER", "SERVICE_CENTER"],
       required: true,
     },
 
-    // Soft-disable account
+    /**
+     * Parent dealer reference
+     * - NULL → main dealer
+     * - ObjectId → sub-dealer
+     */
+    parentDealer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
     active: {
       type: Boolean,
       default: true,
@@ -49,23 +56,9 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-/**
- * ----------------------------------------------------
- * PASSWORD HELPERS
- * ----------------------------------------------------
- */
-
-/**
- * Hash and store password
- * ⚠️ MUST be called manually
- */
-userSchema.methods.setPassword = async function (password) {
-  this.passwordHash = await bcrypt.hash(password, 10);
-};
-
-/**
- * Verify password during login
- */
+/* --------------------------------------------------
+ * Password helpers
+ * -------------------------------------------------- */
 userSchema.methods.verifyPassword = async function (password) {
   return bcrypt.compare(password, this.passwordHash);
 };

@@ -4,6 +4,20 @@ import ServiceJob from "../models/ServiceJob.js";
 import InverterUnit from "../models/InverterUnit.js";
 import PartDispatch from "../models/PartDispatch.js";
 
+/**
+ * ====================================================
+ * ADD REPLACED / REPAIRED PART
+ * ====================================================
+ *
+ * CORE ENFORCEMENT:
+ * - Stock must exist
+ * - Dispatch must belong to service center
+ * - Warranty rules auto-derived
+ * - Cost liability auto-derived
+ *
+ * ACCESS:
+ * SERVICE_CENTER only
+ */
 export const addReplacedPart = async (req, res) => {
   try {
     const { serviceJobId } = req.params;
@@ -16,14 +30,25 @@ export const addReplacedPart = async (req, res) => {
       dispatchId,
     } = req.body;
 
-    /* ---------------- VALIDATION ---------------- */
+    /* --------------------------------------------------
+     * 1️⃣ Basic validation
+     * -------------------------------------------------- */
     if (!partCode || !partName || !replacementDate || !dispatchId) {
       return res.status(400).json({
-        message: "partCode, partName, replacementDate, dispatchId required",
+        message:
+          "partCode, partName, replacementDate, and dispatchId are required",
       });
     }
 
-    /* ---------------- SERVICE JOB ---------------- */
+    if (!mongoose.Types.ObjectId.isValid(dispatchId)) {
+      return res.status(400).json({
+        message: "Invalid dispatchId format",
+      });
+    }
+
+    /* --------------------------------------------------
+     * 2️⃣ Load service job
+     * -------------------------------------------------- */
     const serviceJob = await ServiceJob.findById(serviceJobId);
     if (!serviceJob) {
       return res.status(404).json({
@@ -31,22 +56,31 @@ export const addReplacedPart = async (req, res) => {
       });
     }
 
-    /* ---------------- INVERTER ---------------- */
-    const inverterUnit = await InverterUnit.findById(serviceJob.inverterUnit);
+    /* --------------------------------------------------
+     * 3️⃣ Load inverter unit
+     * -------------------------------------------------- */
+    const inverterUnit = await InverterUnit.findById(
+      serviceJob.inverterUnit
+    ).populate("inverterModel");
+
     if (!inverterUnit) {
       return res.status(404).json({
         message: "Inverter unit not found",
       });
     }
 
-    // Validate dispatchId format
-if (!mongoose.Types.ObjectId.isValid(dispatchId)) {
-  return res.status(400).json({
-    message: "Invalid dispatchId format",
-  });
-}
+    /* --------------------------------------------------
+     * 4️⃣ Prevent replacement before sale
+     * -------------------------------------------------- */
+    if (!inverterUnit.saleDate && replacementType === "REPLACEMENT") {
+      return res.status(403).json({
+        message: "Replacement not allowed before inverter sale",
+      });
+    }
 
-    /* ---------------- DISPATCH ---------------- */
+    /* --------------------------------------------------
+     * 5️⃣ Load factory dispatch
+     * -------------------------------------------------- */
     const dispatch = await PartDispatch.findById(dispatchId);
     if (!dispatch) {
       return res.status(404).json({
@@ -54,69 +88,80 @@ if (!mongoose.Types.ObjectId.isValid(dispatchId)) {
       });
     }
 
-    // Ownership check
     if (dispatch.serviceCenter !== serviceJob.serviceCenter) {
       return res.status(403).json({
         message: "Dispatch does not belong to this service center",
       });
     }
 
-    /* ---------------- STOCK CHECK ---------------- */
-    const item = dispatch.dispatchedItems.find(
+    /* --------------------------------------------------
+     * 6️⃣ Stock validation
+     * -------------------------------------------------- */
+    const dispatchedItem = dispatch.dispatchedItems.find(
       (i) => i.partCode === partCode
     );
 
-    if (!item || item.quantity < quantity) {
+    if (!dispatchedItem || dispatchedItem.quantity < quantity) {
       return res.status(403).json({
-        message: "Insufficient dispatched stock",
+        message: "Insufficient dispatched stock for this part",
       });
     }
 
-    /* ---------------- WARRANTY CHECK ---------------- */
+    /* --------------------------------------------------
+     * 7️⃣ WARRANTY & COST LIABILITY DERIVATION
+     * -------------------------------------------------- */
+    let costLiability = "CUSTOMER";
+    let warrantyClaimEligible = false;
+
     if (replacementType === "REPLACEMENT") {
-      if (!inverterUnit.saleDate) {
-        return res.status(403).json({
-          message: "Inverter not sold yet",
-        });
-      }
+      const saleDate = new Date(inverterUnit.saleDate);
+      const repDate = new Date(replacementDate);
 
-      const sale = new Date(inverterUnit.saleDate);
-      const rep = new Date(replacementDate);
+      const warrantyMonths =
+        inverterUnit.inverterModel.warranty?.partsMonths || 0;
 
-      const months =
-        rep.getFullYear() * 12 +
-        rep.getMonth() -
-        (sale.getFullYear() * 12 + sale.getMonth());
+      const warrantyEnd = new Date(saleDate);
+      warrantyEnd.setMonth(warrantyEnd.getMonth() + warrantyMonths);
 
-      if (months > 12) {
-        return res.status(403).json({
-          message: "Warranty expired",
-        });
+      if (repDate <= warrantyEnd) {
+        costLiability = "FACTORY";
+        warrantyClaimEligible = true;
       }
     }
 
-    /* ---------------- DEDUCT STOCK ---------------- */
-    item.quantity -= quantity;
-    await dispatch.save();
+    /* --------------------------------------------------
+     * 8️⃣ Deduct stock (ONLY for replacement)
+     * -------------------------------------------------- */
+    if (replacementType === "REPLACEMENT") {
+      dispatchedItem.quantity -= quantity;
+      await dispatch.save();
+    }
 
-    /* ---------------- CREATE RECORD ---------------- */
+    /* --------------------------------------------------
+     * 9️⃣ Create replaced part record
+     * -------------------------------------------------- */
     const replacedPart = await ReplacedPart.create({
       serviceJob: serviceJob._id,
       inverterUnit: inverterUnit._id,
-      dispatch: dispatch._id, // ✅ FIXED
+      dispatch: dispatch._id,
       partCode,
       partName,
       quantity,
       replacementDate,
       replacementType,
+      costLiability,
+      warrantyClaimEligible,
     });
 
+    /* --------------------------------------------------
+     * 🔟 Response
+     * -------------------------------------------------- */
     return res.status(201).json({
-      message: "Replaced part added successfully",
+      message: "Replaced part recorded successfully",
       replacedPart,
     });
-  } catch (err) {
-    console.error("Add Replaced Part Error:", err);
+  } catch (error) {
+    console.error("Add Replaced Part Error:", error);
     return res.status(500).json({
       message: "Internal server error",
     });

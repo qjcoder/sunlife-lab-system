@@ -1,21 +1,20 @@
 import express from "express";
 import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
 
-import { createInverterUnit } 
-  from "../controllers/inverterUnitController.js";
+import {
+  createInverterUnit,
+  bulkCreateInverterUnits
+} from "../controllers/inverterUnitController.js";
 
-import { getInverterLifecycle } 
-  from "../controllers/inverterLifecycleController.js";
-
-import { sellInverterUnit } 
-  from "../controllers/inverterSaleController.js";
+import { sellInverterUnit } from "../controllers/inverterSaleController.js";
+import { getInverterLifecycle } from "../controllers/inverterLifecycleController.js";
 
 const router = express.Router();
 
 /**
- * FACTORY → Register inverter unit
- * Physical unit creation (NO sale info)
- *
+ * ====================================================
+ * FACTORY → Register SINGLE inverter unit
+ * ====================================================
  * POST /api/inverters
  * ROLE: FACTORY_ADMIN
  */
@@ -27,9 +26,23 @@ router.post(
 );
 
 /**
- * DEALER / ADMIN → Sell inverter to customer
- * Starts warranty
- *
+ * ====================================================
+ * FACTORY → BULK Register inverter units
+ * ====================================================
+ * POST /api/inverters/bulk
+ * ROLE: FACTORY_ADMIN
+ */
+router.post(
+  "/bulk",
+  requireAuth,
+  requireRole("FACTORY_ADMIN"),
+  bulkCreateInverterUnits
+);
+
+/**
+ * ====================================================
+ * DEALER → Sell inverter to customer
+ * ====================================================
  * POST /api/inverters/sell
  * ROLE: DEALER, FACTORY_ADMIN
  */
@@ -41,11 +54,10 @@ router.post(
 );
 
 /**
+ * ====================================================
  * FULL INVERTER LIFECYCLE
- * Factory → Sale → Warranty → Service → Replacement
- *
+ * ====================================================
  * GET /api/inverters/:serialNumber/lifecycle
- * ROLE: Any authenticated user (filtered inside controller if needed)
  */
 router.get(
   "/:serialNumber/lifecycle",

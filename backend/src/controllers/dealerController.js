@@ -1,11 +1,13 @@
-import bcrypt from "bcrypt"; // ✅ CHANGE HERE
+import bcrypt from "bcrypt";
 import User from "../models/User.js";
 
 /**
- * CREATE DEALER ACCOUNT
+ * ====================================================
+ * CREATE MAIN DEALER (Factory → Dealer)
+ * ====================================================
  *
  * ROLE:
- * FACTORY_ADMIN only
+ * - FACTORY_ADMIN only
  *
  * POST /api/dealers
  */
@@ -19,7 +21,6 @@ export const createDealer = async (req, res) => {
       });
     }
 
-    // Prevent duplicate users
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(409).json({
@@ -27,15 +28,15 @@ export const createDealer = async (req, res) => {
       });
     }
 
-    // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Create dealer user
     const dealer = await User.create({
       name,
       email,
       passwordHash,
       role: "DEALER",
+      parentDealer: null, // ✅ main dealer
+      active: true,
     });
 
     return res.status(201).json({
@@ -51,6 +52,78 @@ export const createDealer = async (req, res) => {
     console.error("Create Dealer Error:", error);
     return res.status(500).json({
       message: "Failed to create dealer account",
+    });
+  }
+};
+
+/**
+ * ====================================================
+ * CREATE SUB-DEALER (Dealer → Sub-Dealer)
+ * ====================================================
+ *
+ * RULES:
+ * - Only MAIN dealer can create sub-dealer
+ * - Sub-dealers cannot create further sub-dealers
+ * - Role is SUB_DEALER
+ *
+ * POST /api/dealers/sub-dealer
+ */
+export const createSubDealer = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // Must be dealer
+    if (req.user.role !== "DEALER") {
+      return res.status(403).json({
+        message: "Only dealers can create sub-dealers",
+      });
+    }
+
+    // Prevent nesting
+    if (req.user.parentDealer) {
+      return res.status(403).json({
+        message: "Sub-dealers cannot create further sub-dealers",
+      });
+    }
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        message: "name, email, and password are required",
+      });
+    }
+
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(409).json({
+        message: "User with this email already exists",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const subDealer = await User.create({
+      name,
+      email,
+      passwordHash,
+      role: "SUB_DEALER",
+      parentDealer: req.user.userId, // ✅ ObjectId link
+      active: true,
+    });
+
+    return res.status(201).json({
+      message: "Sub-dealer created successfully",
+      subDealer: {
+        id: subDealer._id,
+        name: subDealer.name,
+        email: subDealer.email,
+        role: subDealer.role,
+        parentDealer: subDealer.parentDealer,
+      },
+    });
+  } catch (error) {
+    console.error("Create Sub-Dealer Error:", error);
+    return res.status(500).json({
+      message: "Failed to create sub-dealer",
     });
   }
 };

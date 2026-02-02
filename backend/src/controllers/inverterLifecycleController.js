@@ -1,13 +1,24 @@
 import InverterUnit from "../models/InverterUnit.js";
 import InverterDispatch from "../models/InverterDispatch.js";
+import DealerTransfer from "../models/DealerTransfer.js";
 import ServiceJob from "../models/ServiceJob.js";
 import ReplacedPart from "../models/ReplacedPart.js";
 
 /**
+ * ====================================================
  * GET INVERTER LIFECYCLE
+ * ====================================================
  *
  * Complete lifecycle of a physical inverter unit:
- * Factory → Dispatch → Sale → Warranty → Service → Replacement
+ *
+ * Factory Registration
+ * → Factory → Dealer Dispatch
+ * → Dealer → Sub-Dealer Transfer(s)
+ * → Sale (Warranty START)
+ * → Service
+ * → Replacements
+ *
+ * READ-ONLY API
  *
  * GET /api/inverters/:serialNumber/lifecycle
  */
@@ -15,9 +26,9 @@ export const getInverterLifecycle = async (req, res) => {
   try {
     const { serialNumber } = req.params;
 
-    /**
+    /* --------------------------------------------------
      * 1️⃣ Load inverter unit (factory registration)
-     */
+     * -------------------------------------------------- */
     const inverter = await InverterUnit.findOne({ serialNumber })
       .populate(
         "inverterModel",
@@ -29,10 +40,10 @@ export const getInverterLifecycle = async (req, res) => {
       return res.status(404).json({ message: "Inverter not found" });
     }
 
-    /**
+    /* --------------------------------------------------
      * 2️⃣ Load factory → dealer dispatch (if exists)
-     */
-    let dispatchInfo = null;
+     * -------------------------------------------------- */
+    let factoryDispatch = null;
 
     if (inverter.dispatch) {
       const dispatch = await InverterDispatch.findById(inverter.dispatch)
@@ -40,22 +51,45 @@ export const getInverterLifecycle = async (req, res) => {
         .lean();
 
       if (dispatch) {
-        dispatchInfo = dispatch;
+        factoryDispatch = {
+          dispatchNumber: dispatch.dispatchNumber,
+          dealer: dispatch.dealer,
+          dispatchDate: dispatch.dispatchDate,
+          remarks: dispatch.remarks,
+        };
       }
     }
 
-    /**
-     * 3️⃣ Load service jobs (chronological)
-     */
+    /* --------------------------------------------------
+     * 3️⃣ Load dealer → sub-dealer transfers (timeline)
+     * -------------------------------------------------- */
+    const dealerTransfers = await DealerTransfer.find({
+      inverter: inverter._id,
+    })
+      .populate("fromDealer", "name")
+      .populate("toSubDealer", "name")
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const transferTimeline = dealerTransfers.map(t => ({
+      transferredAt: t.createdAt,
+      fromDealer: t.fromDealer?.name,
+      toSubDealer: t.toSubDealer?.name,
+      remarks: t.remarks || null,
+    }));
+
+    /* --------------------------------------------------
+     * 4️⃣ Load service jobs (chronological)
+     * -------------------------------------------------- */
     const serviceJobs = await ServiceJob.find({
       inverterUnit: inverter._id,
     })
       .sort({ visitDate: 1 })
       .lean();
 
-    /**
-     * 4️⃣ Attach replaced parts to each service job
-     */
+    /* --------------------------------------------------
+     * 5️⃣ Attach replaced parts to each service job
+     * -------------------------------------------------- */
     const serviceTimeline = [];
 
     for (const job of serviceJobs) {
@@ -74,9 +108,9 @@ export const getInverterLifecycle = async (req, res) => {
       });
     }
 
-    /**
-     * 5️⃣ Warranty status (starts from sale date)
-     */
+    /* --------------------------------------------------
+     * 6️⃣ Warranty status (starts from SALE date only)
+     * -------------------------------------------------- */
     let warranty = {
       startDate: null,
       status: "NOT_SOLD",
@@ -89,12 +123,14 @@ export const getInverterLifecycle = async (req, res) => {
       );
 
       warranty.startDate = inverter.saleDate;
-      warranty.status = new Date() <= end ? "IN_WARRANTY" : "OUT_OF_WARRANTY";
+      warranty.status = new Date() <= end
+        ? "IN_WARRANTY"
+        : "OUT_OF_WARRANTY";
     }
 
-    /**
-     * 6️⃣ Final structured lifecycle response
-     */
+    /* --------------------------------------------------
+     * 7️⃣ Final lifecycle response (structured)
+     * -------------------------------------------------- */
     return res.json({
       factory: {
         serialNumber: inverter.serialNumber,
@@ -102,13 +138,10 @@ export const getInverterLifecycle = async (req, res) => {
         registeredAt: inverter.createdAt,
       },
 
-      factoryDispatch: dispatchInfo
-        ? {
-            dispatchNumber: dispatchInfo.dispatchNumber,
-            dealer: dispatchInfo.dealer,
-            dispatchDate: dispatchInfo.dispatchDate,
-            remarks: dispatchInfo.remarks,
-          }
+      factoryDispatch,
+
+      dealerTransfers: transferTimeline.length > 0
+        ? transferTimeline
         : null,
 
       sale: inverter.saleDate

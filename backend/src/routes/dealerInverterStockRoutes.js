@@ -1,19 +1,17 @@
-// src/routes/inverterStockRoutes.js
-
 import express from "express";
-import { getDealerInverterStock } from "../controllers/inverterStockController.js";
+import { getDealerInverterStock } from "../controllers/dealerInverterStockController.js";
 import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 /**
- * GET /api/inverter-stock
+ * DEALER INVERTER STOCK
  *
- * Dealer stock = dispatched but not sold inverters
+ * GET /api/dealer-inverter-stock
  *
  * ACCESS:
  * - DEALER → own stock
- * - FACTORY_ADMIN → ?dealer=Dealer Name
+ * - FACTORY_ADMIN → any dealer
  */
 router.get(
   "/",
@@ -22,5 +20,4 @@ router.get(
   getDealerInverterStock
 );
 
-// 🚨 THIS LINE MUST EXIST
 export default router;
