@@ -1,0 +1,10 @@
+export const ROLES = {
+  FACTORY_ADMIN: 'FACTORY_ADMIN',
+  DEALER: 'DEALER',
+  SUB_DEALER: 'SUB_DEALER',
+  SERVICE_CENTER: 'SERVICE_CENTER',
+} as const;
+
+export type Role = typeof ROLES[keyof typeof ROLES];
+
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5050';

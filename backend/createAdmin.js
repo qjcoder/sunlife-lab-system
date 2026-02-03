@@ -14,6 +14,9 @@ async function createAdmin() {
 
   if (exists) {
     console.log("⚠️ Factory Admin already exists");
+    console.log("You can login with:");
+    console.log("  Email: admin@sunlife.com");
+    console.log("  Password: password");
     process.exit(0);
   }
 
@@ -24,12 +27,14 @@ async function createAdmin() {
     active: true,
   });
 
-  // ✅ Hash ONCE
+  // ✅ Hash password using the method
   await user.setPassword("password");
-
   await user.save();
 
   console.log("✅ Factory Admin created correctly");
+  console.log("You can login with:");
+  console.log("  Email: admin@sunlife.com");
+  console.log("  Password: password");
   process.exit(0);
 }
 

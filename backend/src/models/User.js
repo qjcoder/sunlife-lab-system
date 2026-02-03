@@ -59,6 +59,10 @@ const userSchema = new mongoose.Schema(
 /* --------------------------------------------------
  * Password helpers
  * -------------------------------------------------- */
+userSchema.methods.setPassword = async function (password) {
+  this.passwordHash = await bcrypt.hash(password, 10);
+};
+
 userSchema.methods.verifyPassword = async function (password) {
   return bcrypt.compare(password, this.passwordHash);
 };

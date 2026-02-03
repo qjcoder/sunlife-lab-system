@@ -2,6 +2,41 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
 /**
+ * Check user role from email (without password)
+ * Used to auto-select role on login page
+ */
+export const checkRole = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        message: "Email is required",
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "No account found with this email address",
+      });
+    }
+
+    // Return role without sensitive information
+    return res.json({
+      role: user.role,
+      active: user.active,
+    });
+  } catch (error) {
+    console.error("Check role error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+/**
  * Login API
  * FACTORY_ADMIN / SERVICE_CENTER
  */
@@ -16,12 +51,19 @@ export const login = async (req, res) => {
       });
     }
 
-    // 2️⃣ Find active user
-    const user = await User.findOne({ email, active: true });
+    // 2️⃣ Find user (check both active and inactive to provide better error messages)
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(401).json({
-        message: "Invalid credentials",
+        message: "No account found with this email address. Please check your email and try again.",
+      });
+    }
+
+    // Check if user is active
+    if (!user.active) {
+      return res.status(403).json({
+        message: "Your account is inactive. Please contact your administrator to activate your account.",
       });
     }
 
@@ -35,7 +77,7 @@ export const login = async (req, res) => {
 
     if (!passwordValid) {
       return res.status(401).json({
-        message: "Invalid credentials",
+        message: "The password you entered is incorrect. Please check your password and try again.",
       });
     }
 

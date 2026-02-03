@@ -103,11 +103,18 @@ export const getServiceCenterStock = async (req, res) => {
     }
 
     /* --------------------------------------------------
-     * STEP 5: Calculate remaining stock
+     * STEP 5: Calculate remaining stock and format response
      * -------------------------------------------------- */
-    Object.values(stockMap).forEach((item) => {
-      item.remainingQty =
-        item.totalDispatchedQty - item.usedQty;
+    const parts = Object.values(stockMap).map((item) => {
+      const remainingQty = item.totalDispatchedQty - item.usedQty;
+      return {
+        partCode: item.partCode,
+        partName: item.partName,
+        quantity: Math.max(0, remainingQty), // Ensure non-negative
+        // Include additional info for debugging/display if needed
+        totalDispatchedQty: item.totalDispatchedQty,
+        usedQty: item.usedQty,
+      };
     });
 
     /* --------------------------------------------------
@@ -115,7 +122,8 @@ export const getServiceCenterStock = async (req, res) => {
      * -------------------------------------------------- */
     return res.json({
       serviceCenter,
-      stock: Object.values(stockMap),
+      count: parts.length,
+      parts: parts,
     });
   } catch (error) {
     console.error("Get Service Center Stock Error:", error);

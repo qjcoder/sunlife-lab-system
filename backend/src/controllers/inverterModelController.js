@@ -61,11 +61,19 @@ export const createInverterModel = async (req, res) => {
     }
 
     // 4️⃣ Create inverter model (MASTER RECORD)
+    // Compute modelName from brand + productLine + variant
+    const modelName = `${brand} ${productLine} ${variant}`.trim();
+    
+    // Generate image path based on modelCode
+    const imagePath = `/products/${modelCode.toLowerCase()}.jpg`;
+    
     const inverterModel = await InverterModel.create({
       brand,
       productLine,
       variant,
       modelCode,
+      modelName,
+      image: imagePath,
       warranty,
       active: true, // required for listing
     });
@@ -92,7 +100,20 @@ export const createInverterModel = async (req, res) => {
  */
 export const listInverterModels = async (req, res) => {
   try {
-    const models = await InverterModel.find({ active: true })
+    // Get query parameter to filter by active status
+    // If no parameter, show all models (for registration dropdown)
+    // If ?active=true, show only active models (for models page)
+    const { active } = req.query;
+    
+    let query = {};
+    if (active === 'true') {
+      query = { active: true };
+    } else if (active === 'false') {
+      query = { active: false };
+    }
+    // If no active parameter, show all models (for registration dropdown)
+    
+    const models = await InverterModel.find(query)
       .sort({ brand: 1, productLine: 1, variant: 1 })
       .lean();
 
