@@ -9,6 +9,23 @@ import {
 import { sellInverterUnit } from "../controllers/inverterSaleController.js";
 import { getInverterLifecycle } from "../controllers/inverterLifecycleController.js";
 
+/**
+ * ====================================================
+ * INVERTER ROUTES
+ * ====================================================
+ * 
+ * This module defines all inverter unit-related API endpoints.
+ * 
+ * ROUTES:
+ * - POST /api/inverters - Register single inverter unit (FACTORY_ADMIN)
+ * - POST /api/inverters/bulk - Bulk register inverter units (FACTORY_ADMIN)
+ * - POST /api/inverters/sell - Sell inverter to customer (DEALER, FACTORY_ADMIN)
+ * - GET /api/inverters/:serialNumber/lifecycle - Get inverter lifecycle (AUTHENTICATED)
+ * 
+ * AUTHENTICATION:
+ * - All routes require authentication
+ * - Role-based access control enforced per endpoint
+ */
 const router = express.Router();
 
 /**

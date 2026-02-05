@@ -102,15 +102,18 @@ export default function ServiceJobDetails() {
   const replacedParts = jobDetails.replacedParts || [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/service-center/jobs')}>
+    <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
+      {/* Header */}
+      <div className="space-y-4">
+        <Button variant="ghost" onClick={() => navigate('/service-center/jobs')} className="mb-2">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold">Service Job Details</h1>
-          <p className="text-muted-foreground">Job ID: {serviceJobId}</p>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+            Service Job Details
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 text-lg">Job ID: {serviceJobId}</p>
         </div>
       </div>
 
@@ -156,7 +159,7 @@ export default function ServiceJobDetails() {
             <div className="flex items-center justify-between">
               <CardTitle>Replaced Parts</CardTitle>
               <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
+                <DialogTrigger>
                   <Button size="sm">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Part

@@ -5,6 +5,26 @@ import {
   bulkSellInverters,
 } from "../controllers/inverterSaleController.js";
 
+/**
+ * ====================================================
+ * INVERTER SALE ROUTES
+ * ====================================================
+ * 
+ * This module defines all inverter sale-related API endpoints.
+ * 
+ * ROUTES:
+ * - POST /api/inverter-sales/sell - Sell single inverter (FACTORY_ADMIN, DEALER, SUB_DEALER)
+ * - POST /api/inverter-sales/bulk - Bulk sell inverters (DEALER, SUB_DEALER)
+ * 
+ * AUTHENTICATION:
+ * - All routes require authentication
+ * - Role-based access control enforced per endpoint
+ * 
+ * BUSINESS RULES:
+ * - Warranty starts at sale date
+ * - Inverter must be owned by seller
+ * - Inverter must not be already sold
+ */
 const router = express.Router();
 
 /**

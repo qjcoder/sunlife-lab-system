@@ -2,10 +2,10 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "@/store/auth-store";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
+import { getRoleColorScheme } from "@/lib/role-colors";
 import {
   Users,
   Building2,
-  Network,
   Boxes,
   PackagePlus,
   Truck,
@@ -19,6 +19,8 @@ import {
   PackageSearch,
   ChevronDown,
   LayoutDashboard,
+  Keyboard,
+  UserCog,
 } from "lucide-react";
 
 type NavItem = {
@@ -31,17 +33,17 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   /* -------- COMMON -------- */
-  { label: "Dashboard", path: "/dashboard", roles: ["FACTORY_ADMIN", "DEALER", "SUB_DEALER", "SERVICE_CENTER"], icon: LayoutDashboard, section: "MAIN MENU" },
+  { label: "Dashboard", path: "/dashboard", roles: ["FACTORY_ADMIN", "DEALER", "SUB_DEALER", "SERVICE_CENTER", "DATA_ENTRY_OPERATOR"], icon: LayoutDashboard, section: "MAIN MENU" },
 
   /* -------- FACTORY -------- */
-  { label: "Inverter Models", path: "/factory/inverter-models", roles: ["FACTORY_ADMIN"], icon: Boxes, section: "MAIN MENU" },
-  { label: "Inverter Registration", path: "/factory/inverter-registration", roles: ["FACTORY_ADMIN"], icon: PackagePlus, section: "MAIN MENU" },
+  { label: "Create New Product Model", path: "/factory/inverter-models", roles: ["FACTORY_ADMIN"], icon: Boxes, section: "MAIN MENU" },
+  { label: "Product Serial Entry", path: "/factory/inverter-registration", roles: ["FACTORY_ADMIN"], icon: PackagePlus, section: "MAIN MENU" },
   { label: "Factory Stock", path: "/factory/stock", roles: ["FACTORY_ADMIN"], icon: Warehouse, section: "MAIN MENU" },
-  { label: "Dispatch", path: "/factory/dispatch", roles: ["FACTORY_ADMIN"], icon: Truck, section: "MAIN MENU" },
-  { label: "Dealers", path: "/factory/dealers", roles: ["FACTORY_ADMIN"], icon: Users, section: "MAIN MENU" },
+  { label: "Product Dispatch", path: "/factory/dispatch", roles: ["FACTORY_ADMIN"], icon: Truck, section: "MAIN MENU" },
+  { label: "Dealers Network", path: "/factory/dealers", roles: ["FACTORY_ADMIN"], icon: Users, section: "MAIN MENU" },
   { label: "Service Centers", path: "/factory/service-centers", roles: ["FACTORY_ADMIN"], icon: Building2, section: "MAIN MENU" },
-  { label: "Part Dispatch", path: "/factory/part-dispatch", roles: ["FACTORY_ADMIN"], icon: Package, section: "MAIN MENU" },
-  { label: "Dealer Hierarchy", path: "/factory/dealer-hierarchy", roles: ["FACTORY_ADMIN"], icon: Network, section: "MAIN MENU" },
+  { label: "Data Entry Operators", path: "/factory/operators", roles: ["FACTORY_ADMIN"], icon: UserCog, section: "MAIN MENU" },
+  { label: "Service Center Parts Dispatch", path: "/factory/part-dispatch", roles: ["FACTORY_ADMIN"], icon: Package, section: "MAIN MENU" },
 
   /* -------- DEALER -------- */
   { label: "Dealer Stock", path: "/dealer/stock", roles: ["DEALER"], icon: Warehouse, section: "MAIN MENU" },
@@ -57,22 +59,11 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Service Jobs", path: "/service-center/jobs", roles: ["SERVICE_CENTER"], icon: Wrench, section: "MAIN MENU" },
   { label: "Create Service Job", path: "/service-center/jobs/create", roles: ["SERVICE_CENTER"], icon: FilePlus, section: "MAIN MENU" },
   { label: "Parts Stock", path: "/service-center/stock", roles: ["SERVICE_CENTER"], icon: PackageSearch, section: "MAIN MENU" },
+
+  /* -------- DATA ENTRY OPERATOR -------- */
+  { label: "Serial Entry", path: "/operator/serial-entry", roles: ["DATA_ENTRY_OPERATOR"], icon: Keyboard, section: "OPERATOR OPERATIONS" },
 ];
 
-const getRoleBadgeColor = (role: string) => {
-  switch (role) {
-    case "FACTORY_ADMIN":
-      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800";
-    case "DEALER":
-      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800";
-    case "SUB_DEALER":
-      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800";
-    case "SERVICE_CENTER":
-      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800";
-    default:
-      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800";
-  }
-};
 
 const formatRoleName = (role: string) => {
   return role
@@ -81,23 +72,34 @@ const formatRoleName = (role: string) => {
     .join(" ");
 };
 
-const Sidebar = () => {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+const Sidebar = ({ onClose }: SidebarProps) => {
   const { user } = useAuth();
 
   if (!user) return null;
 
   const filteredItems = NAV_ITEMS.filter((item) => item.roles.includes(user.role));
+  const colors = getRoleColorScheme(user.role);
 
   return (
-    <aside className="w-72 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 border-r border-slate-200 dark:border-slate-700 h-full flex flex-col shadow-sm">
+    <aside className={cn(
+      "w-72 border-r h-full flex flex-col shadow-sm transition-colors duration-300 bg-white dark:bg-slate-800",
+      `bg-gradient-to-b ${colors.primaryLight} to-white dark:from-slate-900 dark:to-slate-800`,
+      colors.accentBorder, "dark:border-slate-700"
+    )}>
       {/* Header */}
-      <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+      <div className={cn("p-6 border-b", colors.accentBorder, "dark:border-slate-700")}>
         <Logo size="md" className="mb-4" />
         <div className="mt-4">
           <span
             className={cn(
-              "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-              getRoleBadgeColor(user.role)
+              "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
+              colors.badgeBg,
+              colors.badgeText,
+              colors.badgeBorder
             )}
           >
             {formatRoleName(user.role)}
@@ -121,12 +123,18 @@ const Sidebar = () => {
                   key={item.path}
                   to={item.path}
                   end={isExactMatch}
+                  onClick={() => {
+                    // Close sidebar on mobile when navigating
+                    if (onClose && window.innerWidth < 1024) {
+                      onClose();
+                    }
+                  }}
                   className={({ isActive }) =>
                     cn(
                       "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-100"
+                        ? cn(colors.primary, "text-white shadow-lg")
+                        : cn("text-slate-700 dark:text-slate-300", colors.primaryLight, "dark:hover:bg-slate-700/50", colors.accentText, "dark:hover:text-slate-100", "hover:opacity-80")
                     )
                   }
                 >
@@ -135,7 +143,7 @@ const Sidebar = () => {
                       <Icon
                         className={cn(
                           "h-5 w-5 flex-shrink-0",
-                          isActive ? "text-primary-foreground" : "text-slate-500 dark:text-slate-400"
+                          isActive ? "text-white" : "text-slate-500 dark:text-slate-400"
                         )}
                       />
                       <span className="flex-1">{item.label}</span>
@@ -149,9 +157,16 @@ const Sidebar = () => {
       </nav>
 
       {/* User Profile Footer */}
-      <div className="p-4 border-t border-slate-200 dark:border-slate-700">
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer">
-          <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm flex-shrink-0">
+      <div className={cn("p-4 border-t", colors.accentBorder, "dark:border-slate-700")}>
+        <div className={cn(
+          "flex items-center gap-3 p-3 rounded-lg transition-colors cursor-pointer",
+          colors.primaryLight, "dark:bg-slate-800/50",
+          colors.accentLight, "dark:hover:bg-slate-700/50"
+        )}>
+          <div className={cn(
+            "h-10 w-10 rounded-full flex items-center justify-center font-semibold text-sm flex-shrink-0 text-white",
+            colors.primary
+          )}>
             {user.name
               .split(" ")
               .map((n) => n[0])

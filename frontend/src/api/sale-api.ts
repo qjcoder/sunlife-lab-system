@@ -1,3 +1,18 @@
+/**
+ * ====================================================
+ * SALE API CLIENT
+ * ====================================================
+ * 
+ * This module provides TypeScript interfaces and functions
+ * for interacting with the sale API endpoints.
+ * 
+ * ENDPOINTS:
+ * - POST /api/inverter-sales/sell - Sell single inverter (DEALER, FACTORY_ADMIN)
+ * - POST /api/inverter-sales/bulk - Bulk sell inverters (DEALER, FACTORY_ADMIN)
+ * 
+ * USAGE:
+ * import { sellInverter, bulkSellInverters } from '@/api/sale-api';
+ */
 import api from './axios';
 
 export interface SellInverterRequest {

@@ -7,6 +7,23 @@ import {
 import replacedPartRoutes from "./replacedPartRoutes.js";
 import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
 
+/**
+ * ====================================================
+ * SERVICE JOB ROUTES
+ * ====================================================
+ * 
+ * This module defines all service job-related API endpoints.
+ * 
+ * ROUTES:
+ * - GET /api/service-jobs - List service jobs (AUTHENTICATED)
+ * - GET /api/service-jobs/:serviceJobId - Get service job details (AUTHENTICATED)
+ * - POST /api/service-jobs - Create service job (SERVICE_CENTER)
+ * - POST /api/service-jobs/:serviceJobId/replaced-parts - Add replaced part (SERVICE_CENTER)
+ * 
+ * AUTHENTICATION:
+ * - All routes require authentication
+ * - Service job creation and part replacement require SERVICE_CENTER role
+ */
 const router = express.Router();
 
 /**

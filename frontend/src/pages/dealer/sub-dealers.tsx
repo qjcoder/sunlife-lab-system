@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
+import { Calendar, Mail } from 'lucide-react';
 
 const subDealerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -57,13 +58,19 @@ export default function SubDealers() {
     mutation.mutate(data);
   };
 
-  // Get sub-dealers from hierarchy
+  // Get sub-dealers from hierarchy with creation dates
   const subDealers: any[] = [];
   const extractSubDealers = (nodes: any[]) => {
     nodes.forEach((node) => {
       if (node.subDealers && node.subDealers.length > 0) {
         node.subDealers.forEach((sub: any) => {
-          subDealers.push(sub.dealer);
+          // Include dealer info with createdAt if available
+          subDealers.push({
+            id: sub.id || sub.dealer?.id,
+            name: sub.name || sub.dealer?.name,
+            email: sub.email || sub.dealer?.email,
+            createdAt: sub.createdAt,
+          });
           if (sub.subDealers) {
             extractSubDealers([sub]);
           }
@@ -76,10 +83,13 @@ export default function SubDealers() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Sub-Dealers</h1>
-        <p className="text-muted-foreground">Manage sub-dealer accounts</p>
+    <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
+      {/* Header */}
+      <div className="space-y-2">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+          Sub-Dealers
+        </h1>
+        <p className="text-slate-600 dark:text-slate-400 text-lg">Manage sub-dealer accounts</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -118,28 +128,50 @@ export default function SubDealers() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Existing Sub-Dealers</CardTitle>
+            <CardTitle>Registered Sub-Dealers ({subDealers.length})</CardTitle>
           </CardHeader>
           <CardContent>
             {subDealers.length === 0 ? (
               <p className="text-muted-foreground">No sub-dealers found</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {subDealers.map((subDealer) => (
-                    <TableRow key={subDealer.id}>
-                      <TableCell>{subDealer.name}</TableCell>
-                      <TableCell>{subDealer.email}</TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Username (Email)</TableHead>
+                      <TableHead>Created</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {subDealers.map((subDealer: any) => (
+                      <TableRow key={subDealer.id}>
+                        <TableCell className="font-medium">{subDealer.name}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3 w-3 text-slate-400" />
+                            <span className="text-sm">{subDealer.email}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-3 w-3 text-slate-400" />
+                            <span className="text-sm text-slate-600 dark:text-slate-400">
+                              {subDealer.createdAt
+                                ? new Date(subDealer.createdAt).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                  })
+                                : 'N/A'}
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -1,10 +1,15 @@
 import { useAuth } from "@/store/auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogOut, Mail, Search, Bell, MessageSquare, ChevronDown } from "lucide-react";
+import { LogOut, Search, Bell, MessageSquare, Menu } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
+import { getRoleColorScheme } from "@/lib/role-colors";
 import { useState } from "react";
+
+interface TopbarProps {
+  onMenuClick?: () => void;
+}
 
 const formatRoleName = (role: string) => {
   return role
@@ -22,77 +27,117 @@ const getInitials = (name: string) => {
     .slice(0, 2);
 };
 
-const Topbar = () => {
+const Topbar = ({ onMenuClick }: TopbarProps) => {
   const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
   if (!user) return null;
 
+  const colors = getRoleColorScheme(user.role);
+
   return (
-    <header className="h-16 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between px-6">
-      {/* Left Side - Logo1 */}
-      <div className="flex items-center gap-3 mr-6">
-        <div className="w-10 h-10 border-2 border-red-600 dark:border-red-500 rounded-full bg-transparent flex items-center justify-center p-1 shadow-sm">
+    <header className={cn(
+      "h-14 sm:h-16 border-b shadow-sm flex items-center justify-between px-3 sm:px-4 md:px-6 transition-colors duration-300",
+      "bg-white dark:bg-slate-900", colors.accentBorder, "dark:border-slate-700"
+    )}>
+      {/* Left Side - Menu Button (Mobile) + Logo */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Mobile Menu Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onMenuClick}
+          className="lg:hidden h-9 w-9"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        
+        <div className={cn(
+          "w-8 h-8 sm:w-10 sm:h-10 border-2 rounded-full bg-transparent flex items-center justify-center p-1 shadow-sm",
+          colors.accentBorder, "dark:border-slate-600"
+        )}>
           <img 
             src="/Logo1.png" 
             alt="SunLife Solar" 
-            className="h-8 w-8 rounded-full object-contain bg-transparent"
+            className="h-6 w-6 sm:h-8 sm:w-8 rounded-full object-contain bg-transparent"
             style={{ backgroundColor: 'transparent' }}
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
             }}
           />
         </div>
-        <div className="hidden md:block">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Dashboard</h2>
+        <div className="hidden sm:block">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">Dashboard</h2>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="flex-1 max-w-md">
-        <div className="relative">
+      {/* Search Bar - Hidden on mobile */}
+      <div className="hidden md:flex flex-1 max-w-md mx-4">
+        <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             type="text"
             placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900"
+            className={cn(
+              "pl-10 w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900",
+              "focus:ring-2 focus:ring-offset-0",
+              user.role === "FACTORY_ADMIN" ? "focus:border-red-500 focus:ring-red-500/20" :
+              user.role === "DEALER" ? "focus:border-blue-500 focus:ring-blue-500/20" :
+              user.role === "SUB_DEALER" ? "focus:border-green-500 focus:ring-green-500/20" :
+              "focus:border-orange-500 focus:ring-orange-500/20"
+            )}
           />
         </div>
       </div>
 
       {/* Right Side */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
         {/* Theme Toggle */}
         <ThemeToggle />
 
-        {/* Notifications */}
+        {/* Notifications - Hidden on mobile */}
         <Button
           variant="ghost"
           size="icon"
-          className="relative h-9 w-9 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+          className={cn(
+            "relative h-8 w-8 sm:h-9 sm:w-9 rounded-lg transition-colors hidden sm:flex",
+            colors.primaryLight, "dark:hover:bg-slate-800"
+          )}
         >
-          <Bell className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-          <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900" />
+          <Bell className={cn("h-4 w-4 sm:h-5 sm:w-5", colors.accentText, "dark:text-slate-400")} />
+          <span className={cn(
+            "absolute top-1 right-1 h-2 w-2 rounded-full border-2 border-white dark:border-slate-900",
+            colors.primary
+          )} />
         </Button>
 
-        {/* Messages */}
+        {/* Messages - Hidden on mobile */}
         <Button
           variant="ghost"
           size="icon"
-          className="relative h-9 w-9 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+          className={cn(
+            "relative h-8 w-8 sm:h-9 sm:w-9 rounded-lg transition-colors hidden sm:flex",
+            colors.primaryLight, "dark:hover:bg-slate-800"
+          )}
         >
-          <MessageSquare className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-          <span className="absolute top-1 right-1 h-2 w-2 bg-blue-500 rounded-full border-2 border-white dark:border-slate-900" />
+          <MessageSquare className={cn("h-4 w-4 sm:h-5 sm:w-5", colors.accentText, "dark:text-slate-400")} />
+          <span className={cn(
+            "absolute top-1 right-1 h-2 w-2 rounded-full border-2 border-white dark:border-slate-900",
+            colors.primary
+          )} />
         </Button>
 
         {/* User Profile */}
-        <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
-          <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm">
+        <div className={cn("flex items-center gap-1 sm:gap-2 md:gap-3 pl-2 sm:pl-4 border-l", colors.accentBorder, "dark:border-slate-700")}>
+          <div className={cn(
+            "h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm text-white",
+            colors.primary
+          )}>
             {getInitials(user.name)}
           </div>
-          <div className="flex flex-col items-start">
+          <div className="hidden md:flex flex-col items-start">
             <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
               {user.name}
             </span>
@@ -104,7 +149,11 @@ const Topbar = () => {
             variant="ghost"
             size="icon"
             onClick={logout}
-            className="h-9 w-9 rounded-lg hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+            className={cn(
+              "h-8 w-8 sm:h-9 sm:w-9 rounded-lg transition-colors",
+              colors.primaryLight, colors.accentText,
+              "dark:hover:bg-slate-800 dark:hover:text-red-400"
+            )}
             title="Logout"
           >
             <LogOut className="h-4 w-4" />

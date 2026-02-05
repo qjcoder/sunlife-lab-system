@@ -1,3 +1,19 @@
+/**
+ * ====================================================
+ * DEALER API CLIENT
+ * ====================================================
+ * 
+ * This module provides TypeScript interfaces and functions
+ * for interacting with the dealer API endpoints.
+ * 
+ * ENDPOINTS:
+ * - POST /api/dealers - Create main dealer
+ * - POST /api/dealers/sub-dealer - Create sub-dealer
+ * - GET /api/dealers/hierarchy - Get dealer hierarchy
+ * 
+ * USAGE:
+ * import { createDealer, createSubDealer, getDealerHierarchy } from '@/api/dealer-api';
+ */
 import api from './axios';
 
 export interface CreateDealerRequest {
@@ -55,4 +71,23 @@ export const createSubDealer = async (data: CreateSubDealerRequest): Promise<Cre
 export const getDealerHierarchy = async (): Promise<DealerHierarchyNode[]> => {
   const response = await api.get<{ count: number; data: DealerHierarchyNode[] }>('/api/dealers/hierarchy');
   return response.data.data;
+};
+
+export interface Dealer {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface ListDealersResponse {
+  message: string;
+  dealers: Dealer[];
+}
+
+export const listDealers = async (): Promise<Dealer[]> => {
+  const response = await api.get<ListDealersResponse>('/api/dealers');
+  return response.data.dealers;
 };

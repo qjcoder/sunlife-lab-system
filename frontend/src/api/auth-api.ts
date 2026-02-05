@@ -1,3 +1,18 @@
+/**
+ * ====================================================
+ * AUTH API CLIENT
+ * ====================================================
+ * 
+ * This module provides TypeScript interfaces and functions
+ * for interacting with the authentication API endpoints.
+ * 
+ * ENDPOINTS:
+ * - POST /api/auth/login - User login
+ * - POST /api/auth/check-role - Check user role
+ * 
+ * USAGE:
+ * import { login, checkRole } from '@/api/auth-api';
+ */
 import api from './axios';
 import { UserRole } from '@/store/auth-store';
 

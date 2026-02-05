@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getDealerHierarchy } from '@/api/dealer-api';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Building2, Users, Mail, Phone, MapPin } from 'lucide-react';
+import { Loader2, Building2, Users, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function DealerHierarchy() {
@@ -30,7 +30,7 @@ export default function DealerHierarchy() {
     );
   }
 
-  const renderNode = (node: any, level = 0, isLast = false) => {
+  const renderNode = (node: any, level = 0) => {
     const hasSubDealers = node.subDealers && node.subDealers.length > 0;
     
     return (
@@ -103,9 +103,9 @@ export default function DealerHierarchy() {
         {/* Sub-Dealers */}
         {hasSubDealers && (
           <div className="mt-4 ml-16 space-y-4">
-            {node.subDealers.map((subDealer: any, index: number) => (
+            {node.subDealers.map((subDealer: any) => (
               <div key={subDealer.id}>
-                {renderNode({ dealer: subDealer, subDealers: [] }, level + 1, index === node.subDealers.length - 1)}
+                {renderNode({ dealer: subDealer, subDealers: [] }, level + 1)}
               </div>
             ))}
           </div>
@@ -118,11 +118,14 @@ export default function DealerHierarchy() {
   const totalSubDealers = data?.reduce((acc: number, node: any) => acc + (node.subDealers?.length || 0), 0) || 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-red-50/30 to-orange-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Dealer Hierarchy</h1>
-          <p className="text-muted-foreground mt-1">View dealer and sub-dealer network structure</p>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+            Dealer Hierarchy
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 text-lg">View dealer and sub-dealer network structure</p>
         </div>
         <div className="flex gap-4">
           <Card className="border-red-200 dark:border-red-900 bg-gradient-to-br from-red-50 to-white dark:from-red-950/20 dark:to-slate-900">
@@ -140,24 +143,26 @@ export default function DealerHierarchy() {
         </div>
       </div>
 
-      <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-        <CardContent className="p-8">
-          {!data || data.length === 0 ? (
-            <div className="text-center py-12">
-              <Building2 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-              <p className="text-muted-foreground">No dealers found</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {data.map((node: any, index: number) => (
-                <div key={node.dealer.id}>
-                  {renderNode(node, 0, index === data.length - 1)}
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+          <CardContent className="p-8">
+            {!data || data.length === 0 ? (
+              <div className="text-center py-12">
+                <Building2 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                <p className="text-muted-foreground">No dealers found</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {data.map((node: any) => (
+                  <div key={node.dealer.id}>
+                    {renderNode(node, 0)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

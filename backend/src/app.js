@@ -32,6 +32,7 @@ import authRoutes from "./routes/authRoutes.js";
 // 👤 Account Management
 import dealerRoutes from "./routes/dealerRoutes.js";
 import serviceCenterRoutes from "./routes/serviceCenterRoutes.js";
+import operatorRoutes from "./routes/operatorRoutes.js";
 
 // 🏭 Factory Master Data
 import inverterModelRoutes from "./routes/inverterModelRoutes.js";
@@ -60,6 +61,9 @@ import serviceCenterStockRoutes from "./routes/serviceCenterStockRoutes.js";
 // 🛠 Service & Warranty
 import serviceJobRoutes from "./routes/serviceJobRoutes.js";
 
+// 📝 Operator Serial Entry
+import operatorSerialEntryRoutes from "./routes/operatorSerialEntryRoutes.js";
+
 /**
  * ====================================================
  * API Route Registration
@@ -72,6 +76,7 @@ app.use("/api/auth", authRoutes);
 // 👤 Accounts & Hierarchy
 app.use("/api/dealers", dealerRoutes);
 app.use("/api/service-centers", serviceCenterRoutes);
+app.use("/api/operators", operatorRoutes);
 
 // 🏭 Inverter Models
 app.use("/api/inverter-models", inverterModelRoutes);
@@ -98,6 +103,9 @@ app.use("/api/service-center-stock", serviceCenterStockRoutes);
 
 // 🛠 Service Jobs & Replacements
 app.use("/api/service-jobs", serviceJobRoutes);
+
+// 📝 Operator Serial Entry
+app.use("/api/operator/serial-entry", operatorSerialEntryRoutes);
 
 /**
  * ====================================================

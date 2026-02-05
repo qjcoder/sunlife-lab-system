@@ -15,7 +15,7 @@ export default function ModelDetails() {
 
   const { data: models, isLoading: modelsLoading } = useQuery({
     queryKey: ['inverter-models'],
-    queryFn: listModels,
+    queryFn: () => listModels(),
   });
 
   const { data: factoryStock, isLoading: stockLoading } = useQuery({
@@ -61,7 +61,6 @@ export default function ModelDetails() {
 
     // Total sold = service jobs (since service jobs only exist for sold inverters)
     // This is a conservative estimate - actual sold count might be higher
-    const totalSold = totalServiceJobs;
 
     // Complaint ratio: service jobs / total sold
     // Since we're using service jobs as proxy for sold, we'll calculate differently
@@ -132,18 +131,18 @@ export default function ModelDetails() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/factory/inverter-models')}>
+      <div className="space-y-4">
+        <Button variant="ghost" onClick={() => navigate('/factory/inverter-models')} className="mb-2">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          Back to Models
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
             {model.brand} {model.productLine} {model.variant}
           </h1>
-          <p className="text-muted-foreground">Model Code: {model.modelCode}</p>
+          <p className="text-slate-600 dark:text-slate-400 text-lg">Model Code: {model.modelCode}</p>
         </div>
       </div>
 

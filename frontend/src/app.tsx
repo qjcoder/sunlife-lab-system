@@ -14,7 +14,6 @@ import Login from "@/pages/login/login";
 
 // Factory (FACTORY_ADMIN)
 import Dealers from "@/pages/factory/dealers";
-import DealerHierarchy from "@/pages/factory/dealer-hierarchy";
 import InverterModels from "@/pages/factory/inverter-models";
 import ModelDetails from "@/pages/factory/model-details";
 import InverterRegistration from "@/pages/factory/inverter-registration";
@@ -22,6 +21,7 @@ import FactoryDispatch from "@/pages/factory/factory-dispatch";
 import FactoryStock from "@/pages/factory/factory-stock";
 import PartDispatch from "@/pages/factory/part-dispatch";
 import ServiceCenters from "@/pages/factory/service-centers";
+import Operators from "@/pages/factory/operators";
 
 // Dealer
 import DealerStock from "@/pages/dealer/stock";
@@ -45,9 +45,17 @@ import InverterLifecycle from "@/pages/lifecycle/inverter-lifecycle";
 // Dashboard
 import Dashboard from "@/pages/dashboard/dashboard";
 
+// Operator
+import OperatorSerialEntry from "@/pages/operator/serial-entry";
+
 const App = () => {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Routes>
           {/* ----------------------------------
            * Public
@@ -69,20 +77,20 @@ const App = () => {
               {/* ----------------------------------
                * FACTORY ADMIN
                * ---------------------------------- */}
-              <Route
-                path="factory"
-                element={<RoleRoute allowedRoles={["FACTORY_ADMIN"]} />}
-              >
-                <Route path="dealers" element={<Dealers />} />
-                <Route path="service-centers" element={<ServiceCenters />} />
-                <Route path="dealer-hierarchy" element={<DealerHierarchy />} />
-                <Route path="inverter-models" element={<InverterModels />} />
-                <Route path="inverter-models/:modelId" element={<ModelDetails />} />
-                <Route path="inverter-registration" element={<InverterRegistration />} />
-                <Route path="dispatch" element={<FactoryDispatch />} />
-                <Route path="part-dispatch" element={<PartDispatch />} />
-                <Route path="stock" element={<FactoryStock />} />
-              </Route>
+                  <Route
+                    path="factory"
+                    element={<RoleRoute allowedRoles={["FACTORY_ADMIN"]} />}
+                  >
+                    <Route path="dealers" element={<Dealers />} />
+                    <Route path="service-centers" element={<ServiceCenters />} />
+                    <Route path="operators" element={<Operators />} />
+                    <Route path="inverter-models" element={<InverterModels />} />
+                    <Route path="inverter-models/:modelId" element={<ModelDetails />} />
+                    <Route path="inverter-registration" element={<InverterRegistration />} />
+                    <Route path="dispatch" element={<FactoryDispatch />} />
+                    <Route path="part-dispatch" element={<PartDispatch />} />
+                    <Route path="stock" element={<FactoryStock />} />
+                  </Route>
 
               {/* ----------------------------------
                * DEALER
@@ -119,6 +127,16 @@ const App = () => {
                 <Route path="jobs/create" element={<CreateServiceJob />} />
                 <Route path="jobs/:serviceJobId" element={<ServiceJobDetails />} />
                 <Route path="stock" element={<ServiceCenterStock />} />
+              </Route>
+
+              {/* ----------------------------------
+               * DATA ENTRY OPERATOR
+               * ---------------------------------- */}
+              <Route
+                path="operator"
+                element={<RoleRoute allowedRoles={["DATA_ENTRY_OPERATOR"]} />}
+              >
+                <Route path="serial-entry" element={<OperatorSerialEntry />} />
               </Route>
 
               {/* ----------------------------------

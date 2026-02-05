@@ -21,10 +21,13 @@ export default function DealerStock() {
     queryFn: () => getDealerStock(),
   });
 
-  const filteredData = data?.availableInverters.filter(
-    (item) =>
-      item.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.inverterModel.modelCode.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredData = (data?.availableInverters || []).filter(
+    (item) => {
+      if (!item || !item.inverterModel) return false;
+      const serialMatch = item.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+      const modelMatch = item.inverterModel.modelCode?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+      return serialMatch || modelMatch;
+    }
   );
 
   if (isLoading) {
@@ -48,27 +51,30 @@ export default function DealerStock() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-green-50/30 to-emerald-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dealer Stock</h1>
-          <p className="text-muted-foreground">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+            Dealer Stock
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 text-lg">
             {data?.dealer} - Total: {data?.count || 0} inverters
           </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Input
+            placeholder="Search products..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-64 h-11 border-2 border-slate-300 dark:border-slate-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+          />
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Available Inverters</CardTitle>
-            <Input
-              placeholder="Search by serial number or model..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
-          </div>
+          <CardTitle>Available Inverters</CardTitle>
         </CardHeader>
         <CardContent>
           {!filteredData || filteredData.length === 0 ? (
@@ -85,26 +91,29 @@ export default function DealerStock() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredData.map((item) => (
-                  <TableRow key={item.serialNumber}>
-                    <TableCell className="font-medium">{item.serialNumber}</TableCell>
-                    <TableCell>
-                      {item.inverterModel.brand} {item.inverterModel.modelCode}
-                    </TableCell>
-                    <TableCell>
-                      {item.dispatchedAt ? new Date(item.dispatchedAt).toLocaleDateString() : '-'}
-                    </TableCell>
-                    <TableCell>{item.dispatchNumber || '-'}</TableCell>
-                    <TableCell>
-                      <Link
-                        to={`/lifecycle/${item.serialNumber}`}
-                        className="text-primary hover:underline"
-                      >
-                        View Lifecycle
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredData.map((item) => {
+                  if (!item || !item.inverterModel) return null;
+                  return (
+                    <TableRow key={item.serialNumber}>
+                      <TableCell className="font-medium">{item.serialNumber || '-'}</TableCell>
+                      <TableCell>
+                        {item.inverterModel.brand || ''} {item.inverterModel.modelCode || ''}
+                      </TableCell>
+                      <TableCell>
+                        {item.dispatchedAt ? new Date(item.dispatchedAt).toLocaleDateString() : '-'}
+                      </TableCell>
+                      <TableCell>{item.dispatchNumber || '-'}</TableCell>
+                      <TableCell>
+                        <Link
+                          to={`/lifecycle/${item.serialNumber || ''}`}
+                          className="text-primary hover:underline"
+                        >
+                          View Lifecycle
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

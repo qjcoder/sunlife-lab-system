@@ -60,6 +60,13 @@ const inverterUnitSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+
+    // Track who entered this serial number (for operator entries)
+    enteredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   {
     timestamps: true, // createdAt = factory registration date

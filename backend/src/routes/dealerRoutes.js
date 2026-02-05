@@ -4,8 +4,25 @@ import { getDealerHierarchy } from "../controllers/dealerHierarchyController.js"
 import {
   createDealer,
   createSubDealer,
+  listDealers,
 } from "../controllers/dealerController.js";
 
+/**
+ * ====================================================
+ * DEALER ROUTES
+ * ====================================================
+ * 
+ * This module defines all dealer-related API endpoints.
+ * 
+ * ROUTES:
+ * - POST /api/dealers - Create main dealer (FACTORY_ADMIN)
+ * - POST /api/dealers/sub-dealer - Create sub-dealer (DEALER)
+ * - GET /api/dealers/hierarchy - Get dealer hierarchy (FACTORY_ADMIN)
+ * 
+ * AUTHENTICATION:
+ * - All routes require authentication
+ * - Role-based access control enforced
+ */
 const router = express.Router();
 
 /**
@@ -48,5 +65,18 @@ router.get(
   getDealerHierarchy
 );
 
+/**
+ * ====================================================
+ * FACTORY_ADMIN → LIST ALL DEALERS
+ * ====================================================
+ *
+ * GET /api/dealers
+ */
+router.get(
+  "/",
+  requireAuth,
+  requireRole("FACTORY_ADMIN"),
+  listDealers
+);
 
 export default router;

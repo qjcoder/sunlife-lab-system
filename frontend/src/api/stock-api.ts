@@ -1,3 +1,18 @@
+/**
+ * ====================================================
+ * STOCK API CLIENT
+ * ====================================================
+ * 
+ * This module provides TypeScript interfaces and functions
+ * for interacting with the stock API endpoints.
+ * 
+ * ENDPOINTS:
+ * - GET /api/factory-inverter-stock - Get factory stock (FACTORY_ADMIN)
+ * - GET /api/dealer-inverter-stock - Get dealer stock (DEALER, FACTORY_ADMIN)
+ * 
+ * USAGE:
+ * import { getFactoryStock, getDealerStock } from '@/api/stock-api';
+ */
 import api from './axios';
 
 export interface InverterStockItem {

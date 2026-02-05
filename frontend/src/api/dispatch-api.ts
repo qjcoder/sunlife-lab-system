@@ -1,3 +1,17 @@
+/**
+ * ====================================================
+ * DISPATCH API CLIENT
+ * ====================================================
+ * 
+ * This module provides TypeScript interfaces and functions
+ * for interacting with the dispatch API endpoints.
+ * 
+ * ENDPOINTS:
+ * - POST /api/inverter-dispatches - Create factory dispatch (FACTORY_ADMIN)
+ * 
+ * USAGE:
+ * import { createDispatch } from '@/api/dispatch-api';
+ */
 import api from './axios';
 
 export interface CreateDispatchRequest {

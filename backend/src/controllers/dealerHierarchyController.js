@@ -46,7 +46,7 @@ export const getDealerHierarchy = async (req, res) => {
       parentDealer: { $ne: null },
       active: true,
     })
-      .select("_id name email parentDealer")
+      .select("_id name email parentDealer createdAt")
       .lean();
 
     /* --------------------------------------------------
@@ -67,6 +67,7 @@ export const getDealerHierarchy = async (req, res) => {
           id: sd._id,
           name: sd.name,
           email: sd.email,
+          createdAt: sd.createdAt,
         })),
       };
     });

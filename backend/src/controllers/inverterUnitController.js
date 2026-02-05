@@ -3,9 +3,23 @@ import InverterModel from "../models/InverterModel.js";
 
 /**
  * ====================================================
- * CREATE SINGLE INVERTER UNIT
+ * INVERTER UNIT CONTROLLER
  * ====================================================
- * POST /api/inverters
+ * 
+ * This controller handles physical inverter unit operations.
+ * 
+ * WORKFLOW:
+ * 1. Factory registers inverter units with serial numbers
+ * 2. Units can be registered individually or in bulk
+ * 3. Each unit is linked to an inverter model
+ * 
+ * BUSINESS RULES:
+ * - Serial numbers must be unique
+ * - Units must reference a valid inverter model
+ * - Bulk operations validate all serials before creating any
+ * 
+ * ROLES:
+ * - FACTORY_ADMIN: Can register inverter units (single or bulk)
  */
 export const createInverterUnit = async (req, res) => {
   try {

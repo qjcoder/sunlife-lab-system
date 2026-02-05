@@ -1,3 +1,18 @@
+/**
+ * ====================================================
+ * PART DISPATCH API CLIENT
+ * ====================================================
+ * 
+ * This module provides TypeScript interfaces and functions
+ * for interacting with the part dispatch API endpoints.
+ * 
+ * ENDPOINTS:
+ * - POST /api/part-dispatches - Create part dispatch (FACTORY_ADMIN)
+ * - GET /api/part-dispatches - List part dispatches (FACTORY_ADMIN, SERVICE_CENTER)
+ * 
+ * USAGE:
+ * import { createPartDispatch, listPartDispatches } from '@/api/part-dispatch-api';
+ */
 import api from './axios';
 
 export interface DispatchedItem {

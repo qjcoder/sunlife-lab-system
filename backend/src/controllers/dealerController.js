@@ -3,13 +3,24 @@ import User from "../models/User.js";
 
 /**
  * ====================================================
- * CREATE MAIN DEALER (Factory → Dealer)
+ * DEALER CONTROLLER
  * ====================================================
- *
- * ROLE:
- * - FACTORY_ADMIN only
- *
- * POST /api/dealers
+ * 
+ * This controller handles dealer and sub-dealer operations.
+ * 
+ * WORKFLOW:
+ * 1. Factory Admin creates main dealers
+ * 2. Main dealers create sub-dealers under their account
+ * 3. Dealers can manage their hierarchy
+ * 
+ * BUSINESS RULES:
+ * - Main dealers have parentDealer = null
+ * - Sub-dealers must belong to a main dealer
+ * - Each dealer has unique email
+ * 
+ * ROLES:
+ * - FACTORY_ADMIN: Can create main dealers and view hierarchy
+ * - DEALER: Can create sub-dealers under their account
  */
 export const createDealer = async (req, res) => {
   try {
@@ -124,6 +135,42 @@ export const createSubDealer = async (req, res) => {
     console.error("Create Sub-Dealer Error:", error);
     return res.status(500).json({
       message: "Failed to create sub-dealer",
+    });
+  }
+};
+
+/**
+ * ====================================================
+ * LIST ALL DEALERS (Main Dealers Only)
+ * ====================================================
+ * 
+ * GET /api/dealers
+ * Returns all main dealers (parentDealer = null) with creation date
+ */
+export const listDealers = async (req, res) => {
+  try {
+    const dealers = await User.find({
+      role: "DEALER",
+      parentDealer: null, // Only main dealers
+    })
+      .select("name email role active createdAt")
+      .sort({ createdAt: -1 }); // Newest first
+
+    return res.status(200).json({
+      message: "Dealers retrieved successfully",
+      dealers: dealers.map((dealer) => ({
+        id: dealer._id,
+        name: dealer.name,
+        email: dealer.email,
+        role: dealer.role,
+        active: dealer.active,
+        createdAt: dealer.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error("List Dealers Error:", error);
+    return res.status(500).json({
+      message: "Failed to retrieve dealers",
     });
   }
 };

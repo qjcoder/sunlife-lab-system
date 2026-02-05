@@ -1,3 +1,21 @@
+/**
+ * ====================================================
+ * SERVICE API CLIENT
+ * ====================================================
+ * 
+ * This module provides TypeScript interfaces and functions
+ * for interacting with the service job API endpoints.
+ * 
+ * ENDPOINTS:
+ * - GET /api/service-jobs - List service jobs (SERVICE_CENTER)
+ * - GET /api/service-jobs/:id - Get service job details (SERVICE_CENTER)
+ * - POST /api/service-jobs - Create service job (SERVICE_CENTER)
+ * - POST /api/service-jobs/:id/replaced-parts - Add replaced part (SERVICE_CENTER)
+ * - GET /api/service-center-stock - Get service center stock (SERVICE_CENTER)
+ * 
+ * USAGE:
+ * import { createServiceJob, addReplacedPart, getServiceCenterStock } from '@/api/service-api';
+ */
 import api from './axios';
 
 export interface ServiceJob {

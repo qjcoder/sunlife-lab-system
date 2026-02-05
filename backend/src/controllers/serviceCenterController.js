@@ -63,3 +63,38 @@ export const createServiceCenter = async (req, res) => {
     });
   }
 };
+
+/**
+ * ====================================================
+ * LIST ALL SERVICE CENTERS
+ * ====================================================
+ * 
+ * GET /api/service-centers
+ * Returns all service centers with creation date
+ */
+export const listServiceCenters = async (req, res) => {
+  try {
+    const serviceCenters = await User.find({
+      role: "SERVICE_CENTER",
+    })
+      .select("name email role active createdAt")
+      .sort({ createdAt: -1 }); // Newest first
+
+    return res.status(200).json({
+      message: "Service centers retrieved successfully",
+      serviceCenters: serviceCenters.map((sc) => ({
+        id: sc._id,
+        name: sc.name,
+        email: sc.email,
+        role: sc.role,
+        active: sc.active,
+        createdAt: sc.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error("List Service Centers Error:", error);
+    return res.status(500).json({
+      message: "Failed to retrieve service centers",
+    });
+  }
+};

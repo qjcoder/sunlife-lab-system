@@ -1,3 +1,17 @@
+/**
+ * ====================================================
+ * TRANSFER API CLIENT
+ * ====================================================
+ * 
+ * This module provides TypeScript interfaces and functions
+ * for interacting with the transfer API endpoints.
+ * 
+ * ENDPOINTS:
+ * - POST /api/dealer-transfers - Transfer inverters to sub-dealer (DEALER)
+ * 
+ * USAGE:
+ * import { createTransfer } from '@/api/transfer-api';
+ */
 import api from './axios';
 
 export interface CreateTransferRequest {

@@ -1,5 +1,27 @@
 import mongoose from "mongoose";
 
+/**
+ * ====================================================
+ * MODEL PART MODEL
+ * ====================================================
+ * 
+ * Represents parts/components that belong to an inverter model.
+ * 
+ * PURPOSE:
+ * - Define parts catalog for each inverter model
+ * - Track part codes, names, categories, and revisions
+ * - Support service center part management
+ * 
+ * BUSINESS RULES:
+ * - Each part must belong to an inverter model
+ * - Part code must be unique per model
+ * - Parts can be categorized (PCB, Communication, Power, Mechanical)
+ * - Parts can be marked as repairable
+ * 
+ * USAGE:
+ * - Used by service centers to identify parts for replacement
+ * - Linked to part dispatches and replacements
+ */
 const modelPartSchema = new mongoose.Schema(
   {
     inverterModel: {

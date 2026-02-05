@@ -54,6 +54,12 @@ const inverterModelSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Technical datasheet PDF path (e.g. /products/datasheets/sl-sky-4kw.pdf)
+    datasheet: {
+      type: String,
+      trim: true,
+    },
+
     // Warranty definition for this model
     warranty: {
       partsMonths: {

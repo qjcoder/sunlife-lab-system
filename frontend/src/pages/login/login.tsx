@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ErrorPopup } from "@/components/ui/error-popup";
 import { useNavigate } from "react-router-dom";
 import { Navigate } from "react-router-dom";
-import { Mail, Lock, Building2, Users, Wrench, User, X } from "lucide-react";
+import { Mail, Lock, Building2, Users, Wrench, User } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 type FormData = {
@@ -102,7 +102,7 @@ const Login = () => {
   const [selectedRole, setSelectedRole] = useState<RoleType>("");
   const [errorPopup, setErrorPopup] = useState<{ title?: string; message: string } | null>(null);
   const [isCheckingRole, setIsCheckingRole] = useState(false);
-  const checkRoleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const checkRoleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const emailValue = watch("email");
 
@@ -159,7 +159,6 @@ const Login = () => {
       }
       
       // Proceed with login regardless of selected role
-      const config = getRoleConfig(role);
       login(res.token, res.user);
       navigate("/dashboard", { replace: true });
     } catch (error: unknown) {
@@ -269,7 +268,6 @@ const Login = () => {
   };
 
   const config = getRoleConfig(selectedRole);
-  const Icon = config.icon;
 
   // Show loading or redirect if already logged in
   if (isLoading) {
@@ -307,9 +305,9 @@ const Login = () => {
         />
       )}
       
-      <div className="min-h-screen flex">
+      <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left Column - Login Form */}
-      <div className={`flex-1 flex items-center justify-center p-8 transition-all duration-500 relative overflow-hidden ${
+      <div className={`flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8 transition-all duration-500 relative overflow-hidden ${
         selectedRole === "FACTORY_ADMIN" ? "bg-gradient-to-br from-red-50 via-white to-red-100" :
         selectedRole === "DEALER" ? "bg-gradient-to-br from-blue-50 via-white to-blue-100" :
         selectedRole === "SUB_DEALER" ? "bg-gradient-to-br from-green-50 via-white to-green-100" :

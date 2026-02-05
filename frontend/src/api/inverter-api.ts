@@ -1,3 +1,19 @@
+/**
+ * ====================================================
+ * INVERTER API CLIENT
+ * ====================================================
+ * 
+ * This module provides TypeScript interfaces and functions
+ * for interacting with the inverter unit API endpoints.
+ * 
+ * ENDPOINTS:
+ * - POST /api/inverters - Register single inverter unit (FACTORY_ADMIN)
+ * - POST /api/inverters/bulk - Bulk register inverter units (FACTORY_ADMIN)
+ * - GET /api/inverters/:serialNumber/lifecycle - Get inverter lifecycle (AUTHENTICATED)
+ * 
+ * USAGE:
+ * import { createInverter, bulkCreateInverters, getInverterLifecycle } from '@/api/inverter-api';
+ */
 import api from './axios';
 
 export interface CreateInverterRequest {

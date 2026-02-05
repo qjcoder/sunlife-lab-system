@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Scan, Upload, Package, Building2, FileText, Hash, Loader2, CheckCircle2 } from 'lucide-react';
 
 const dispatchSchema = z.object({
   serviceCenter: z.string().min(1, 'Service center is required'),
@@ -33,7 +33,10 @@ export default function PartDispatch() {
     partName: '',
     quantity: 1,
   });
+  const [scannerMode, setScannerMode] = useState(false);
   const queryClient = useQueryClient();
+  const partCodeRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -43,6 +46,89 @@ export default function PartDispatch() {
   } = useForm<DispatchFormData>({
     resolver: zodResolver(dispatchSchema),
   });
+
+  // Auto-focus scanner input when scanner mode is enabled
+  useEffect(() => {
+    if (scannerMode && partCodeRef.current) {
+      partCodeRef.current.focus();
+    }
+  }, [scannerMode]);
+
+  // Handle scanner input - auto-add part on Enter
+  const handleScannerInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && scannerMode) {
+      e.preventDefault();
+      if (currentItem.partCode.trim()) {
+        // Auto-add part if part code is scanned
+        if (!currentItem.partName.trim()) {
+          // If part name is empty, use part code as name
+          setCurrentItem({ ...currentItem, partName: currentItem.partCode });
+        }
+        addItem();
+        // Clear and refocus for next scan
+        setCurrentItem({ partCode: '', partName: '', quantity: 1 });
+        setTimeout(() => {
+          partCodeRef.current?.focus();
+        }, 100);
+      }
+    }
+  };
+
+  // Handle Excel/CSV file upload
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      // Parse CSV/Excel
+      const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      const items: DispatchedItem[] = [];
+
+      lines.forEach((line, index) => {
+        // Skip header row
+        if (index === 0 && (
+          line.toLowerCase().includes('part') ||
+          line.toLowerCase().includes('code') ||
+          line.toLowerCase().includes('name') ||
+          line.toLowerCase().includes('quantity')
+        )) {
+          return;
+        }
+        
+        const parts = line.split(',').map(p => p.trim());
+        const partCode = parts[0] || '';
+        const partName = parts[1] || partCode;
+        const quantity = parseInt(parts[2] || '1', 10) || 1;
+
+        if (partCode && partCode.length > 0) {
+          items.push({ partCode, partName, quantity });
+        }
+      });
+
+      if (items.length === 0) {
+        toast.error('No parts found in file');
+        return;
+      }
+
+      // Add items to dispatch list
+      setDispatchedItems([...dispatchedItems, ...items]);
+      toast.success(`Added ${items.length} parts from file`);
+    };
+
+    reader.onerror = () => {
+      toast.error('Failed to read file');
+    };
+
+    reader.readAsText(file);
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const mutation = useMutation({
     mutationFn: createPartDispatch,
@@ -68,6 +154,9 @@ export default function PartDispatch() {
 
     setDispatchedItems([...dispatchedItems, { ...currentItem }]);
     setCurrentItem({ partCode: '', partName: '', quantity: 1 });
+    if (scannerMode && partCodeRef.current) {
+      partCodeRef.current.focus();
+    }
   };
 
   const removeItem = (index: number) => {
@@ -88,71 +177,177 @@ export default function PartDispatch() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Part Dispatch</h1>
-        <p className="text-muted-foreground">Dispatch parts from factory to service center</p>
+    <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-cyan-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
+      {/* Header */}
+      <div className="space-y-2">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+          Service Center Parts Dispatch
+        </h1>
+        <p className="text-slate-600 dark:text-slate-400 text-lg">Dispatch parts from factory to service center</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Dispatch Information</CardTitle>
+        <Card className="border-2 border-slate-200 dark:border-slate-700 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30 border-b border-slate-200 dark:border-slate-700">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+                  <Package className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                </div>
+                <span className="text-xl font-bold">Dispatch Information</span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={scannerMode ? 'default' : 'outline'}
+                  size="sm"
+                  className={scannerMode ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                  onClick={() => {
+                    setScannerMode(!scannerMode);
+                    if (!scannerMode) {
+                      setTimeout(() => partCodeRef.current?.focus(), 100);
+                    }
+                  }}
+                >
+                  <Scan className="h-4 w-4 mr-2" />
+                  {scannerMode ? 'Scanner ON' : 'Scanner'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Excel/CSV
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.xlsx,.xls,.txt"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </div>
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <CardContent className="pt-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="serviceCenter">Service Center</Label>
-                <Input id="serviceCenter" {...register('serviceCenter')} />
+                <Label htmlFor="serviceCenter" className="text-sm font-semibold flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-slate-500" />
+                  Service Center
+                </Label>
+                <Input id="serviceCenter" {...register('serviceCenter')} className="h-11" placeholder="Enter service center name" />
                 {errors.serviceCenter && (
-                  <p className="text-sm text-destructive">{errors.serviceCenter.message}</p>
+                  <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                    <span>⚠</span>
+                    {errors.serviceCenter.message}
+                  </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="remarks">Remarks (Optional)</Label>
-                <Input id="remarks" {...register('remarks')} />
+                <Label htmlFor="remarks" className="text-sm font-semibold flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-slate-500" />
+                  Remarks (Optional)
+                </Label>
+                <Input id="remarks" {...register('remarks')} className="h-11" placeholder="Any additional notes" />
               </div>
 
-              <div className="space-y-2">
-                <p className="text-sm font-medium">
-                  Parts to dispatch: {dispatchedItems.length}
-                </p>
+              <div className="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <Package className="h-4 w-4 text-slate-500" />
+                  Parts to Dispatch: <span className="text-primary font-bold">{dispatchedItems.length}</span>
+                </Label>
+                {dispatchedItems.length === 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">No parts added yet. Use the form on the right to add parts.</p>
+                )}
               </div>
 
-              <Button type="submit" disabled={mutation.isPending || dispatchedItems.length === 0}>
-                {mutation.isPending ? 'Dispatching...' : 'Create Dispatch'}
-              </Button>
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                <Button 
+                  type="submit" 
+                  disabled={mutation.isPending || dispatchedItems.length === 0}
+                  className="w-full h-11 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                >
+                  {mutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Dispatching...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Create Dispatch ({dispatchedItems.length} part{dispatchedItems.length !== 1 ? 's' : ''})
+                    </>
+                  )}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Add Parts</CardTitle>
+        <Card className="border-2 border-slate-200 dark:border-slate-700 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border-b border-slate-200 dark:border-slate-700">
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                <Plus className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <span className="text-xl font-bold">Add Parts (Bulk Operations)</span>
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="pt-6">
+            <div className="space-y-6">
+              {scannerMode && (
+                <div className="p-4 bg-green-50 dark:bg-green-950/20 border-2 border-green-200 dark:border-green-800 rounded-lg">
+                  <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
+                    <Scan className="h-4 w-4 text-green-600" />
+                    Scanner Mode Active
+                  </Label>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span>💡</span>
+                    Scan part code and press Enter to auto-add. Quantity defaults to 1.
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-2">
-                <Label htmlFor="partCode">Part Code</Label>
+                <Label htmlFor="partCode" className="text-sm font-semibold flex items-center gap-2">
+                  <Hash className="h-4 w-4 text-slate-500" />
+                  Part Code
+                </Label>
                 <Input
+                  ref={partCodeRef}
                   id="partCode"
                   value={currentItem.partCode}
                   onChange={(e) => setCurrentItem({ ...currentItem, partCode: e.target.value })}
+                  onKeyDown={handleScannerInput}
+                  placeholder={scannerMode ? "Scan part code and press Enter" : "Enter part code"}
+                  autoFocus={scannerMode}
+                  className={`h-11 ${scannerMode ? 'border-green-500 focus:ring-green-500' : ''}`}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="partName">Part Name</Label>
+                <Label htmlFor="partName" className="text-sm font-semibold flex items-center gap-2">
+                  <Package className="h-4 w-4 text-slate-500" />
+                  Part Name
+                </Label>
                 <Input
                   id="partName"
                   value={currentItem.partName}
                   onChange={(e) => setCurrentItem({ ...currentItem, partName: e.target.value })}
+                  placeholder="Enter part name (optional, will use part code if empty)"
+                  className="h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity</Label>
+                <Label htmlFor="quantity" className="text-sm font-semibold flex items-center gap-2">
+                  <Package className="h-4 w-4 text-slate-500" />
+                  Quantity
+                </Label>
                 <Input
                   id="quantity"
                   type="number"
@@ -161,53 +356,85 @@ export default function PartDispatch() {
                   onChange={(e) =>
                     setCurrentItem({ ...currentItem, quantity: parseInt(e.target.value) || 1 })
                   }
+                  className="h-11"
                 />
               </div>
 
-              <Button type="button" onClick={addItem} className="w-full">
+              <Button 
+                type="button" 
+                onClick={addItem} 
+                className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+              >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Part
+                Add Part to Dispatch List
               </Button>
+
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-xs text-muted-foreground flex items-start gap-2">
+                  <span>💡</span>
+                  <span>
+                    <strong>Bulk Upload:</strong> Upload Excel/CSV file with columns: Part Code, Part Name, Quantity. 
+                    Use the Upload button in the header to add multiple parts at once.
+                  </span>
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {dispatchedItems.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Parts to Dispatch</CardTitle>
+        <Card className="border-2 border-slate-200 dark:border-slate-700 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-slate-200 dark:bg-slate-700 rounded-lg">
+                <Package className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+              </div>
+              <span className="text-xl font-bold">Parts to Dispatch ({dispatchedItems.length})</span>
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Part Code</TableHead>
-                  <TableHead>Part Name</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dispatchedItems.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{item.partCode}</TableCell>
-                    <TableCell>{item.partName}</TableCell>
-                    <TableCell>{item.quantity}</TableCell>
-                    <TableCell>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeItem(index)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
+          <CardContent className="pt-6">
+            <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50 dark:bg-slate-800">
+                    <TableHead className="font-semibold">Part Code</TableHead>
+                    <TableHead className="font-semibold">Part Name</TableHead>
+                    <TableHead className="font-semibold">Quantity</TableHead>
+                    <TableHead className="font-semibold text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {dispatchedItems.map((item, index) => (
+                    <TableRow key={index} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                      <TableCell className="font-medium font-mono">{item.partCode}</TableCell>
+                      <TableCell>{item.partName}</TableCell>
+                      <TableCell>
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md font-semibold">
+                          {item.quantity}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeItem(index)}
+                          className="hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Total Parts: <span className="text-primary">{dispatchedItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}

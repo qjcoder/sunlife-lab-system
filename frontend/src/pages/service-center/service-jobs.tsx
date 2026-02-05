@@ -42,13 +42,19 @@ export default function ServiceJobs() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Service Jobs</h1>
-          <p className="text-muted-foreground">Manage service jobs and repairs</p>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+            Service Jobs
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 text-lg">Manage service jobs and repairs</p>
         </div>
-        <Button onClick={() => navigate('/service-center/create-job')}>
+        <Button
+          onClick={() => navigate('/service-center/create-job')}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Create Job
         </Button>
@@ -59,7 +65,7 @@ export default function ServiceJobs() {
           <CardTitle>All Service Jobs</CardTitle>
         </CardHeader>
         <CardContent>
-          {!data || data.length === 0 ? (
+          {!data || !Array.isArray(data) || data.length === 0 ? (
             <p className="text-muted-foreground">No service jobs found</p>
           ) : (
             <Table>
@@ -74,32 +80,35 @@ export default function ServiceJobs() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map((job) => (
-                  <TableRow key={job._id}>
-                    <TableCell className="font-medium">{job._id.slice(-8)}</TableCell>
-                    <TableCell>{job.serialNumber}</TableCell>
-                    <TableCell>{job.serviceCenter}</TableCell>
-                    <TableCell>{new Date(job.visitDate).toLocaleDateString()}</TableCell>
-                    <TableCell className="max-w-xs truncate">{job.reportedFault}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Link
-                          to={`/service-center/jobs/${job._id}`}
-                          className="text-primary hover:underline"
-                        >
-                          View Details
-                        </Link>
-                        <span className="text-muted-foreground">|</span>
-                        <Link
-                          to={`/lifecycle/${job.serialNumber}`}
-                          className="text-primary hover:underline"
-                        >
-                          Lifecycle
-                        </Link>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {data.map((job) => {
+                  if (!job || !job._id) return null;
+                  return (
+                    <TableRow key={job._id}>
+                      <TableCell className="font-medium">{job._id?.slice(-8) || '-'}</TableCell>
+                      <TableCell>{job.serialNumber || '-'}</TableCell>
+                      <TableCell>{job.serviceCenter || '-'}</TableCell>
+                      <TableCell>{job.visitDate ? new Date(job.visitDate).toLocaleDateString() : '-'}</TableCell>
+                      <TableCell className="max-w-xs truncate">{job.reportedFault || '-'}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Link
+                            to={`/service-center/jobs/${job._id}`}
+                            className="text-primary hover:underline"
+                          >
+                            View Details
+                          </Link>
+                          <span className="text-muted-foreground">|</span>
+                          <Link
+                            to={`/lifecycle/${job.serialNumber || ''}`}
+                            className="text-primary hover:underline"
+                          >
+                            Lifecycle
+                          </Link>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
