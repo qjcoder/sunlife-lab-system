@@ -7,11 +7,11 @@ import { listModels, createModel, updateModel, deleteModel, uploadModelImage, up
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Boxes, Shield, Calendar, Upload, Zap, Battery, Settings, Tag, Hash, Loader2, CheckCircle2, Trash2, Image as ImageIcon, FileText, X, BookOpen, Video } from 'lucide-react';
+import { Plus, Boxes, Shield, Calendar, Upload, Zap, Battery, Settings, Tag, Hash, Loader2, CheckCircle2, Trash2, Image as ImageIcon, FileText, X, BookOpen, Video, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 import { getProductImageWithHandler } from '@/lib/image-utils';
@@ -82,6 +82,59 @@ const categorizeModel = (model: InverterModel | null | undefined) => {
   return 'inverter';
 };
 
+/** Extract numeric power/capacity for sorting (higher first). Inverters/VFD: kW or W; Battery: Ah. R = decimal (e.g. 4r2 = 4.2kW). */
+function extractPowerForSort(model: InverterModel): number {
+  let s = [
+    model.modelCode,
+    model.variant,
+    model.productLine,
+    model.modelName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  // Normalize R as decimal: 4r2 → 4.2, 3r5 → 3.5 (e.g. 4r2kw = 4.2kW)
+  s = s.replace(/(\d)r(\d)/gi, '$1.$2');
+  // kW / K: 6k, 8kw, 11kw, 6.5kw, 4r2kw → 4.2kw (inverters & VFD)
+  const kwMatch = s.match(/(\d+(?:\.\d+)?)\s*kw?\b/);
+  if (kwMatch) return parseFloat(kwMatch[1]) * 1000;
+  // XrY as kW in model code (e.g. -5R5- → 5.5 kW, -7R5 → 7.5 kW): hyphen-separated decimal after R normalization
+  const segmentKwMatch = s.match(/-(\d+\.\d+)(?:-|$)/);
+  if (segmentKwMatch) {
+    const val = parseFloat(segmentKwMatch[1]);
+    if (val >= 0.1 && val <= 500) return val * 1000;
+  }
+  // Integer kW in model code (e.g. SL-GD170-030-4-PV → 30 kW): first hyphen-separated 2–3 digit segment in 3–99 kW (skips 170 in GD170)
+  const segmentIntKwMatches = [...s.matchAll(/-(\d{2,3})-/g)];
+  for (const m of segmentIntKwMatches) {
+    const val = parseInt(m[1], 10);
+    if (val >= 3 && val <= 99) return val * 1000;
+  }
+  // W: 1600w, 800w
+  const wMatch = s.match(/(\d+)\s*w\b/);
+  if (wMatch) return parseInt(wMatch[1], 10);
+  // HP (horsepower, common for VFD): 1hp, 2.2hp, 7.5hp → convert to watts (1 HP ≈ 746 W) for same scale as kW
+  const hpMatch = s.match(/(\d+(?:\.\d+)?)\s*hp\b/);
+  if (hpMatch) return parseFloat(hpMatch[1]) * 746;
+  // Battery: 100ah, 50ah
+  const ahMatch = s.match(/(\d+)\s*ah\b/);
+  if (ahMatch) return parseInt(ahMatch[1], 10);
+  // Battery capacity codes like 48100 (48V 100Ah), 48314
+  const capMatch = s.match(/\b48(\d{3})\b/);
+  if (capMatch) return parseInt(capMatch[1], 10);
+  return 0;
+}
+
+/** Sort category: active first, then by power/capacity lowest to highest (e.g. 5.5 kW before 7.5 kW). */
+function sortCategoryModels(list: InverterModel[]): InverterModel[] {
+  return [...list].sort((a, b) => {
+    if (a.active !== b.active) return a.active ? -1 : 1;
+    const powerA = extractPowerForSort(a);
+    const powerB = extractPowerForSort(b);
+    return powerA - powerB;
+  });
+}
+
 export default function InverterModels() {
   const [editingModel, setEditingModel] = useState<InverterModel | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -91,6 +144,7 @@ export default function InverterModels() {
   const [datasheetUpdateModel, setDatasheetUpdateModel] = useState<InverterModel | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ modelId: string; modelName: string } | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<'inverter' | 'battery' | 'vfd' | null>(null);
   const queryClient = useQueryClient();
   const createImageInputRef = useRef<HTMLInputElement>(null);
   const createDatasheetInputRef = useRef<HTMLInputElement>(null);
@@ -220,8 +274,12 @@ export default function InverterModels() {
         inverter.push(model);
       }
     });
-    
-    return { inverter, battery, vfd };
+
+    return {
+      inverter: sortCategoryModels(inverter),
+      battery: sortCategoryModels(battery),
+      vfd: sortCategoryModels(vfd),
+    };
   }, [models]);
 
   const createMutation = useMutation({
@@ -656,13 +714,13 @@ export default function InverterModels() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-        <div className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <h1 className={PAGE_HEADING_CLASS}>Create New Product Model</h1>
+    <div className="min-h-screen bg-muted/30">
+      {/* Header - ShadCN card-style bar */}
+      <header className="border-b bg-card">
+        <div className="px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1 sm:space-y-1.5">
+              <h1 className={PAGE_HEADING_CLASS}>Create Product Model</h1>
               <p className={PAGE_SUBHEADING_CLASS}>Create and manage product models and configurations</p>
             </div>
             <Button
@@ -673,7 +731,8 @@ export default function InverterModels() {
                   setEditingModel(null);
                 }
               }}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+              size="lg"
+              className="w-full sm:w-auto"
             >
               {showCreateForm ? (
                 <>
@@ -689,22 +748,21 @@ export default function InverterModels() {
             </Button>
           </div>
         </div>
-      </div>
-      
+      </header>
+
       {/* Scrollable Content */}
-      <div className="space-y-8 p-6">
+      <div className="space-y-6 sm:space-y-8 p-4 sm:p-6">
 
       {/* Create Form at Top */}
       {showCreateForm && (
-        <Card className="border-2 border-slate-200 dark:border-slate-800 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                Create Product Model
-              </h2>
+        <Card>
+          <CardHeader className="p-4 sm:p-6 pb-0">
+            <div className="flex items-center justify-between gap-4">
+              <CardTitle className="text-xl sm:text-2xl">Create Product Model</CardTitle>
               <Button
                 variant="ghost"
                 size="icon"
+                className="shrink-0"
                 onClick={() => {
                   setShowCreateForm(false);
                   reset();
@@ -713,7 +771,9 @@ export default function InverterModels() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 pt-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
               {/* Product Type - required selection */}
               <div className="space-y-3">
                 <Label htmlFor="productType" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
@@ -768,10 +828,10 @@ export default function InverterModels() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-5">
-                <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                <div className="space-y-2 sm:space-y-3">
                   <Label htmlFor="brand" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                    <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg shrink-0">
                       <Hash className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     Brand
@@ -782,7 +842,7 @@ export default function InverterModels() {
                     value="Sunlife"
                     disabled
                     readOnly
-                    className="h-12 border-2 border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-not-allowed"
+                    className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-not-allowed"
                   />
                   {errors.brand && (
                     <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -792,9 +852,9 @@ export default function InverterModels() {
                   )}
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <Label htmlFor="productLine" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                    <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg shrink-0">
                       <Boxes className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                     </div>
                     Product Line
@@ -803,15 +863,14 @@ export default function InverterModels() {
                     id="productLine"
                     {...register('productLine', {
                       onChange: () => {
-                        // Trigger model code regeneration when productLine changes
                         if (watchedVariant) {
                           const newCode = generateModelCode(watchedBrand || 'Sunlife', watchedProductLine || '', watchedVariant);
                           if (newCode) setValue('modelCode', newCode);
                         }
                       }
                     })}
-                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
-                    placeholder="e.g., MPPT SOLAR INVERTER"
+                    className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
+                    placeholder="e.g. MPPT SOLAR INVERTER"
                   />
                   {errors.productLine && (
                     <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -822,73 +881,70 @@ export default function InverterModels() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-5">
-                <div className="space-y-3">
-                  <Label htmlFor="variant" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                      <Tag className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    Variant
-                  </Label>
-                  <Input
-                    id="variant"
-                    {...register('variant', {
-                      onChange: () => {
-                        // Trigger model code regeneration when variant changes
-                        if (watchedProductLine) {
-                          const newCode = generateModelCode(watchedBrand || 'Sunlife', watchedProductLine, watchedVariant || '');
-                          if (newCode) setValue('modelCode', newCode);
-                        }
+              <div className="space-y-2 sm:space-y-3">
+                <Label htmlFor="variant" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                  <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg shrink-0">
+                    <Tag className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  Variant
+                </Label>
+                <Input
+                  id="variant"
+                  {...register('variant', {
+                    onChange: () => {
+                      if (watchedProductLine) {
+                        const newCode = generateModelCode(watchedBrand || 'Sunlife', watchedProductLine, watchedVariant || '');
+                        if (newCode) setValue('modelCode', newCode);
                       }
-                    })}
-                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
-                    placeholder="e.g., 800W, 1600W"
-                  />
-                  {errors.variant && (
-                    <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-                      <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
-                      <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.variant.message}</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="modelCode" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <div className="p-1.5 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
-                      <Hash className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                    </div>
-                    Model Code (Auto-generated)
-                  </Label>
-                  <Input
-                    id="modelCode"
-                    {...register('modelCode')}
-                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono bg-slate-50 dark:bg-slate-800/50"
-                    placeholder="Auto-generated from Product Line and Variant"
-                    readOnly={!editingModel}
-                  />
-                  {!editingModel && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Model code is automatically generated from Product Line and Variant
-                    </p>
-                  )}
-                  {errors.modelCode && (
-                    <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-                      <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
-                      <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.modelCode.message}</p>
-                    </div>
-                  )}
-                </div>
+                    }
+                  })}
+                  className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
+                  placeholder="e.g. 800W, 1600W, 5R5"
+                />
+                {errors.variant && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
+                    <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.variant.message}</p>
+                  </div>
+                )}
               </div>
 
-              <div className="p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-blue-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
-                <h3 className="text-lg font-bold mb-5 text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="space-y-2 sm:space-y-3">
+                <Label htmlFor="modelCode" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                  <div className="p-1.5 bg-teal-100 dark:bg-teal-900/30 rounded-lg shrink-0">
+                    <Hash className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                  </div>
+                  Model Code (Auto-generated)
+                </Label>
+                <Input
+                  id="modelCode"
+                  {...register('modelCode')}
+                  className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono bg-slate-50 dark:bg-slate-800/50"
+                  placeholder="Filled from Product Line and Variant"
+                  readOnly={!editingModel}
+                />
+                {!editingModel && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Generated from Product Line and Variant
+                  </p>
+                )}
+                {errors.modelCode && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
+                    <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.modelCode.message}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-blue-950/20 rounded-xl sm:rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
+                <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-5 text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
                   Warranty Information (Editable)
                 </h3>
-                <div className="grid grid-cols-2 gap-5">
-                  <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                  <div className="space-y-2 sm:space-y-3">
                     <Label htmlFor="partsYears" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                      <Shield className="h-4 w-4 text-blue-600" />
+                      <Shield className="h-4 w-4 text-blue-600 shrink-0" />
                       Parts Warranty (Years)
                     </Label>
                     <Input
@@ -897,7 +953,7 @@ export default function InverterModels() {
                       min={0}
                       step={0.5}
                       {...register('partsYears', { valueAsNumber: true })}
-                      className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
+                      className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
                       placeholder="1"
                     />
                     {errors.partsYears && (
@@ -908,9 +964,9 @@ export default function InverterModels() {
                     )}
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     <Label htmlFor="serviceYears" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                      <Calendar className="h-4 w-4 text-green-600" />
+                      <Calendar className="h-4 w-4 text-green-600 shrink-0" />
                       Service Warranty (Years)
                     </Label>
                     <Input
@@ -919,7 +975,7 @@ export default function InverterModels() {
                       min={0}
                       step={0.5}
                       {...register('serviceYears', { valueAsNumber: true })}
-                      className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
+                      className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
                       placeholder="2"
                     />
                     {errors.serviceYears && (
@@ -933,25 +989,25 @@ export default function InverterModels() {
               </div>
 
               {/* Image Upload */}
-              <div className="p-5 bg-gradient-to-br from-slate-50 to-purple-50/30 dark:from-slate-800/50 dark:to-purple-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
-                <Label htmlFor="image" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-4">
-                  <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+              <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-purple-50/30 dark:from-slate-800/50 dark:to-purple-950/20 rounded-xl sm:rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
+                <Label htmlFor="image" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-3 sm:mb-4">
+                  <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg shrink-0">
                     <Upload className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                   </div>
                   Product Image
                 </Label>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <Input
                     id="image"
                     placeholder="/products/image-name.jpg"
                     {...register('image')}
-                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono text-sm"
+                    className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 font-mono text-sm"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => createImageInputRef.current?.click()}
-                    className="h-12 px-6 border-2 border-purple-500 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 font-semibold"
+                    className="h-11 sm:h-12 px-6 border-2 border-purple-500 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 font-semibold shrink-0"
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     Upload
@@ -984,26 +1040,26 @@ export default function InverterModels() {
               </div>
 
               {/* Datasheet Upload */}
-              <div className="p-5 bg-gradient-to-br from-slate-50 to-amber-50/30 dark:from-slate-800/50 dark:to-amber-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
-                <Label htmlFor="datasheet" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-4">
-                  <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+              <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-amber-50/30 dark:from-slate-800/50 dark:to-amber-950/20 rounded-xl sm:rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
+                <Label htmlFor="datasheet" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-3 sm:mb-4">
+                  <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg shrink-0">
                     <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   </div>
                   Technical Datasheet (PDF)
                 </Label>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <Input
                     id="datasheet"
                     placeholder="/products/datasheets/model-code.pdf"
                     {...register('datasheet')}
-                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono text-sm"
+                    className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 font-mono text-sm"
                     disabled
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => createDatasheetInputRef.current?.click()}
-                    className="h-12 px-6 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 font-semibold"
+                    className="h-11 sm:h-12 px-6 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 font-semibold shrink-0"
                   >
                     <FileText className="h-4 w-4 mr-2" />
                     Upload PDF
@@ -1042,16 +1098,16 @@ export default function InverterModels() {
               </div>
 
               {/* User Manual (Google Drive / external link) */}
-              <div className="p-5 bg-gradient-to-br from-slate-50 to-emerald-50/30 dark:from-slate-800/50 dark:to-emerald-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
-                <Label htmlFor="userManualUrl" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-4">
-                  <BookOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-emerald-50/30 dark:from-slate-800/50 dark:to-emerald-950/20 rounded-xl sm:rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
+                <Label htmlFor="userManualUrl" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-3 sm:mb-4">
+                  <BookOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   User Manual (link)
                 </Label>
                 <Input
                   id="userManualUrl"
                   placeholder="https://drive.google.com/... or any PDF link"
                   {...register('userManualUrl')}
-                  className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-mono text-sm"
+                  className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-mono text-sm"
                 />
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                   Add a Google Drive or external link to the user manual PDF to avoid storing large files in the database.
@@ -1059,23 +1115,23 @@ export default function InverterModels() {
               </div>
 
               {/* Technical support video links (YouTube etc.) */}
-              <div className="p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-blue-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
-                <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-4">
-                  <Video className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-blue-950/20 rounded-xl sm:rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
+                <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-3 sm:mb-4">
+                  <Video className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
                   Technical support videos
                 </Label>
                 <div className="space-y-3">
                   {(watch('supportVideoLinks') || []).map((_: unknown, index: number) => (
-                    <div key={index} className="flex gap-2 items-center flex-wrap">
+                    <div key={index} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
                       <Input
-                        placeholder="Title (e.g. BMS method, Wifi setup)"
+                        placeholder="Title (e.g. BMS, Wifi)"
                         {...register(`supportVideoLinks.${index}.title`)}
-                        className="flex-1 min-w-[140px] h-10"
+                        className="flex-1 min-w-0 h-10"
                       />
                       <Input
                         placeholder="https://youtube.com/..."
                         {...register(`supportVideoLinks.${index}.url`)}
-                        className="flex-1 min-w-[180px] h-10 font-mono text-sm"
+                        className="flex-1 min-w-0 h-10 font-mono text-sm"
                       />
                       <Button
                         type="button"
@@ -1177,13 +1233,13 @@ export default function InverterModels() {
           reset();
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            <DialogTitle className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
               Update Product Model
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
             <div className="space-y-3">
               <Label htmlFor="edit-productType" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
@@ -1230,10 +1286,10 @@ export default function InverterModels() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-5">
-              <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+              <div className="space-y-2 sm:space-y-3">
                 <Label htmlFor="edit-brand" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                  <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg shrink-0">
                     <Hash className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   Brand
@@ -1244,7 +1300,7 @@ export default function InverterModels() {
                   value="Sunlife"
                   disabled
                   readOnly
-                  className="h-12 border-2 border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-not-allowed"
+                  className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-not-allowed"
                 />
                 {errors.brand && (
                   <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -1254,9 +1310,9 @@ export default function InverterModels() {
                 )}
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <Label htmlFor="edit-productLine" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                  <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg shrink-0">
                     <Boxes className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                   </div>
                   Product Line
@@ -1271,8 +1327,8 @@ export default function InverterModels() {
                       }
                     }
                   })}
-                  className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
-                  placeholder="e.g., MPPT SOLAR INVERTER"
+                  className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 placeholder:text-slate-400"
+                  placeholder="e.g. MPPT SOLAR INVERTER"
                 />
                 {errors.productLine && (
                   <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -1283,66 +1339,64 @@ export default function InverterModels() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-5">
-              <div className="space-y-3">
-                <Label htmlFor="edit-variant" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                    <Tag className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  Variant
-                </Label>
-                <Input
-                  id="edit-variant"
-                  {...register('variant', {
-                    onChange: () => {
-                      if (watchedProductLine) {
-                        const newCode = generateModelCode(watchedBrand || 'Sunlife', watchedProductLine, watchedVariant || '');
-                        if (newCode) setValue('modelCode', newCode);
-                      }
+            <div className="space-y-2 sm:space-y-3">
+              <Label htmlFor="edit-variant" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg shrink-0">
+                  <Tag className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                Variant
+              </Label>
+              <Input
+                id="edit-variant"
+                {...register('variant', {
+                  onChange: () => {
+                    if (watchedProductLine) {
+                      const newCode = generateModelCode(watchedBrand || 'Sunlife', watchedProductLine, watchedVariant || '');
+                      if (newCode) setValue('modelCode', newCode);
                     }
-                  })}
-                  className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
-                  placeholder="e.g., 800W, 1600W"
-                />
-                {errors.variant && (
-                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-                    <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
-                    <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.variant.message}</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="edit-modelCode" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <div className="p-1.5 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
-                    <Hash className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                  </div>
-                  Model Code
-                </Label>
-                <Input
-                  id="edit-modelCode"
-                  {...register('modelCode')}
-                  className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono bg-slate-50 dark:bg-slate-800/50"
-                  placeholder="Model code"
-                />
-                {errors.modelCode && (
-                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-                    <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
-                    <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.modelCode.message}</p>
-                  </div>
-                )}
-              </div>
+                  }
+                })}
+                className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                placeholder="e.g. 800W, 1600W, 5R5"
+              />
+              {errors.variant && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
+                  <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.variant.message}</p>
+                </div>
+              )}
             </div>
 
-            <div className="p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-blue-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
-              <h3 className="text-lg font-bold mb-5 text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="space-y-2 sm:space-y-3">
+              <Label htmlFor="edit-modelCode" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <div className="p-1.5 bg-teal-100 dark:bg-teal-900/30 rounded-lg shrink-0">
+                  <Hash className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                </div>
+                Model Code
+              </Label>
+              <Input
+                id="edit-modelCode"
+                {...register('modelCode')}
+                className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 font-mono bg-slate-50 dark:bg-slate-800/50"
+                placeholder="Model code"
+              />
+              {errors.modelCode && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
+                  <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.modelCode.message}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-blue-950/20 rounded-xl sm:rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
+              <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-5 text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
                 Warranty Information (Editable)
               </h3>
-              <div className="grid grid-cols-2 gap-5">
-                <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                <div className="space-y-2 sm:space-y-3">
                   <Label htmlFor="edit-partsYears" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <Shield className="h-4 w-4 text-blue-600" />
+                    <Shield className="h-4 w-4 text-blue-600 shrink-0" />
                     Parts Warranty (Years)
                   </Label>
                   <Input
@@ -1351,31 +1405,31 @@ export default function InverterModels() {
                     min={0}
                     step={0.5}
                     {...register('partsYears', { valueAsNumber: true })}
-                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
+                    className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     placeholder="1"
                   />
-                  {errors.partsYears && (
-                    <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-                      <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
-                      <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.partsYears.message}</p>
-                    </div>
-                  )}
-                </div>
+                    {errors.partsYears && (
+                      <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                        <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
+                        <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.partsYears.message}</p>
+                      </div>
+                    )}
+                  </div>
 
-                <div className="space-y-3">
-                  <Label htmlFor="edit-serviceYears" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <Calendar className="h-4 w-4 text-green-600" />
-                    Service Warranty (Years)
-                  </Label>
-                  <Input
-                    id="edit-serviceYears"
-                    type="number"
-                    min={0}
-                    step={0.5}
-                    {...register('serviceYears', { valueAsNumber: true })}
-                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
-                    placeholder="2"
-                  />
+                  <div className="space-y-2 sm:space-y-3">
+                    <Label htmlFor="edit-serviceYears" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                      <Calendar className="h-4 w-4 text-green-600 shrink-0" />
+                      Service Warranty (Years)
+                    </Label>
+                    <Input
+                      id="edit-serviceYears"
+                      type="number"
+                      min={0}
+                      step={0.5}
+                      {...register('serviceYears', { valueAsNumber: true })}
+                      className="h-11 sm:h-12 min-w-0 border-2 border-slate-300 dark:border-slate-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                      placeholder="2"
+                    />
                   {errors.serviceYears && (
                     <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
                       <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
@@ -1708,38 +1762,118 @@ export default function InverterModels() {
 
       {/* Product Grid by Category */}
       {isLoading ? (
-        <div className="flex items-center justify-center p-12">
-          <div className="text-center">
-            <Boxes className="h-12 w-12 text-slate-400 mx-auto mb-4 animate-pulse" />
-            <p className="text-muted-foreground">Loading models...</p>
-          </div>
-        </div>
-      ) : !models || models.length === 0 ? (
         <Card>
-          <CardContent className="py-12">
-            <div className="text-center">
-              <Boxes className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-              <p className="text-muted-foreground">No models found</p>
+          <CardContent className="py-16">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="p-4 rounded-lg bg-muted mb-4">
+                <Loader2 className="h-10 w-10 text-muted-foreground animate-spin" />
+              </div>
+              <p className="font-medium text-foreground">Loading models...</p>
+              <CardDescription className="mt-1">Fetching product catalog</CardDescription>
             </div>
           </CardContent>
         </Card>
+      ) : !models || models.length === 0 ? (
+        <Card>
+          <CardContent className="py-16">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="p-4 rounded-lg bg-muted mb-4">
+                <Boxes className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <p className="font-medium text-foreground">No models found</p>
+              <CardDescription className="mt-1">Create your first product model to get started</CardDescription>
+            </div>
+          </CardContent>
+        </Card>
+      ) : selectedCategory === null ? (
+        <Card className="max-w-4xl mx-auto">
+          <CardHeader className="text-center space-y-1.5 pb-4 sm:pb-6">
+            <CardTitle className="text-xl sm:text-2xl">Browse by category</CardTitle>
+            <CardDescription className="text-sm sm:text-base">
+              Select a category to view and manage its product models.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <Card
+              role="button"
+              tabIndex={0}
+              onClick={() => setSelectedCategory('inverter')}
+              onKeyDown={(e) => e.key === 'Enter' && setSelectedCategory('inverter')}
+              className={cn(
+                "cursor-pointer transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "flex items-center gap-3 sm:gap-4 p-4 sm:p-5 text-left"
+              )}
+            >
+              <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+                <Zap className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold leading-none tracking-tight text-card-foreground">Inverters</p>
+                <p className="text-sm text-muted-foreground mt-0.5">{categorizedModels.inverter.length} models</p>
+              </div>
+              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-muted-foreground" />
+            </Card>
+            <Card
+              role="button"
+              tabIndex={0}
+              onClick={() => setSelectedCategory('battery')}
+              onKeyDown={(e) => e.key === 'Enter' && setSelectedCategory('battery')}
+              className={cn(
+                "cursor-pointer transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "flex items-center gap-3 sm:gap-4 p-4 sm:p-5 text-left"
+              )}
+            >
+              <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
+                <Battery className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold leading-none tracking-tight text-card-foreground">Batteries</p>
+                <p className="text-sm text-muted-foreground mt-0.5">{categorizedModels.battery.length} models</p>
+              </div>
+              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-muted-foreground" />
+            </Card>
+            <Card
+              role="button"
+              tabIndex={0}
+              onClick={() => setSelectedCategory('vfd')}
+              onKeyDown={(e) => e.key === 'Enter' && setSelectedCategory('vfd')}
+              className={cn(
+                "cursor-pointer transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "flex items-center gap-3 sm:gap-4 p-4 sm:p-5 text-left"
+              )}
+            >
+              <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
+                <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold leading-none tracking-tight text-card-foreground">VFD</p>
+                <p className="text-sm text-muted-foreground mt-0.5">{categorizedModels.vfd.length} models</p>
+              </div>
+              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-muted-foreground" />
+            </Card>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="space-y-8">
-          {renderCategorySection(
+        <div className="space-y-6">
+          <Button type="button" variant="outline" onClick={() => setSelectedCategory(null)} className="gap-2">
+            <ChevronLeft className="h-4 w-4" />
+            Back to categories
+          </Button>
+          {selectedCategory === 'inverter' && renderCategorySection(
             'inverter',
             categorizedModels.inverter,
             <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />,
             'Inverters',
             'bg-blue-100 dark:bg-blue-900/30'
           )}
-          {renderCategorySection(
+          {selectedCategory === 'battery' && renderCategorySection(
             'battery',
             categorizedModels.battery,
             <Battery className="h-5 w-5 text-green-600 dark:text-green-400" />,
             'Batteries',
             'bg-green-100 dark:bg-green-900/30'
           )}
-          {renderCategorySection(
+          {selectedCategory === 'vfd' && renderCategorySection(
             'vfd',
             categorizedModels.vfd,
             <Settings className="h-5 w-5 text-orange-600 dark:text-orange-400" />,

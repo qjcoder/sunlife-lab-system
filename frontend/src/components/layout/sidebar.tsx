@@ -37,7 +37,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", path: "/dashboard", roles: ["FACTORY_ADMIN", "DEALER", "SUB_DEALER", "SERVICE_CENTER", "DATA_ENTRY_OPERATOR"], icon: LayoutDashboard, section: "MAIN MENU" },
 
   /* -------- FACTORY -------- */
-  { label: "Create New Product Model", path: "/factory/inverter-models", roles: ["FACTORY_ADMIN"], icon: Boxes, section: "MAIN MENU" },
+  { label: "Create Product Model", path: "/factory/inverter-models", roles: ["FACTORY_ADMIN"], icon: Boxes, section: "MAIN MENU" },
   { label: "Product Serial Entry", path: "/factory/inverter-registration", roles: ["FACTORY_ADMIN"], icon: PackagePlus, section: "MAIN MENU" },
   { label: "Factory Stock", path: "/factory/stock", roles: ["FACTORY_ADMIN"], icon: Warehouse, section: "MAIN MENU" },
   { label: "Product Dispatch", path: "/factory/dispatch", roles: ["FACTORY_ADMIN"], icon: Truck, section: "MAIN MENU" },
