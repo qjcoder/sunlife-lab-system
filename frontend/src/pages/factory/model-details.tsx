@@ -6,7 +6,7 @@ import { listServiceJobs } from '@/api/service-api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, Warehouse, Users, ShoppingCart, AlertTriangle, TrendingUp, Package, CheckCircle } from 'lucide-react';
-import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
+import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS, getModelDisplayName } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
 
@@ -140,7 +140,7 @@ export default function ModelDetails() {
           Back to Models
         </Button>
         <div className="space-y-1">
-          <h1 className={PAGE_HEADING_CLASS}>{model.brand} {model.productLine} {model.variant}</h1>
+          <h1 className={PAGE_HEADING_CLASS}>{getModelDisplayName(model) || `${model.brand} ${model.productLine} ${model.variant}`.trim()}</h1>
           <p className={PAGE_SUBHEADING_CLASS}>Model Code: {model.modelCode}</p>
         </div>
       </div>

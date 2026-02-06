@@ -8,14 +8,14 @@ const router = express.Router();
  * GET FACTORY INVERTER STOCK
  *
  * ACCESS:
- * - FACTORY_ADMIN only
+ * - FACTORY_ADMIN, DATA_ENTRY_OPERATOR (for Product Serial Entry stock counts)
  *
  * GET /api/factory-inverter-stock
  */
 router.get(
   "/",
   requireAuth,
-  requireRole("FACTORY_ADMIN"),
+  requireRole("FACTORY_ADMIN", "DATA_ENTRY_OPERATOR"),
   getFactoryInverterStock
 );
 

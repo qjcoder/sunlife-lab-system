@@ -12,8 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
-import { Package, CheckCircle2, Upload, Scan, Hash, Box, Loader2, Search, X } from 'lucide-react';
-import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
+import { Package, CheckCircle2, Upload, Scan, Hash, Box, Loader2, Search, X, Sun, Battery, Gauge } from 'lucide-react';
+import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS, getModelDisplayName, extractPowerRating, sortModelsByPowerAndActive, categorizeModel } from '@/lib/utils';
 
 const singleSchema = z.object({
   serialNumber: z.string().min(1, 'Serial number is required'),
@@ -30,58 +30,11 @@ const bulkSchema = z.object({
 type SingleFormData = z.infer<typeof singleSchema>;
 type BulkFormData = z.infer<typeof bulkSchema>;
 
-// Helper function to categorize models
-const categorizeModel = (model: any) => {
-  if (!model) return 'inverter';
-  
-  const productLine = (model.productLine || '').toLowerCase();
-  const brand = (model.brand || '').toLowerCase();
-  const variant = (model.variant || '').toLowerCase();
-  const modelCode = (model.modelCode || '').toLowerCase();
-  const fullName = `${brand} ${productLine} ${variant} ${modelCode}`.toLowerCase();
-  
-  // Check for VFD
-  if (
-    productLine.includes('vfd') || 
-    brand.includes('vfd') || 
-    variant.includes('vfd') || 
-    modelCode.includes('vfd') ||
-    fullName.includes('vfd') ||
-    modelCode.includes('gd170')
-  ) {
-    return 'vfd';
-  }
-  
-  // Check for battery
-  if (
-    productLine.includes('battery') || 
-    productLine.includes('batt') || 
-    productLine.includes('lithium') ||
-    brand.includes('battery') || 
-    brand.includes('lithium') ||
-    variant.includes('battery') || 
-    variant.includes('lithium') ||
-    modelCode.includes('battery') ||
-    modelCode.includes('lithium') ||
-    fullName.includes('battery') ||
-    fullName.includes('lithium') ||
-    fullName.includes('51.2v') ||
-    fullName.includes('48100') ||
-    fullName.includes('48314') ||
-    fullName.includes('100ah')
-  ) {
-    return 'battery';
-  }
-  
-  // Everything else is an inverter
-  return 'inverter';
-};
-
-function getModelDisplayName(model: { productLine?: string; variant?: string; modelName?: string; brand?: string; modelCode?: string }) {
-  if (model.productLine && model.variant) return `${model.productLine} ${model.variant}`.trim();
-  if (model.modelName && model.brand) return model.modelName.replace(new RegExp(`^${model.brand}\\s+`, 'i'), '').trim();
-  return model.modelCode || 'Unknown Model';
-}
+const CATEGORY_OPTIONS: { key: 'inverter' | 'battery' | 'vfd'; label: string; icon: typeof Sun; activeClass: string }[] = [
+  { key: 'inverter', label: 'Inverters', icon: Sun, activeClass: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-500 hover:from-amber-600 hover:to-orange-600' },
+  { key: 'battery', label: 'Batteries', icon: Battery, activeClass: 'bg-gradient-to-r from-emerald-500 to-green-500 text-white border-emerald-500 hover:from-emerald-600 hover:to-green-600' },
+  { key: 'vfd', label: 'VFD', icon: Gauge, activeClass: 'bg-gradient-to-r from-violet-500 to-purple-500 text-white border-violet-500 hover:from-violet-600 hover:to-purple-600' },
+];
 
 export default function InverterRegistration() {
   const [mode, setMode] = useState<'single' | 'bulk'>('single');
@@ -174,20 +127,23 @@ export default function InverterRegistration() {
   const selectedSingleModel = watchSingle('inverterModel');
   const selectedBulkModel = watchBulk('inverterModel');
 
-  // Group active models by category
+  // Group models by category; sort each category: active first, then power higher to lower (discontinued at end)
   const categorizedModels = useMemo(() => {
     if (!models || !Array.isArray(models)) return { inverter: [], battery: [], vfd: [] };
-    const active = models.filter((m) => m.active !== false);
-    const inverter: typeof active = [];
-    const battery: typeof active = [];
-    const vfd: typeof active = [];
-    active.forEach((m) => {
+    const inverter: typeof models = [];
+    const battery: typeof models = [];
+    const vfd: typeof models = [];
+    models.forEach((m) => {
       const cat = categorizeModel(m);
       if (cat === 'battery') battery.push(m);
       else if (cat === 'vfd') vfd.push(m);
       else inverter.push(m);
     });
-    return { inverter, battery, vfd };
+    return {
+      inverter: sortModelsByPowerAndActive(inverter, extractPowerRating),
+      battery: sortModelsByPowerAndActive(battery, extractPowerRating),
+      vfd: sortModelsByPowerAndActive(vfd, extractPowerRating),
+    };
   }, [models]);
   const filteredSingleModels = useMemo(() => {
     const list = categorizedModels[selectedSingleCategory];
@@ -508,21 +464,25 @@ export default function InverterRegistration() {
                   {/* Left: Category, Model, Manufacturing Date */}
                   <div className="space-y-5 lg:pr-6 lg:border-r lg:border-border">
                     <div className="space-y-2.5">
-                      <Label className="block text-base font-semibold text-foreground">Category</Label>
+                      <Label className="block text-base font-semibold text-foreground">Product category</Label>
                       <div className="flex flex-wrap gap-2">
-                        {(['inverter', 'battery', 'vfd'] as const).map((cat) => (
+                        {CATEGORY_OPTIONS.map(({ key, label, icon: Icon, activeClass }) => (
                           <Button
-                            key={cat}
+                            key={key}
                             type="button"
-                            variant={selectedSingleCategory === cat ? 'default' : 'outline'}
+                            variant={selectedSingleCategory === key ? 'default' : 'outline'}
                             size="default"
-                            className="capitalize text-sm"
+                            className={cn(
+                              'capitalize text-sm gap-1.5',
+                              selectedSingleCategory === key && activeClass
+                            )}
                             onClick={() => {
-                              setSelectedSingleCategory(cat);
+                              setSelectedSingleCategory(key);
                               setValueSingle('inverterModel', '');
                             }}
                           >
-                            {cat === 'inverter' ? 'Inverters' : cat === 'battery' ? 'Batteries' : 'VFD'}
+                            <Icon className="h-4 w-4" />
+                            {label}
                           </Button>
                         ))}
                       </div>
@@ -719,21 +679,22 @@ export default function InverterRegistration() {
                   {/* Left: Category, Model, Manufacturing Date */}
                   <div className="flex flex-col min-h-0 space-y-4 lg:space-y-5 lg:pr-8 lg:border-r lg:border-border">
                     <div className="space-y-3 shrink-0">
-                      <Label className="block text-base font-semibold text-foreground">Category</Label>
+                      <Label className="block text-base font-semibold text-foreground">Product category</Label>
                       <div className="flex flex-wrap gap-2">
-                        {(['inverter', 'battery', 'vfd'] as const).map((cat) => (
+                        {CATEGORY_OPTIONS.map(({ key, label, icon: Icon, activeClass }) => (
                           <Button
-                            key={cat}
+                            key={key}
                             type="button"
-                            variant={selectedBulkCategory === cat ? 'default' : 'outline'}
+                            variant={selectedBulkCategory === key ? 'default' : 'outline'}
                             size="sm"
-                            className="capitalize"
+                            className={cn('capitalize gap-1.5', selectedBulkCategory === key && activeClass)}
                             onClick={() => {
-                              setSelectedBulkCategory(cat);
+                              setSelectedBulkCategory(key);
                               setValueBulk('inverterModel', '');
                             }}
                           >
-                            {cat === 'inverter' ? 'Inverters' : cat === 'battery' ? 'Batteries' : 'VFD'}
+                            <Icon className="h-4 w-4" />
+                            {label}
                           </Button>
                         ))}
                       </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getInverterLifecycle } from '@/api/inverter-api';
@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Package, ArrowRight, ArrowLeft, Search } from 'lucide-react';
-import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
+import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS, getModelDisplayName } from '@/lib/utils';
 
 export default function InverterLifecycle() {
   const { serialNumber } = useParams<{ serialNumber?: string }>();
@@ -37,6 +37,22 @@ export default function InverterLifecycle() {
     if (sn) navigate(`/lifecycle/${encodeURIComponent(sn)}`);
   };
 
+  const pageShell = (content: ReactNode) => (
+    <div className="h-full min-h-0 flex flex-col overflow-hidden bg-muted/30">
+      <header className="shrink-0 border-b bg-card">
+        <div className="px-4 py-2 sm:px-5 sm:py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-0.5">
+            <h1 className={PAGE_HEADING_CLASS}>Product History</h1>
+            <p className={PAGE_SUBHEADING_CLASS}>View full lifecycle of a product by serial number</p>
+          </div>
+        </div>
+      </header>
+      <div className="flex-1 min-h-0 flex flex-col overflow-auto p-3 sm:p-4">
+        {content}
+      </div>
+    </div>
+  );
+
   const topBar = (
     <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
       <Button type="button" variant="outline" size="sm" onClick={() => navigate(-1)} className="w-full sm:w-auto shrink-0">
@@ -62,66 +78,57 @@ export default function InverterLifecycle() {
   if (!serialNumber) {
     if (modelId && unitsData) {
       const { model, units } = unitsData;
-      return (
-        <div className="space-y-4 sm:space-y-6 min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 sm:p-6">
+      return pageShell(
+        <>
           {topBar}
-          <div className="space-y-1">
-            <h1 className={`${PAGE_HEADING_CLASS} leading-tight`}>
-              Full Life Cycle View — Select Unit
-            </h1>
-            <p className={`${PAGE_SUBHEADING_CLASS} break-words`}>
-              Model: {model.brand} {model.productLine} {model.variant} ({model.modelCode})
-            </p>
-          </div>
+          <Card className="max-w-2xl">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Full Life Cycle View — Select Unit</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Model: {getModelDisplayName(model) || `${model.brand} ${model.productLine} ${model.variant}`.trim()} ({model.modelCode})
+              </p>
+            </CardHeader>
+            <CardContent className="pt-0">
           {unitsLoading ? (
             <div className="flex items-center justify-center p-6 sm:p-8">
               <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin" />
             </div>
           ) : units.length === 0 ? (
-            <Card>
-              <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
-                <p className="text-sm sm:text-base text-muted-foreground">No units registered for this model yet.</p>
-              </CardContent>
-            </Card>
+            <p className="text-sm text-muted-foreground py-4">No units registered for this model yet.</p>
           ) : (
-            <Card>
-              <CardHeader className="px-4 sm:px-6 py-3 sm:py-6">
-                <CardTitle className="text-base sm:text-lg">Units ({units.length})</CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 sm:px-6">
-                <ul className="divide-y">
-                  {units.map((u) => (
-                    <li key={u.serialNumber} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-w-0">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-mono text-sm sm:text-base truncate">{u.serialNumber}</span>
-                        <span className="text-xs sm:text-sm text-muted-foreground capitalize shrink-0">{u.currentStage}</span>
-                      </div>
-                      <Button asChild variant="default" size="sm" className="w-full sm:w-auto shrink-0">
-                        <Link to={`/lifecycle/${u.serialNumber}`}>View full lifecycle</Link>
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            <ul className="divide-y">
+              {units.map((u) => (
+                <li key={u.serialNumber} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-mono text-sm sm:text-base truncate">{u.serialNumber}</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground capitalize shrink-0">{u.currentStage}</span>
+                  </div>
+                  <Button asChild variant="default" size="sm" className="w-full sm:w-auto shrink-0">
+                    <Link to={`/lifecycle/${u.serialNumber}`}>View full lifecycle</Link>
+                  </Button>
+                </li>
+              ))}
+            </ul>
           )}
-        </div>
+            </CardContent>
+          </Card>
+        </>
       );
     }
     if (modelId && unitsLoading) {
-      return (
-        <div className="space-y-4 sm:space-y-6 min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 sm:p-6">
+      return pageShell(
+        <>
           {topBar}
           <div className="flex items-center justify-center p-6 sm:p-8">
             <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin" />
           </div>
-        </div>
+        </>
       );
     }
-    return (
-      <div className="space-y-4 sm:space-y-6 min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 sm:p-6">
+    return pageShell(
+      <>
         {topBar}
-        <Card>
+        <Card className="max-w-2xl">
           <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
             <p className="text-sm sm:text-base text-muted-foreground">
               Enter a serial number above to view its lifecycle, or go back to the previous page.
@@ -131,47 +138,47 @@ export default function InverterLifecycle() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </>
     );
   }
 
   if (isLoading) {
-    return (
-      <div className="space-y-4 sm:space-y-6 min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 sm:p-6">
+    return pageShell(
+      <>
         {topBar}
         <div className="flex items-center justify-center p-6 sm:p-8">
           <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin" />
         </div>
-      </div>
+      </>
     );
   }
 
   if (error) {
-    return (
-      <div className="space-y-4 sm:space-y-6 min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 sm:p-6">
+    return pageShell(
+      <>
         {topBar}
-        <Card>
+        <Card className="max-w-2xl">
           <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
             <p className="text-sm sm:text-base text-destructive break-words">
               Failed to load inverter lifecycle: {error instanceof Error ? error.message : 'Unknown error'}
             </p>
           </CardContent>
         </Card>
-      </div>
+      </>
     );
   }
 
   const data = lifecycleData;
   if (!data) {
-    return (
-      <div className="space-y-4 sm:space-y-6 min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 sm:p-6">
+    return pageShell(
+      <>
         {topBar}
-        <Card>
+        <Card className="max-w-2xl">
           <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
             <p className="text-sm sm:text-base text-muted-foreground">No data available</p>
           </CardContent>
         </Card>
-      </div>
+      </>
     );
   }
 
@@ -181,15 +188,15 @@ export default function InverterLifecycle() {
   const warrantyServiceStr = serviceYears === 1 ? '1 year' : serviceYears % 1 === 0 ? `${serviceYears} years` : `${serviceYears.toFixed(1)} years`;
   const directFactorySale = data.soldFrom === 'factory';
 
-  return (
-    <div className="space-y-4 sm:space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 sm:p-6">
+  return pageShell(
+    <>
       {topBar}
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className={PAGE_HEADING_CLASS}>Inverter Lifecycle</h1>
-        <p className={`${PAGE_SUBHEADING_CLASS} break-all`}>Serial Number: {serialNumber}</p>
-      </div>
-
+      <Card className="max-w-4xl">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Inverter Lifecycle</CardTitle>
+          <p className="text-sm text-muted-foreground break-all">Serial Number: {serialNumber}</p>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-0">
       {/* Lifecycle flow */}
       <Card>
         <CardHeader>
@@ -415,6 +422,8 @@ export default function InverterLifecycle() {
           </CardContent>
         </Card>
       )}
-    </div>
+        </CardContent>
+      </Card>
+    </>
   );
 }

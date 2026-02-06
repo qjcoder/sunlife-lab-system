@@ -30,29 +30,29 @@ const router = express.Router();
 
 /**
  * ====================================================
- * FACTORY → Register SINGLE inverter unit
+ * FACTORY / DATA ENTRY → Register SINGLE inverter unit
  * ====================================================
  * POST /api/inverters
- * ROLE: FACTORY_ADMIN
+ * ROLE: FACTORY_ADMIN, DATA_ENTRY_OPERATOR
  */
 router.post(
   "/",
   requireAuth,
-  requireRole("FACTORY_ADMIN"),
+  requireRole("FACTORY_ADMIN", "DATA_ENTRY_OPERATOR"),
   createInverterUnit
 );
 
 /**
  * ====================================================
- * FACTORY → BULK Register inverter units
+ * FACTORY / DATA ENTRY → BULK Register inverter units
  * ====================================================
  * POST /api/inverters/bulk
- * ROLE: FACTORY_ADMIN
+ * ROLE: FACTORY_ADMIN, DATA_ENTRY_OPERATOR
  */
 router.post(
   "/bulk",
   requireAuth,
-  requireRole("FACTORY_ADMIN"),
+  requireRole("FACTORY_ADMIN", "DATA_ENTRY_OPERATOR"),
   bulkCreateInverterUnits
 );
 

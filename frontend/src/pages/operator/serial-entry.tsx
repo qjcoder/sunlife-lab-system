@@ -20,9 +20,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { 
   Package, CheckCircle2, Upload, Scan, Hash, Calendar, Box, Loader2, 
-  X, AlertCircle, History, User, Clock 
+  X, AlertCircle, History, User, Clock, Sun, Battery, Gauge 
 } from 'lucide-react';
-import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
+import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS, getModelDisplayName, extractPowerRating, sortModelsByPowerAndActive, categorizeModel, type ProductCategory } from '@/lib/utils';
 
 const singleSchema = z.object({
   serialNumber: z.string().min(1, 'Serial number is required'),
@@ -39,6 +39,12 @@ const bulkSchema = z.object({
 type SingleFormData = z.infer<typeof singleSchema>;
 type BulkFormData = z.infer<typeof bulkSchema>;
 
+const CATEGORY_OPTIONS: { key: ProductCategory; label: string; icon: typeof Sun; activeClass: string }[] = [
+  { key: 'inverter', label: 'Inverters', icon: Sun, activeClass: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-500 hover:from-amber-600 hover:to-orange-600' },
+  { key: 'battery', label: 'Batteries', icon: Battery, activeClass: 'bg-gradient-to-r from-emerald-500 to-green-500 text-white border-emerald-500 hover:from-emerald-600 hover:to-green-600' },
+  { key: 'vfd', label: 'VFD', icon: Gauge, activeClass: 'bg-gradient-to-r from-violet-500 to-purple-500 text-white border-violet-500 hover:from-violet-600 hover:to-purple-600' },
+];
+
 export default function OperatorSerialEntry() {
   const [mode, setMode] = useState<'single' | 'bulk'>('single');
   const [serialCount, setSerialCount] = useState(0);
@@ -51,6 +57,7 @@ export default function OperatorSerialEntry() {
     summary: { total: number; accepted: number; rejected: number };
   } | null>(null);
   const [selectedModelForHistory, setSelectedModelForHistory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<ProductCategory>('inverter');
   const singleSerialRef = useRef<HTMLInputElement>(null);
   const bulkSerialRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -105,10 +112,27 @@ export default function OperatorSerialEntry() {
   const selectedSingleModel = watchSingle('inverterModel');
   const selectedBulkModel = watchBulk('inverterModel');
 
-  const filteredModels = useMemo(() => {
-    if (!models) return [];
-    return models;
+  const categorizedModels = useMemo(() => {
+    if (!models || !Array.isArray(models)) return { inverter: [], battery: [], vfd: [] };
+    const inverter: typeof models = [];
+    const battery: typeof models = [];
+    const vfd: typeof models = [];
+    models.forEach((m) => {
+      const cat = categorizeModel(m);
+      if (cat === 'battery') battery.push(m);
+      else if (cat === 'vfd') vfd.push(m);
+      else inverter.push(m);
+    });
+    return {
+      inverter: sortModelsByPowerAndActive(inverter, extractPowerRating),
+      battery: sortModelsByPowerAndActive(battery, extractPowerRating),
+      vfd: sortModelsByPowerAndActive(vfd, extractPowerRating),
+    };
   }, [models]);
+
+  const filteredModels = useMemo(() => {
+    return categorizedModels[selectedCategory] ?? [];
+  }, [categorizedModels, selectedCategory]);
 
   useEffect(() => {
     const currentDate = getCurrentDateTime();
@@ -361,21 +385,39 @@ export default function OperatorSerialEntry() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              {/* Model Selection */}
+              {/* Model Selection - Category wise */}
               <div className="space-y-3">
                 <Label className="text-sm font-bold flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  Product Model
+                  Product category &amp; model
                 </Label>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORY_OPTIONS.map(({ key, label, icon: Icon, activeClass }) => (
+                    <Button
+                      key={key}
+                      type="button"
+                      variant={selectedCategory === key ? 'default' : 'outline'}
+                      size="sm"
+                      className={cn(selectedCategory === key && activeClass, 'gap-1.5')}
+                      onClick={() => {
+                        setSelectedCategory(key);
+                        setValueSingle('inverterModel', '');
+                      }}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {label}
+                    </Button>
+                  ))}
+                </div>
                 {filteredModels.length === 0 ? (
                   <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed">
                     <Package className="h-12 w-12 text-slate-400 mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">No models found</p>
+                    <p className="text-sm text-muted-foreground">No models in this category</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
                     {filteredModels.map((model) => {
-                      const displayName = model.modelName || `${model.brand} ${model.productLine} ${model.variant}`.trim();
+                      const displayName = getModelDisplayName(model) || model.modelCode || '';
                       const isSelected = selectedSingleModel === model._id;
                       return (
                         <button
@@ -513,21 +555,39 @@ export default function OperatorSerialEntry() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              {/* Model Selection */}
+              {/* Model Selection - Category wise */}
               <div className="space-y-3">
                 <Label className="text-sm font-bold flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  Product Model
+                  Product category &amp; model
                 </Label>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORY_OPTIONS.map(({ key, label, icon: Icon, activeClass }) => (
+                    <Button
+                      key={key}
+                      type="button"
+                      variant={selectedCategory === key ? 'default' : 'outline'}
+                      size="sm"
+                      className={cn(selectedCategory === key && activeClass, 'gap-1.5')}
+                      onClick={() => {
+                        setSelectedCategory(key);
+                        setValueBulk('inverterModel', '');
+                      }}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {label}
+                    </Button>
+                  ))}
+                </div>
                 {filteredModels.length === 0 ? (
                   <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed">
                     <Package className="h-12 w-12 text-slate-400 mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">No models found</p>
+                    <p className="text-sm text-muted-foreground">No models in this category</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
                     {filteredModels.map((model) => {
-                      const displayName = model.modelName || `${model.brand} ${model.productLine} ${model.variant}`.trim();
+                      const displayName = getModelDisplayName(model) || model.modelCode || '';
                       const isSelected = selectedBulkModel === model._id;
                       return (
                         <button

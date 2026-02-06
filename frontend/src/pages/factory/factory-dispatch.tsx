@@ -10,10 +10,10 @@ import { getFactoryStock } from '@/api/stock-api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, Scan, Upload, X, Truck, Hash, Building2, Package } from 'lucide-react';
-import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
+import { Loader2, Scan, Upload, X, Truck, Hash, Building2, Package, Box } from 'lucide-react';
+import { PAGE_HEADING_FIRST, PAGE_HEADING_SECOND, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 const dispatchSchema = z.object({
   dispatchNumber: z.string().optional(),
@@ -220,53 +220,57 @@ export default function FactoryDispatch() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-orange-50/30 to-amber-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      {/* Header */}
-      <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 space-y-1">
-        <h1 className={PAGE_HEADING_CLASS}>Product Dispatch</h1>
-        <p className={PAGE_SUBHEADING_CLASS}>Dispatch products to dealers</p>
-      </div>
-      <div className="space-y-4 sm:space-y-5 px-4 sm:px-5 md:px-6 pb-4 pt-0">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Dispatch Information</span>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={scannerMode ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => {
-                    setScannerMode(!scannerMode);
-                    if (!scannerMode) {
-                      setTimeout(() => scannerRef.current?.focus(), 100);
-                    }
-                  }}
-                >
-                  <Scan className="h-4 w-4 mr-2" />
-                  {scannerMode ? 'Scanner ON' : 'Scanner'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Excel/CSV
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv,.xlsx,.xls,.txt"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </div>
-            </CardTitle>
+    <div className="h-full min-h-0 flex flex-col overflow-hidden bg-muted/30">
+      <header className="shrink-0 border-b bg-card">
+        <div className="px-4 py-2 sm:px-5 sm:py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-0.5">
+            <h1 className="inline"><span className={PAGE_HEADING_FIRST}>Product </span><span className={PAGE_HEADING_SECOND}>Dispatch</span></h1>
+            <p className={PAGE_SUBHEADING_CLASS}>Dispatch products to dealers</p>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex-1 min-h-0 flex flex-col overflow-auto p-3 sm:p-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 max-w-6xl">
+        <Card className="flex flex-col overflow-hidden break-inside-avoid">
+          <CardHeader className="shrink-0 flex flex-row items-start justify-between gap-3 space-y-0 pb-4 pt-5 px-4 sm:px-6 bg-gradient-to-r from-blue-50 via-indigo-50/80 to-slate-50 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-slate-900/50 border-b border-border">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
+                <div className="p-1.5 rounded-lg bg-blue-500/20">
+                  <Box className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
+                </div>
+                Dispatch Information
+              </CardTitle>
+              <CardDescription className="text-sm">Enter dealer and select products to dispatch</CardDescription>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                type="button"
+                variant={scannerMode ? 'default' : 'outline'}
+                size="sm"
+                className={scannerMode ? "border-emerald-500/60 text-white bg-emerald-600 hover:bg-emerald-700" : "border-emerald-500/60 text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20"}
+                onClick={() => {
+                  setScannerMode(!scannerMode);
+                  if (!scannerMode) setTimeout(() => scannerRef.current?.focus(), 100);
+                }}
+              >
+                <Scan className="h-4 w-4 mr-2" />
+                {scannerMode ? 'Scanner ON' : 'Scanner'}
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Excel/CSV
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls,.txt"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0 px-4 pb-5 sm:px-6 sm:pb-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {scannerMode && (
                 <div className="space-y-2 p-4 bg-green-50 dark:bg-green-950/20 border-2 border-green-200 dark:border-green-800 rounded-lg">
@@ -348,7 +352,7 @@ export default function FactoryDispatch() {
                       {selectedSerials.map((serial) => (
                         <span
                           key={serial}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-md text-xs font-medium shadow-sm"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-xs font-medium"
                         >
                           {serial}
                           <button
@@ -371,7 +375,7 @@ export default function FactoryDispatch() {
                 <Button 
                   type="submit" 
                   disabled={mutation.isPending || selectedSerials.length === 0}
-                  className="w-full h-11 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                  className="w-full h-11 text-base"
                 >
                   {mutation.isPending ? (
                     <>
@@ -390,11 +394,17 @@ export default function FactoryDispatch() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Available Products</CardTitle>
+        <Card className="flex flex-col overflow-hidden break-inside-avoid">
+          <CardHeader className="shrink-0 pb-4 pt-5 px-4 sm:px-6 bg-gradient-to-r from-slate-50 to-indigo-50/50 dark:from-slate-800/50 dark:to-indigo-950/30 border-b border-border">
+            <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
+              <div className="p-1.5 rounded-lg bg-indigo-500/20">
+                <Box className="h-5 w-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              </div>
+              Available Products
+            </CardTitle>
+            <CardDescription className="text-sm">Select products from factory stock to include in this dispatch</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0 px-4 pb-5 sm:px-6 sm:pb-6">
             {stockLoading ? (
               <div className="flex items-center justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin" />

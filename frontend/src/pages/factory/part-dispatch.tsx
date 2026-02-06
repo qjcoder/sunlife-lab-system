@@ -7,7 +7,7 @@ import { createPartDispatch, DispatchedItem } from '@/api/part-dispatch-api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Trash2, Scan, Upload, Package, Building2, FileText, Hash, Loader2, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Scan, Upload, Package, Building2, FileText, Hash, Loader2, CheckCircle2, Box } from 'lucide-react';
 import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 const dispatchSchema = z.object({
@@ -178,59 +178,57 @@ export default function PartDispatch() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-cyan-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      {/* Header */}
-      <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 space-y-1">
-        <h1 className={PAGE_HEADING_CLASS}>Service Center Parts Dispatch</h1>
-        <p className={PAGE_SUBHEADING_CLASS}>Dispatch parts from factory to service center</p>
-      </div>
-      <div className="space-y-4 sm:space-y-5 px-4 sm:px-5 md:px-6 pb-4 pt-0">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <Card className="border-2 border-slate-200 dark:border-slate-700 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30 border-b border-slate-200 dark:border-slate-700">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
-                  <Package className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+    <div className="h-full min-h-0 flex flex-col overflow-hidden bg-muted/30">
+      <header className="shrink-0 border-b bg-card">
+        <div className="px-4 py-2 sm:px-5 sm:py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-0.5">
+            <h1 className={PAGE_HEADING_CLASS}>Service Center Parts Dispatch</h1>
+            <p className={PAGE_SUBHEADING_CLASS}>Dispatch parts from factory to service center</p>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex-1 min-h-0 flex flex-col overflow-auto p-3 sm:p-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 max-w-6xl">
+        <Card className="flex flex-col overflow-hidden break-inside-avoid">
+          <CardHeader className="shrink-0 flex flex-row items-start justify-between gap-3 space-y-0 pb-4 pt-5 px-4 sm:px-6 bg-gradient-to-r from-teal-50 via-cyan-50/80 to-slate-50 dark:from-teal-950/40 dark:via-cyan-950/30 dark:to-slate-900/50 border-b border-border">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
+                <div className="p-1.5 rounded-lg bg-teal-500/20">
+                  <Box className="h-5 w-5 text-teal-600 dark:text-teal-400 shrink-0" />
                 </div>
-                <span className="text-xl font-bold">Dispatch Information</span>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={scannerMode ? 'default' : 'outline'}
-                  size="sm"
-                  className={scannerMode ? "bg-green-600 hover:bg-green-700 text-white" : ""}
-                  onClick={() => {
-                    setScannerMode(!scannerMode);
-                    if (!scannerMode) {
-                      setTimeout(() => partCodeRef.current?.focus(), 100);
-                    }
-                  }}
-                >
-                  <Scan className="h-4 w-4 mr-2" />
-                  {scannerMode ? 'Scanner ON' : 'Scanner'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Excel/CSV
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv,.xlsx,.xls,.txt"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </div>
-            </CardTitle>
+                Dispatch Information
+              </CardTitle>
+              <CardDescription className="text-sm">Enter service center and parts to dispatch</CardDescription>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                type="button"
+                variant={scannerMode ? 'default' : 'outline'}
+                size="sm"
+                className={scannerMode ? "border-emerald-500/60 text-white bg-emerald-600 hover:bg-emerald-700" : "border-emerald-500/60 text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20"}
+                onClick={() => {
+                  setScannerMode(!scannerMode);
+                  if (!scannerMode) setTimeout(() => partCodeRef.current?.focus(), 100);
+                }}
+              >
+                <Scan className="h-4 w-4 mr-2" />
+                {scannerMode ? 'Scanner ON' : 'Scanner'}
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Excel/CSV
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls,.txt"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="pt-0 px-4 pb-5 sm:px-6 sm:pb-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="serviceCenter" className="text-sm font-semibold flex items-center gap-2">
@@ -268,7 +266,7 @@ export default function PartDispatch() {
                 <Button 
                   type="submit" 
                   disabled={mutation.isPending || dispatchedItems.length === 0}
-                  className="w-full h-11 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                  className="w-full h-11 text-base"
                 >
                   {mutation.isPending ? (
                     <>
@@ -287,14 +285,15 @@ export default function PartDispatch() {
           </CardContent>
         </Card>
 
-        <Card className="border-2 border-slate-200 dark:border-slate-700 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border-b border-slate-200 dark:border-slate-700">
-            <CardTitle className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                <Plus className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+        <Card className="flex flex-col overflow-hidden break-inside-avoid">
+          <CardHeader className="shrink-0 pb-4 pt-5 px-4 sm:px-6 bg-gradient-to-r from-slate-50 to-cyan-50/50 dark:from-slate-800/50 dark:to-cyan-950/30 border-b border-border">
+            <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
+              <div className="p-1.5 rounded-lg bg-cyan-500/20">
+                <Box className="h-5 w-5 text-cyan-600 dark:text-cyan-400 shrink-0" />
               </div>
-              <span className="text-xl font-bold">Add Parts (Bulk Operations)</span>
+              Add Parts (Bulk Operations)
             </CardTitle>
+            <CardDescription className="text-sm">Use scanner or upload file to add parts to the dispatch list</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-6">
@@ -362,13 +361,13 @@ export default function PartDispatch() {
               <Button 
                 type="button" 
                 onClick={addItem} 
-                className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                className="w-full h-11"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Part to Dispatch List
               </Button>
 
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="p-3 bg-muted/50 border border-border rounded-lg">
                 <p className="text-xs text-muted-foreground flex items-start gap-2">
                   <span>💡</span>
                   <span>
@@ -383,11 +382,11 @@ export default function PartDispatch() {
       </div>
 
       {dispatchedItems.length > 0 && (
-        <Card className="border-2 border-slate-200 dark:border-slate-700 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
-            <CardTitle className="flex items-center gap-3">
-              <div className="p-2 bg-slate-200 dark:bg-slate-700 rounded-lg">
-                <Package className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+        <Card className="border border-border">
+          <CardHeader className="border-b border-border bg-gradient-to-r from-amber-50 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/20">
+            <CardTitle className="flex items-center gap-3 text-foreground">
+              <div className="p-2 bg-amber-500/20 rounded-lg">
+                <Package className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <span className="text-xl font-bold">Parts to Dispatch ({dispatchedItems.length})</span>
             </CardTitle>
@@ -409,7 +408,7 @@ export default function PartDispatch() {
                       <TableCell className="font-medium font-mono">{item.partCode}</TableCell>
                       <TableCell>{item.partName}</TableCell>
                       <TableCell>
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md font-semibold">
+                        <span className="px-2 py-1 bg-muted text-foreground rounded-md font-semibold">
                           {item.quantity}
                         </span>
                       </TableCell>

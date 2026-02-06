@@ -9,6 +9,15 @@ const AppShell = () => {
   const mainRef = useRef<HTMLElement>(null);
   const location = useLocation();
   const isInverterModels = location.pathname.includes("inverter-models");
+  // Pages that use full-height card layout (scroll inside page, not main)
+  const isFullHeightPage =
+    isInverterModels ||
+    location.pathname.includes("factory/stock") ||
+    location.pathname.includes("part-dispatch") ||
+    location.pathname.includes("factory/dispatch") ||
+    location.pathname.includes("lifecycle") ||
+    location.pathname.includes("inverter-registration") ||
+    location.pathname.includes("operator/product-serial-entry");
 
   // Scroll main content to top when navigating to a new page
   useEffect(() => {
@@ -43,13 +52,13 @@ const AppShell = () => {
           ref={mainRef}
           className={cn(
             "flex-1 min-h-0 flex flex-col p-3 sm:p-4 md:p-6 bg-white dark:bg-slate-900",
-            isInverterModels ? "overflow-hidden" : "overflow-auto"
+            isFullHeightPage ? "overflow-hidden" : "overflow-auto"
           )}
         >
           <div
             className={cn(
               "max-w-7xl mx-auto w-full h-full min-h-0 flex flex-col",
-              isInverterModels && "overflow-hidden"
+              isFullHeightPage && "overflow-hidden"
             )}
           >
             <Outlet />

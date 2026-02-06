@@ -60,6 +60,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Parts Stock", path: "/service-center/stock", roles: ["SERVICE_CENTER"], icon: PackageSearch, section: "MAIN MENU" },
 
   /* -------- DATA ENTRY OPERATOR -------- */
+  { label: "Product Serial Entry", path: "/operator/product-serial-entry", roles: ["DATA_ENTRY_OPERATOR"], icon: PackagePlus, section: "MAIN MENU" },
   { label: "Serial Entry", path: "/operator/serial-entry", roles: ["DATA_ENTRY_OPERATOR"], icon: Keyboard, section: "OPERATOR OPERATIONS" },
 ];
 

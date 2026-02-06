@@ -137,6 +137,7 @@ const App = () => {
                 element={<RoleRoute allowedRoles={["DATA_ENTRY_OPERATOR"]} />}
               >
                 <Route path="serial-entry" element={<OperatorSerialEntry />} />
+                <Route path="product-serial-entry" element={<InverterRegistration />} />
               </Route>
 
               {/* ----------------------------------

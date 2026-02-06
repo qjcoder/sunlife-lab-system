@@ -11,7 +11,7 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { getProductImageWithHandler } from '@/lib/image-utils';
-import { cn, PAGE_HEADING_CLASS } from '@/lib/utils';
+import { cn, PAGE_HEADING_CLASS, getModelDisplayName } from '@/lib/utils';
 import { toast } from 'sonner';
 
 /** Roles that can see Full Life Cycle View */
@@ -234,24 +234,6 @@ export default function Dashboard() {
     return 999999; // Put unknown values at the end
   };
 
-  /**
-   * Custom power rating order: 800W, 1.5kW, 1600W, 2kW, 3kW, then ascending
-   */
-  const getPowerSortOrder = (powerInWatts: number): number => {
-    // Define the custom order
-    const customOrder: number[] = [800, 1500, 1600, 2000, 3000];
-    
-    // Check if power matches a custom order position
-    const customIndex = customOrder.indexOf(powerInWatts);
-    if (customIndex !== -1) {
-      return customIndex; // Return position in custom order
-    }
-    
-    // For other values, sort after custom order
-    // Add 1000 to ensure they come after custom values
-    return 1000 + powerInWatts;
-  };
-
   /** VFD (GD170) variant order: 5R5, 7R5, then 011, 015, 018, 022, 030, 037, 045 */
   const VFD_GD170_SORT_ORDER = ['5R5', '7R5', '011', '015', '018', '022', '030', '037', '045'];
 
@@ -277,9 +259,7 @@ export default function Dashboard() {
       }
       const powerA = extractPowerRating(a);
       const powerB = extractPowerRating(b);
-      const orderA = getPowerSortOrder(powerA);
-      const orderB = getPowerSortOrder(powerB);
-      return orderA - orderB;
+      return powerB - powerA; // higher to lower
     });
   };
 
@@ -402,63 +382,6 @@ export default function Dashboard() {
    * - Brand: "Sunlife", ProductLine: "Lithium", Variant: "SL-48100M" → "SL-48100M" (battery)
    * - Brand: "Sunlife", ProductLine: "IP65", Variant: "6kW" → "IP65"
    */
-  const getProductDisplayName = (model: any): string => {
-    if (!model) return '';
-    
-    const brand = (model.brand || '').trim();
-    const productLine = (model.productLine || '').trim();
-    const variant = (model.variant || '').trim();
-    const modelCode = (model.modelCode || '').trim();
-    const productLineLower = productLine.toLowerCase();
-    const brandLower = brand.toLowerCase();
-    const fullName = [brand, productLine, variant, modelCode].filter(Boolean).join(' ').toLowerCase();
-    
-    // Detect battery (same logic as getPowerDisplay / categorizeModel)
-    const isBattery =
-      productLineLower === 'lithium' ||
-      productLineLower.includes('battery') ||
-      productLineLower.includes('batt') ||
-      /(?:SL-|RM-)\d{2}\d+/.test(modelCode) ||
-      (variant.includes('V') && variant.includes('AH')) ||
-      fullName.includes('51.2v') ||
-      fullName.includes('48100') ||
-      fullName.includes('48314') ||
-      fullName.includes('100ah') ||
-      fullName.includes('lithium');
-    
-    // For batteries, show actual model name as stored (SL- or RM- as per product)
-    // Examples: "SL-48100M", "SL-48314M", "SL-RM-SKWH-51.2V-100A", "RM 51.2V 100AH"
-    if (isBattery) {
-      return modelCode || variant || '';
-    }
-    
-    // For IP65 models (e.g., "HI-6K-SL"), productLine is "IP65" and variant is "6kW"
-    if (productLineLower === 'ip65' || (model.modelCode || '').toUpperCase().includes('IP65')) {
-      return 'IP65';
-    }
-    
-    // For VFD models, productLine is "VFD" and variant contains the full model name
-    // Example: variant = "SL-GD170-5R5-4-PV"
-    if (productLineLower === 'vfd') {
-      // Return variant if it contains the model identifier, otherwise return "VFD"
-      return variant || 'VFD';
-    }
-    
-    // For other products, return only product line (without variant)
-    // Remove brand name if it appears at the start of product line to avoid repetition
-    let displayName = productLine;
-    
-    // Remove brand name from product line if it appears at the start
-    if (brandLower && displayName.toLowerCase().startsWith(brandLower)) {
-      displayName = displayName.substring(brand.length).trim();
-      // Also remove any leading hyphens or spaces
-      displayName = displayName.replace(/^[\s-]+/, '');
-    }
-    
-    // Convert to uppercase for consistency
-    return displayName.toUpperCase() || productLine.toUpperCase();
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100/50 to-blue-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
@@ -777,9 +700,7 @@ export default function Dashboard() {
                             if (!primaryA.active && primaryB.active) return 1;
                             const powerA = extractPowerRating(primaryA);
                             const powerB = extractPowerRating(primaryB);
-                            const orderA = getPowerSortOrder(powerA);
-                            const orderB = getPowerSortOrder(powerB);
-                            return orderA - orderB;
+                            return powerB - powerA; // higher to lower
                           } catch (err) {
                             return 0;
                           }
@@ -806,7 +727,7 @@ export default function Dashboard() {
                                 if (!sortedModels || sortedModels.length === 0) return null;
                                 const primaryModel = sortedModels[0];
                                 if (!primaryModel) return null;
-                                const productLineName = `${primaryModel.brand || ''} ${primaryModel.productLine || ''}`.trim();
+                                const productLineName = getModelDisplayName(primaryModel) || primaryModel.modelCode || '';
                                 const hasActive = sortedModels.some(m => m && m.active);
                                 const hasMultipleVariants = sortedModels.length > 1;
                                 
@@ -867,7 +788,7 @@ export default function Dashboard() {
                                       
                                       {/* Product Name */}
                                       <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-3 leading-tight">
-                                        {getProductDisplayName(primaryModel)}
+                                        {getModelDisplayName(primaryModel)}
                                       </h4>
                                       
                                       {/* Variant Display - wrap so all buttons stay inside card */}
@@ -948,7 +869,7 @@ export default function Dashboard() {
                   {batteryModels.length > 0 && (() => {
                     const groupedBatteries = groupModelsByProductLine(batteryModels, true);
                     
-                    // Sort battery groups: active first, then by power; discontinued at the end
+                    // Sort battery groups: active first, then by power higher to lower; discontinued at the end
                     const sortedBatteryGroups = Array.from(groupedBatteries.entries()).sort(([, groupA], [, groupB]) => {
                       const modelA = groupA[0];
                       const modelB = groupB[0];
@@ -956,9 +877,7 @@ export default function Dashboard() {
                       if (!modelA?.active && modelB?.active) return 1;
                       const powerA = extractPowerRating(modelA);
                       const powerB = extractPowerRating(modelB);
-                      const orderA = getPowerSortOrder(powerA);
-                      const orderB = getPowerSortOrder(powerB);
-                      return orderA - orderB;
+                      return powerB - powerA;
                     });
                     
                     return (
@@ -980,7 +899,7 @@ export default function Dashboard() {
                             if (!modelGroup || !Array.isArray(modelGroup) || modelGroup.length === 0) return null;
                             const model = modelGroup[0];
                             if (!model || !model._id) return null;
-                            const productLineName = `${model.brand || ''} ${model.productLine || ''} ${model.variant || ''}`.trim();
+                            const productLineName = getModelDisplayName(model) || model.modelCode || '';
                             
                             return (
                               <div
@@ -1039,7 +958,7 @@ export default function Dashboard() {
                                   
                                   {/* Product Name */}
                                   <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-3 leading-tight">
-                                    {getProductDisplayName(model)}
+                                    {getModelDisplayName(model)}
                                   </h4>
                                   
                                   {/* Variant Display - wrap so all buttons stay inside card */}
@@ -1102,7 +1021,7 @@ export default function Dashboard() {
                   {vfdModels.length > 0 && (() => {
                     const groupedVFD = groupModelsByProductLine(vfdModels);
                     
-                    // Sort VFD groups: active first, then by power; discontinued at the end
+                    // Sort VFD groups: active first, then by power higher to lower; discontinued at the end
                     const sortedVFDGroups = Array.from(groupedVFD.entries()).sort(([, groupA], [, groupB]) => {
                       const sortedA = sortVariants(groupA);
                       const sortedB = sortVariants(groupB);
@@ -1112,9 +1031,7 @@ export default function Dashboard() {
                       if (!primaryA?.active && primaryB?.active) return 1;
                       const powerA = extractPowerRating(primaryA);
                       const powerB = extractPowerRating(primaryB);
-                      const orderA = getPowerSortOrder(powerA);
-                      const orderB = getPowerSortOrder(powerB);
-                      return orderA - orderB;
+                      return powerB - powerA;
                     });
                     
                     return (
@@ -1252,7 +1169,7 @@ export default function Dashboard() {
             <>
               <DialogHeader className="space-y-1 pb-2 sm:pb-4">
                 <DialogTitle className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-tight">
-                  {selectedVariant.modelName || `${selectedVariant.brand} ${selectedVariant.productLine} ${selectedVariant.variant}`}
+                  {getModelDisplayName(selectedVariant) || selectedVariant.modelCode}
                 </DialogTitle>
                 <DialogDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 tracking-wide">
                   Complete product specifications and warranty information
@@ -1263,7 +1180,7 @@ export default function Dashboard() {
                 <div className="relative h-20 sm:aspect-video sm:h-auto bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg overflow-hidden">
                   <img
                     src={getModelImage(selectedVariant)}
-                    alt={selectedVariant.modelName || selectedVariant.modelCode}
+                    alt={getModelDisplayName(selectedVariant) || selectedVariant.modelCode}
                     className="w-full h-full object-contain p-3 sm:p-8"
                     onError={(e) => {
                       getImageErrorHandler(selectedVariant)(e);
@@ -1532,7 +1449,7 @@ export default function Dashboard() {
                 <DialogTitle className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2 sm:gap-3 truncate min-w-0">
                   <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400 shrink-0" />
                   <span className="truncate">
-                    {selectedModelForPdf.modelName || `${selectedModelForPdf.brand} ${selectedModelForPdf.productLine} ${selectedModelForPdf.variant}`}
+                    {getModelDisplayName(selectedModelForPdf) || selectedModelForPdf.modelCode}
                   </span>
                 </DialogTitle>
                 <DialogDescription className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 tracking-wide">

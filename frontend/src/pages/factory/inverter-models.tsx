@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Plus, Boxes, Shield, Calendar, Upload, Zap, Battery, Settings, Tag, Hash, Loader2, CheckCircle2, Trash2, Image as ImageIcon, FileText, X, BookOpen, Video, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
+import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS, getModelDisplayName } from '@/lib/utils';
 import { getProductImageWithHandler } from '@/lib/image-utils';
 
 const productTypeOptions = ['Inverter', 'Battery', 'VFD'] as const;
@@ -125,13 +125,13 @@ function extractPowerForSort(model: InverterModel): number {
   return 0;
 }
 
-/** Sort category: active first, then by power/capacity lowest to highest (e.g. 5.5 kW before 7.5 kW). */
+/** Sort category: active first, then by power/capacity higher to lower; discontinued always at the end. */
 function sortCategoryModels(list: InverterModel[]): InverterModel[] {
   return [...list].sort((a, b) => {
     if (a.active !== b.active) return a.active ? -1 : 1;
     const powerA = extractPowerForSort(a);
     const powerB = extractPowerForSort(b);
-    return powerA - powerB;
+    return powerB - powerA;
   });
 }
 
@@ -555,7 +555,7 @@ export default function InverterModels() {
                   return (
                     <img
                       src={imageHandler.src}
-                      alt={model.modelName || `${model.brand} ${model.productLine} ${model.variant}`}
+                      alt={getModelDisplayName(model) || model.modelCode}
                       className="max-w-full max-h-full object-contain p-4"
                       onError={(e) => {
                         imageHandler.onError(e);
@@ -607,38 +607,9 @@ export default function InverterModels() {
                   {model.brand}
                 </p>
 
-                {/* Product Name - Show only product line, remove brand if duplicated */}
+                {/* Product Name – same as Dashboard */}
                 <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-1.5 line-clamp-2 leading-tight">
-                  {(() => {
-                    const brand = (model.brand || '').trim();
-                    const productLine = (model.productLine || '').trim();
-                    const brandLower = brand.toLowerCase();
-                    let displayName = productLine;
-                    
-                    // Remove brand name from product line if it appears at the start
-                    if (brandLower && displayName.toLowerCase().startsWith(brandLower)) {
-                      displayName = displayName.substring(brand.length).trim();
-                      displayName = displayName.replace(/^[\s-]+/, '');
-                    }
-                    
-                    // For batteries, show variant instead
-                    const productLineLower = productLine.toLowerCase();
-                    if (productLineLower === 'lithium' || productLineLower.includes('battery')) {
-                      return model.variant || model.modelCode || '';
-                    }
-                    
-                    // For IP65, show "IP65"
-                    if (productLineLower === 'ip65' || (model.modelCode || '').toUpperCase().includes('IP65')) {
-                      return 'IP65';
-                    }
-                    
-                    // For VFD, show variant if available
-                    if (productLineLower === 'vfd') {
-                      return model.variant || 'VFD';
-                    }
-                    
-                    return displayName.toUpperCase() || productLine.toUpperCase();
-                  })()}
+                  {getModelDisplayName(model)}
                 </h3>
 
                 {/* Model Code */}
@@ -704,7 +675,7 @@ export default function InverterModels() {
                       className="border border-red-400 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 h-auto w-auto p-1.5"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(model._id, model.modelName || `${model.brand} ${model.productLine} ${model.variant}`);
+                        handleDelete(model._id, getModelDisplayName(model) || model.modelCode || 'Unknown');
                       }}
                       disabled={deleteMutation.isPending}
                       title="Delete Model"
@@ -1196,7 +1167,7 @@ export default function InverterModels() {
                 <Button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="flex-1 h-14 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white font-bold text-base shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl"
+                  className="flex-1 h-14 font-bold text-base rounded-xl"
                 >
                   {createMutation.isPending ? (
                     <>
@@ -1644,7 +1615,7 @@ export default function InverterModels() {
               <Button
                 type="submit"
                 disabled={updateMutation.isPending}
-                className="flex-1 h-14 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white font-bold text-base shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl"
+                className="flex-1 h-14 font-bold text-base rounded-xl"
               >
                 {updateMutation.isPending ? (
                   <>
@@ -1958,7 +1929,7 @@ export default function InverterModels() {
               <Button
                 type="button"
                 onClick={handleImageUpdateSubmit}
-                className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold"
+                className="flex-1 font-semibold"
                 disabled={!imageUpdateFile}
               >
                 <Upload className="h-4 w-4 mr-2" />
