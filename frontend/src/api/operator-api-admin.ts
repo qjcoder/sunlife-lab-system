@@ -56,3 +56,16 @@ export const listOperators = async (): Promise<ListOperatorsResponse> => {
   const response = await api.get<ListOperatorsResponse>('/api/operators');
   return response.data;
 };
+
+export interface DeleteOperatorResponse {
+  message: string;
+}
+
+/**
+ * Delete a data entry operator
+ * DELETE /api/operators/:id
+ */
+export const deleteOperator = async (id: string): Promise<DeleteOperatorResponse> => {
+  const response = await api.delete<DeleteOperatorResponse>(`/api/operators/${id}`);
+  return response.data;
+};

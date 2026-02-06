@@ -22,15 +22,22 @@ export interface Warranty {
   serviceMonths: number;
 }
 
+export type ProductType = 'Inverter' | 'Battery' | 'VFD';
+
 export interface InverterModel {
   _id: string;
   brand: string;
   productLine: string;
+  productType?: ProductType;
   variant: string;
   modelCode: string;
   modelName?: string; // Full model name (e.g. "Sunlife SL-Sky 4kW")
   image?: string; // Product image path (e.g. "/products/sl-sky-4kw.jpg")
   datasheet?: string; // Technical datasheet PDF path (e.g. "/products/datasheets/sl-sky-4kw.pdf")
+  /** User manual: Google Drive or external link (no file in DB) */
+  userManualUrl?: string | null;
+  /** Technical support video links (e.g. YouTube: BMS method, Wifi method) */
+  supportVideoLinks?: Array<{ title: string; url: string }>;
   warranty: Warranty;
   active: boolean;
   createdAt: string;
@@ -40,22 +47,28 @@ export interface InverterModel {
 export interface CreateInverterModelRequest {
   brand: string;
   productLine: string;
+  productType?: ProductType;
   variant: string;
   modelCode: string;
   warranty: Warranty;
   image?: string;
   datasheet?: string;
+  userManualUrl?: string | null;
+  supportVideoLinks?: Array<{ title: string; url: string }>;
   active?: boolean;
 }
 
 export interface UpdateInverterModelRequest {
   brand?: string;
   productLine?: string;
+  productType?: ProductType;
   variant?: string;
   modelCode?: string;
   warranty?: Warranty;
   image?: string;
   datasheet?: string;
+  userManualUrl?: string | null;
+  supportVideoLinks?: Array<{ title: string; url: string }>;
   active?: boolean;
 }
 
@@ -172,4 +185,20 @@ export const getModelStatistics = async (modelId: string): Promise<ModelStatisti
       totalInService: 0,
     },
   };
+};
+
+/** Units of a model (for Full Life Cycle View - pick serial to see lifecycle) */
+export interface UnitsByModelResponse {
+  model: { _id: string; modelCode: string; brand: string; productLine: string; variant: string };
+  units: Array<{
+    serialNumber: string;
+    currentStage: 'factory' | 'dispatched' | 'dealer' | 'sold';
+    registeredAt: string;
+    saleDate: string | null;
+  }>;
+}
+
+export const getUnitsByModel = async (modelId: string): Promise<UnitsByModelResponse> => {
+  const response = await api.get<UnitsByModelResponse>(`/api/inverter-models/${modelId}/units`);
+  return response.data;
 };

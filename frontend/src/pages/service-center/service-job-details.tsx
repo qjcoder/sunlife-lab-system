@@ -109,12 +109,7 @@ export default function ServiceJobDetails() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-            Service Job Details
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-lg">Job ID: {serviceJobId}</p>
-        </div>
+        <PageHeader title="Service Job Details" description={`Job ID: ${serviceJobId}`} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

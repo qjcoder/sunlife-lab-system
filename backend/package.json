@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "seed:lifecycle": "node scripts/seedLifecycleTrialData.js",
+    "seed:dashboard": "node scripts/seedDashboardDummyData.js",
+    "remove-dummy": "node scripts/removeDummyData.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

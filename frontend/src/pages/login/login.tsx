@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ErrorPopup } from "@/components/ui/error-popup";
 import { useNavigate } from "react-router-dom";
 import { Navigate } from "react-router-dom";
-import { Mail, Lock, Building2, Users, Wrench, User } from "lucide-react";
+import { Mail, Lock, Building2, Users, Wrench, User, ClipboardList, FileEdit } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 type FormData = {
@@ -16,7 +16,7 @@ type FormData = {
   rememberMe?: boolean;
 };
 
-type RoleType = "FACTORY_ADMIN" | "DEALER" | "SUB_DEALER" | "SERVICE_CENTER" | "";
+type RoleType = "FACTORY_ADMIN" | "DEALER" | "SUB_DEALER" | "SERVICE_CENTER" | "INSTALLER_PROGRAM_MANAGER" | "DATA_ENTRY_OPERATOR" | "";
 
 const getRoleConfig = (role: RoleType) => {
   switch (role) {
@@ -75,6 +75,34 @@ const getRoleConfig = (role: RoleType) => {
         title: "Service Center",
         description: "Manage service jobs and parts inventory",
         rightBg: "bg-gradient-to-br from-orange-900 via-orange-800 to-orange-900",
+      };
+    case "INSTALLER_PROGRAM_MANAGER":
+      return {
+        accentColor: "bg-violet-600",
+        accentHover: "hover:bg-violet-700",
+        accentLight: "bg-violet-50",
+        accentBorder: "border-violet-200",
+        accentText: "text-violet-600",
+        bgGradient: "from-violet-900 via-violet-800 to-violet-900",
+        bgPattern: "bg-violet-600",
+        icon: ClipboardList,
+        title: "Installer Program Manager",
+        description: "Manage installer program and product lifecycle",
+        rightBg: "bg-gradient-to-br from-violet-900 via-violet-800 to-violet-900",
+      };
+    case "DATA_ENTRY_OPERATOR":
+      return {
+        accentColor: "bg-teal-600",
+        accentHover: "hover:bg-teal-700",
+        accentLight: "bg-teal-50",
+        accentBorder: "border-teal-200",
+        accentText: "text-teal-600",
+        bgGradient: "from-teal-900 via-teal-800 to-teal-900",
+        bgPattern: "bg-teal-600",
+        icon: FileEdit,
+        title: "Data Entry Operator",
+        description: "Enter and manage product and warranty data",
+        rightBg: "bg-gradient-to-br from-teal-900 via-teal-800 to-teal-900",
       };
     default:
       return {
@@ -191,35 +219,19 @@ const Login = () => {
           detectedRole = "SUB_DEALER";
         } else if (errorText.includes("Service Center") || errorText.includes("SERVICE_CENTER")) {
           detectedRole = "SERVICE_CENTER";
+        } else if (errorText.includes("Installer Program") || errorText.includes("INSTALLER_PROGRAM_MANAGER")) {
+          detectedRole = "INSTALLER_PROGRAM_MANAGER";
+        } else if (errorText.includes("Data Entry") || errorText.includes("DATA_ENTRY_OPERATOR")) {
+          detectedRole = "DATA_ENTRY_OPERATOR";
         }
         
         if (status === 400) {
           errorTitle = "Missing Information";
           errorMessage = backendMessage || "Email and password are required. Please fill in all fields and try again.";
         } else if (status === 401) {
-          // Check for specific error messages from backend
-          if (backendMessage.toLowerCase().includes("no account found") || 
-              backendMessage.toLowerCase().includes("check your email")) {
-            errorTitle = "Account Not Found";
-            errorMessage = "No account found with this email address. Please check your email address and try again.";
-          } else if (backendMessage.toLowerCase().includes("password") && 
-                     (backendMessage.toLowerCase().includes("incorrect") || 
-                      backendMessage.toLowerCase().includes("wrong") ||
-                      backendMessage.toLowerCase().includes("check your password"))) {
-            errorTitle = "Incorrect Password";
-            errorMessage = "The password you entered is incorrect. Please check your password and try again.";
-          } else if (backendMessage.toLowerCase().includes("invalid credentials")) {
-            errorTitle = "Invalid Credentials";
-            errorMessage = "The email or password you entered is incorrect. Please verify both your email and password, then try again.";
-          } else if (backendMessage) {
-            // Use backend message directly if available
-            errorTitle = "Authentication Failed";
-            errorMessage = backendMessage;
-          } else {
-            // Generic 401 error
-            errorTitle = "Authentication Failed";
-            errorMessage = "The email or password you entered is incorrect. Please check your credentials and try again.";
-          }
+          // Generic message for all auth failures (security: don't reveal email vs password)
+          errorTitle = "Invalid Credentials";
+          errorMessage = "The email or password you entered is incorrect. Please try again.";
           
           // If we detected a role, auto-select it silently
           if (detectedRole) {
@@ -290,6 +302,8 @@ const Login = () => {
     { type: "DEALER", label: "Dealer", icon: Users },
     { type: "SUB_DEALER", label: "Sub-Dealer", icon: User },
     { type: "SERVICE_CENTER", label: "Service Center", icon: Wrench },
+    { type: "INSTALLER_PROGRAM_MANAGER", label: "Installer Program", icon: ClipboardList },
+    { type: "DATA_ENTRY_OPERATOR", label: "Data Entry Operator", icon: FileEdit },
   ];
 
   return (
@@ -312,6 +326,8 @@ const Login = () => {
         selectedRole === "DEALER" ? "bg-gradient-to-br from-blue-50 via-white to-blue-100" :
         selectedRole === "SUB_DEALER" ? "bg-gradient-to-br from-green-50 via-white to-green-100" :
         selectedRole === "SERVICE_CENTER" ? "bg-gradient-to-br from-orange-50 via-white to-orange-100" :
+        selectedRole === "INSTALLER_PROGRAM_MANAGER" ? "bg-gradient-to-br from-violet-50 via-white to-violet-100" :
+        selectedRole === "DATA_ENTRY_OPERATOR" ? "bg-gradient-to-br from-teal-50 via-white to-teal-100" :
         "bg-gradient-to-br from-gray-50 via-white to-gray-100"
       }`}>
         {/* Animated background pattern */}
@@ -321,6 +337,8 @@ const Login = () => {
             selectedRole === "DEALER" ? "bg-blue-200" :
             selectedRole === "SUB_DEALER" ? "bg-green-200" :
             selectedRole === "SERVICE_CENTER" ? "bg-orange-200" :
+            selectedRole === "INSTALLER_PROGRAM_MANAGER" ? "bg-violet-200" :
+            selectedRole === "DATA_ENTRY_OPERATOR" ? "bg-teal-200" :
             "bg-gray-200"
           } animate-pulse`}></div>
           <div className={`absolute bottom-0 right-0 w-96 h-96 rounded-full blur-3xl ${
@@ -328,6 +346,8 @@ const Login = () => {
             selectedRole === "DEALER" ? "bg-blue-300" :
             selectedRole === "SUB_DEALER" ? "bg-green-300" :
             selectedRole === "SERVICE_CENTER" ? "bg-orange-300" :
+            selectedRole === "INSTALLER_PROGRAM_MANAGER" ? "bg-violet-300" :
+            selectedRole === "DATA_ENTRY_OPERATOR" ? "bg-teal-300" :
             "bg-gray-300"
           } animate-pulse delay-1000`}></div>
         </div>
@@ -415,6 +435,8 @@ const Login = () => {
                     selectedRole === "DEALER" ? "focus:border-blue-500 focus:ring-blue-500" :
                     selectedRole === "SUB_DEALER" ? "focus:border-green-500 focus:ring-green-500" :
                     selectedRole === "SERVICE_CENTER" ? "focus:border-orange-500 focus:ring-orange-500" :
+                    selectedRole === "INSTALLER_PROGRAM_MANAGER" ? "focus:border-violet-500 focus:ring-violet-500" :
+                    selectedRole === "DATA_ENTRY_OPERATOR" ? "focus:border-teal-500 focus:ring-teal-500" :
                     "focus:border-red-500 focus:ring-red-500"
                   }`}
                 />
@@ -452,6 +474,8 @@ const Login = () => {
                     selectedRole === "DEALER" ? "focus:border-blue-500 focus:ring-blue-500" :
                     selectedRole === "SUB_DEALER" ? "focus:border-green-500 focus:ring-green-500" :
                     selectedRole === "SERVICE_CENTER" ? "focus:border-orange-500 focus:ring-orange-500" :
+                    selectedRole === "INSTALLER_PROGRAM_MANAGER" ? "focus:border-violet-500 focus:ring-violet-500" :
+                    selectedRole === "DATA_ENTRY_OPERATOR" ? "focus:border-teal-500 focus:ring-teal-500" :
                     "focus:border-red-500 focus:ring-red-500"
                   }`}
                 />
@@ -473,6 +497,8 @@ const Login = () => {
                     selectedRole === "DEALER" ? "text-blue-600 focus:ring-blue-500" :
                     selectedRole === "SUB_DEALER" ? "text-green-600 focus:ring-green-500" :
                     selectedRole === "SERVICE_CENTER" ? "text-orange-600 focus:ring-orange-500" :
+                    selectedRole === "INSTALLER_PROGRAM_MANAGER" ? "text-violet-600 focus:ring-violet-500" :
+                    selectedRole === "DATA_ENTRY_OPERATOR" ? "text-teal-600 focus:ring-teal-500" :
                     "text-red-600 focus:ring-red-500"
                   }`}
                 />
@@ -536,6 +562,10 @@ const Login = () => {
                 ? "Streamlined Operations"
                 : selectedRole === "SERVICE_CENTER"
                 ? "Professional Service Hub"
+                : selectedRole === "INSTALLER_PROGRAM_MANAGER"
+                ? "Installer Program Management"
+                : selectedRole === "DATA_ENTRY_OPERATOR"
+                ? "Efficient Data Entry"
                 : "Welcome to Sunlife Solar"}
             </h2>
             <p className="text-xl text-gray-100 mb-6 leading-relaxed font-medium">
@@ -547,6 +577,10 @@ const Login = () => {
                 ? "Simple, intuitive tools for inventory management, sales tracking, and warranty activation."
                 : selectedRole === "SERVICE_CENTER"
                 ? "Streamline service jobs, parts inventory, and warranty tracking with professional-grade tools."
+                : selectedRole === "INSTALLER_PROGRAM_MANAGER"
+                ? "Manage installer program, product lifecycle, and full history view in one place."
+                : selectedRole === "DATA_ENTRY_OPERATOR"
+                ? "Enter and manage product data, warranty information, and records with ease."
                 : "Comprehensive solar warranty and inventory management system trusted by industry leaders."}
             </p>
             <div className="flex flex-wrap gap-3 mb-12">
@@ -578,6 +612,20 @@ const Login = () => {
                   <span className="px-4 py-2 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">Warranty Tracking</span>
                 </>
               )}
+              {selectedRole === "INSTALLER_PROGRAM_MANAGER" && (
+                <>
+                  <span className="px-4 py-2 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">Product Lifecycle</span>
+                  <span className="px-4 py-2 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">Full History</span>
+                  <span className="px-4 py-2 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">Installer Program</span>
+                </>
+              )}
+              {selectedRole === "DATA_ENTRY_OPERATOR" && (
+                <>
+                  <span className="px-4 py-2 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">Data Entry</span>
+                  <span className="px-4 py-2 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">Records</span>
+                  <span className="px-4 py-2 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">Warranty Data</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -594,6 +642,10 @@ const Login = () => {
                     ? "Simple & Fast"
                     : selectedRole === "SERVICE_CENTER"
                     ? "Professional Tools"
+                    : selectedRole === "INSTALLER_PROGRAM_MANAGER"
+                    ? "Lifecycle & History"
+                    : selectedRole === "DATA_ENTRY_OPERATOR"
+                    ? "Accurate Data"
                     : "Get Started Today"}
                 </h3>
                 <p className="text-gray-200 text-sm">
@@ -605,6 +657,10 @@ const Login = () => {
                     ? "Designed for speed and simplicity"
                     : selectedRole === "SERVICE_CENTER"
                     ? "Trusted by service professionals"
+                    : selectedRole === "INSTALLER_PROGRAM_MANAGER"
+                    ? "Full product lifecycle at your fingertips"
+                    : selectedRole === "DATA_ENTRY_OPERATOR"
+                    ? "Keep records accurate and up to date"
                     : "Join thousands of satisfied users"}
                 </p>
               </div>

@@ -2,25 +2,40 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/store/auth-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getFactoryStock } from '@/api/stock-api';
+import { getFactoryStock, getDealerStock } from '@/api/stock-api';
 import { listServiceJobs } from '@/api/service-api';
 import { listModels } from '@/api/model-api';
-import { Warehouse, Package, Wrench, TrendingUp, Users, Building2, Zap, Battery, Settings, Shield, Calendar, Hash, Tag, Eye, ArrowRight, X, FileText } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Warehouse, Package, Wrench, TrendingUp, Building2, Sun, Battery, Gauge, Settings, Shield, Calendar, Hash, Tag, Eye, ArrowRight, ArrowLeft, X, FileText, BookOpen, Video, Users, ArrowRightLeft, ShoppingCart } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { getProductImageWithHandler } from '@/lib/image-utils';
-import { cn } from '@/lib/utils';
+import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
+import { toast } from 'sonner';
+
+/** Roles that can see Full Life Cycle View */
+const ROLES_WITH_LIFECYCLE_ACCESS = ['FACTORY_ADMIN', 'SERVICE_CENTER', 'INSTALLER_PROGRAM_MANAGER'];
 
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedVFDGroup, setSelectedVFDGroup] = useState<any>(null);
   const [isVFDDialogOpen, setIsVFDDialogOpen] = useState(false);
   const [selectedModelForPdf, setSelectedModelForPdf] = useState<any>(null);
   const [isPdfDialogOpen, setIsPdfDialogOpen] = useState(false);
+
+  /** Format warranty months as years for display (e.g. 12 → "1 year", 24 → "2 years") */
+  const formatWarrantyYears = (months: number | undefined, defaultMonths: number): string => {
+    const m = months ?? defaultMonths;
+    if (m === 0) return '0 years';
+    const years = m / 12;
+    if (years === 1) return '1 year';
+    return `${Number.isInteger(years) ? years : years.toFixed(1)} years`;
+  };
 
   /**
    * Get model image path - ensures it's from /products/ directory
@@ -70,11 +85,30 @@ export default function Dashboard() {
     enabled: user?.role === 'SERVICE_CENTER',
   });
 
+  const { data: dealerStock } = useQuery({
+    queryKey: ['dealer-stock'],
+    queryFn: getDealerStock,
+    enabled: user?.role === 'DEALER' || user?.role === 'SUB_DEALER',
+  });
+
+  // Product catalog: show for admin, service center, installer program manager, data entry operator, dealer, sub-dealer
+  const rolesWithProductCatalog = ['FACTORY_ADMIN', 'SERVICE_CENTER', 'INSTALLER_PROGRAM_MANAGER', 'DATA_ENTRY_OPERATOR', 'DEALER', 'SUB_DEALER'];
   const { data: models } = useQuery({
     queryKey: ['inverter-models'],
     queryFn: () => listModels(),
-    enabled: user?.role === 'FACTORY_ADMIN',
+    enabled: !!user && rolesWithProductCatalog.includes(user.role),
   });
+
+  // Open variant details dialog when URL has ?model=id (e.g. from "View Full Details" - stay on dashboard)
+  const modelIdFromUrl = searchParams.get('model');
+  useEffect(() => {
+    if (!modelIdFromUrl || !models || !Array.isArray(models)) return;
+    const model = models.find((m: any) => m && m._id === modelIdFromUrl);
+    if (model) {
+      setSelectedVariant(model);
+      setIsDialogOpen(true);
+    }
+  }, [modelIdFromUrl, models]);
 
   // Calculate stock counts per model (for admin only) - MUST be at top level to avoid hook order violations
   const modelStockCounts = useMemo(() => {
@@ -130,39 +164,6 @@ export default function Dashboard() {
   };
 
   const stats = getDashboardStats();
-
-  const getQuickActions = () => {
-    if (user?.role === 'FACTORY_ADMIN') {
-      return [
-        { label: 'Register Products', path: '/factory/inverter-registration', icon: Package },
-        { label: 'Dispatch to Dealer', path: '/factory/dispatch', icon: Warehouse },
-        { label: 'View Stock', path: '/factory/stock', icon: TrendingUp },
-        { label: 'Manage Dealers', path: '/factory/dealers', icon: Users },
-      ];
-    }
-    if (user?.role === 'DEALER') {
-      return [
-        { label: 'View Stock', path: '/dealer/stock', icon: Warehouse },
-        { label: 'Record Sale', path: '/dealer/sales', icon: TrendingUp },
-        { label: 'Transfer to Sub-Dealer', path: '/dealer/transfer', icon: Package },
-        { label: 'Manage Sub-Dealers', path: '/dealer/sub-dealers', icon: Users },
-      ];
-    }
-    if (user?.role === 'SUB_DEALER') {
-      return [
-        { label: 'View Stock', path: '/sub-dealer/stock', icon: Warehouse },
-        { label: 'Record Sale', path: '/sub-dealer/sales', icon: TrendingUp },
-      ];
-    }
-    if (user?.role === 'SERVICE_CENTER') {
-      return [
-        { label: 'Create Service Job', path: '/service-center/jobs/create', icon: Wrench },
-        { label: 'View Service Jobs', path: '/service-center/jobs', icon: Package },
-        { label: 'Parts Stock', path: '/service-center/stock', icon: Warehouse },
-      ];
-    }
-    return [];
-  };
 
   /**
    * Sort variant strings numerically (e.g., "5r5", "7r5", "011" -> "011", "5r5", "7r5")
@@ -251,16 +252,33 @@ export default function Dashboard() {
     return 1000 + powerInWatts;
   };
 
+  /** VFD (GD170) variant order: 5R5, 7R5, then 011, 015, 018, 022, 030, 037, 045 */
+  const VFD_GD170_SORT_ORDER = ['5R5', '7R5', '011', '015', '018', '022', '030', '037', '045'];
+
+  const getVFDVariantSortKey = (model: any): number => {
+    const code = (model?.modelCode || model?.variant || '').trim();
+    const match = code.match(/GD170-(\d*R?\d+)-/i) || code.match(/-(\d*R?\d+)-\d+-PV$/i);
+    const segment = (match ? match[1] : '').toUpperCase();
+    const idx = VFD_GD170_SORT_ORDER.findIndex(s => s.toUpperCase() === segment);
+    return idx === -1 ? 999 : idx;
+  };
+
   const sortVariants = (variants: any[]) => {
     if (!variants || !Array.isArray(variants) || variants.length === 0) return [];
-    return [...variants].filter(v => v != null).sort((a, b) => {
+    const list = [...variants].filter(v => v != null);
+    const isVFD = list.length > 0 && (list[0]?.modelCode || '').toUpperCase().includes('GD170');
+    return list.sort((a, b) => {
       if (!a || !b) return 0;
+      // Discontinued (active: false) at the end within each category
+      if (a.active && !b.active) return -1;
+      if (!a.active && b.active) return 1;
+      if (isVFD) {
+        return getVFDVariantSortKey(a) - getVFDVariantSortKey(b);
+      }
       const powerA = extractPowerRating(a);
       const powerB = extractPowerRating(b);
-      
       const orderA = getPowerSortOrder(powerA);
       const orderB = getPowerSortOrder(powerB);
-      
       return orderA - orderB;
     });
   };
@@ -291,39 +309,45 @@ export default function Dashboard() {
     const productLine = (model.productLine || '').toLowerCase();
     const variant = (model.variant || '').trim();
     const modelCode = (model.modelCode || '').trim();
+    const fullName = [model.brand, model.productLine, variant, modelCode].filter(Boolean).join(' ').toLowerCase();
     
-    // For batteries, extract voltage and capacity
-    if (productLine === 'lithium' || productLine.includes('battery')) {
+    // Detect battery: productLine, or modelCode pattern (SL-48xxx, RM-48xxx), or variant/model name with V+AH
+    const isBattery =
+      productLine === 'lithium' ||
+      productLine.includes('battery') ||
+      productLine.includes('batt') ||
+      /(?:SL-|RM-)\d{2}\d+/.test(modelCode) ||
+      (variant.includes('V') && variant.includes('AH')) ||
+      fullName.includes('51.2v') ||
+      fullName.includes('48100') ||
+      fullName.includes('48314') ||
+      fullName.includes('100ah') ||
+      fullName.includes('lithium');
+    
+    // For batteries, show proper variant name / voltage-capacity (never "48100W" or "51.2kW")
+    if (isBattery) {
       // If variant already contains voltage and capacity (e.g., "51.2V 100AH", "RM 51.2V 100AH")
       if (variant && (variant.includes('V') && variant.includes('AH'))) {
-        // Extract voltage and capacity from variant
         const voltageMatch = variant.match(/(\d+\.?\d*)\s*V/i);
         const capacityMatch = variant.match(/(\d+\.?\d*)\s*AH/i);
         if (voltageMatch && capacityMatch) {
           return `${voltageMatch[1]}V ${capacityMatch[1]}AH`;
         }
-        // If format is "RM 51.2V 100AH", return "51.2V 100AH"
         return variant.replace(/^RM\s+/i, '').trim();
       }
       
-      // If modelCode contains pattern like "SL-48100M" or "SL-48314M"
-      // Extract: 48100 → 48V 100AH → 51.2V 100AH
-      // Extract: 48314 → 48V 314AH → 51.2V 314AH
+      // If modelCode contains pattern like "SL-48100M" or "SL-48314M" → show "51.2V 100AH" / "51.2V 314AH"
       if (modelCode) {
-        // Match pattern: SL-48100M, SL-48314M, RM-48100M
-        // Extract numbers: first 2 digits = voltage (48), rest = capacity (100, 314)
         const codeMatch = modelCode.match(/(?:SL-|RM-)?(\d{2})(\d+)(\w*)/i);
         if (codeMatch) {
-          const voltagePart = codeMatch[1]; // "48" (first 2 digits)
-          const capacityPart = codeMatch[2]; // "100" or "314" (remaining digits)
-          
-          // Convert 48V to 51.2V (standard battery voltage)
+          const voltagePart = codeMatch[1];
+          const capacityPart = codeMatch[2];
           const voltage = voltagePart === '48' ? '51.2' : voltagePart;
           return `${voltage}V ${capacityPart}AH`;
         }
       }
       
-      // Fallback: return variant or modelCode as-is
+      // Fallback: show actual variant or modelCode (e.g. "SL-48100M")
       return variant || modelCode || '';
     }
     
@@ -384,14 +408,28 @@ export default function Dashboard() {
     const brand = (model.brand || '').trim();
     const productLine = (model.productLine || '').trim();
     const variant = (model.variant || '').trim();
+    const modelCode = (model.modelCode || '').trim();
     const productLineLower = productLine.toLowerCase();
     const brandLower = brand.toLowerCase();
+    const fullName = [brand, productLine, variant, modelCode].filter(Boolean).join(' ').toLowerCase();
     
-    // For batteries, use modelCode as product name
-    // Examples: "SL-48100M", "SL-48314M", "RM-48100M" (from modelCode)
-    if (productLineLower === 'lithium' || productLineLower.includes('battery')) {
-      // Use modelCode if available, otherwise fallback to variant
-      return model.modelCode || variant || '';
+    // Detect battery (same logic as getPowerDisplay / categorizeModel)
+    const isBattery =
+      productLineLower === 'lithium' ||
+      productLineLower.includes('battery') ||
+      productLineLower.includes('batt') ||
+      /(?:SL-|RM-)\d{2}\d+/.test(modelCode) ||
+      (variant.includes('V') && variant.includes('AH')) ||
+      fullName.includes('51.2v') ||
+      fullName.includes('48100') ||
+      fullName.includes('48314') ||
+      fullName.includes('100ah') ||
+      fullName.includes('lithium');
+    
+    // For batteries, show actual model name as stored (SL- or RM- as per product)
+    // Examples: "SL-48100M", "SL-48314M", "SL-RM-SKWH-51.2V-100A", "RM 51.2V 100AH"
+    if (isBattery) {
+      return modelCode || variant || '';
     }
     
     // For IP65 models (e.g., "HI-6K-SL"), productLine is "IP65" and variant is "6kW"
@@ -422,120 +460,208 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      {/* Fixed Header */}
-      <div className="sticky top-0 z-10 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 backdrop-blur-sm border-b border-slate-200/50 dark:border-slate-700/50">
-        <div className="p-3 sm:p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-            <div className="space-y-1 sm:space-y-2">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100/50 to-blue-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      {/* Header */}
+      <header className="border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm">
+        <div className="p-5 sm:p-6 md:p-8 lg:p-10">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-2">
+              <h1 className={PAGE_HEADING_CLASS}>
                 Dashboard
               </h1>
-              <p className="text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-400">Welcome back, {user?.name}</p>
+              <p className={`${PAGE_SUBHEADING_CLASS} flex items-center gap-2 flex-wrap`}>
+                <span className="text-slate-500 dark:text-slate-500">Welcome back,</span>
+                <span className="inline-flex items-center font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/80 text-base sm:text-lg px-3 py-1 rounded-lg border border-slate-200/80 dark:border-slate-700/80">
+                  {user?.name}
+                </span>
+              </p>
             </div>
+            {/* Dealer Stock - same style and position as Total Factory Stock */}
+            {(user?.role === 'DEALER' || user?.role === 'SUB_DEALER') && (
+              <Card className="border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-white dark:from-green-950/20 dark:to-slate-900 shrink-0">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                      <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Dealer Stock</p>
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        {(dealerStock?.count ?? 0).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {dealerStock?.count ?? 0} units available
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
-      </div>
-      
-      {/* Scrollable Content */}
-      <div className="space-y-4 sm:space-y-6 md:space-y-8 p-3 sm:p-4 md:p-6">
+      </header>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+      {/* Main content */}
+      <main className="p-4 sm:p-5 md:p-6 lg:p-8 space-y-6 sm:space-y-8">
+
+        {/* Summary / Stats cards - admin only; other roles see only Product Catalog below */}
         {user?.role === 'FACTORY_ADMIN' && (
-          <>
-            <Card className="border-slate-200 dark:border-slate-700">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Total Products
-                </CardTitle>
-                <Package className="h-4 w-4 text-slate-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {stats.totalInverters.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Registered in system</p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 dark:border-slate-700">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Available Stock
-                </CardTitle>
-                <Warehouse className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {stats.availableInverters.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">In factory warehouse</p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 dark:border-slate-700">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Dispatched
-                </CardTitle>
-                <TrendingUp className="h-4 w-4 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {stats.dispatchedInverters.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Sent to dealers</p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 dark:border-slate-700">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Service Centers
-                </CardTitle>
-                <Building2 className="h-4 w-4 text-orange-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                  -
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Active centers</p>
-              </CardContent>
-            </Card>
-          </>
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-5">
+            <>
+              <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-900/80">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3 sm:pb-2 sm:pt-5 sm:px-5">
+                  <CardTitle className="font-heading text-xs sm:text-sm font-semibold tracking-wide text-slate-600 dark:text-slate-400 truncate pr-1">
+                    Total Products
+                  </CardTitle>
+                  <div className="rounded-lg bg-slate-100 dark:bg-slate-800 p-1.5 sm:p-2 shrink-0">
+                    <Package className="h-3 w-3 sm:h-4 sm:w-4 text-slate-600 dark:text-slate-400" />
+                  </div>
+                </CardHeader>
+                <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
+                  <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-slate-900 dark:text-slate-100">
+                    {stats.totalInverters.toLocaleString()}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">Registered in system</p>
+                </CardContent>
+              </Card>
+              <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-900/80">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3 sm:pb-2 sm:pt-5 sm:px-5">
+                  <CardTitle className="font-heading text-xs sm:text-sm font-semibold tracking-wide text-slate-600 dark:text-slate-400 truncate pr-1">
+                    Available Stock
+                  </CardTitle>
+                  <div className="rounded-lg bg-green-100 dark:bg-green-900/30 p-1.5 sm:p-2 shrink-0">
+                    <Warehouse className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
+                  </div>
+                </CardHeader>
+                <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
+                  <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-green-600 dark:text-green-400">
+                    {stats.availableInverters.toLocaleString()}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">In factory warehouse</p>
+                </CardContent>
+              </Card>
+              <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-900/80">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3 sm:pb-2 sm:pt-5 sm:px-5">
+                  <CardTitle className="font-heading text-xs sm:text-sm font-semibold tracking-wide text-slate-600 dark:text-slate-400 truncate pr-1">
+                    Dispatched
+                  </CardTitle>
+                  <div className="rounded-lg bg-blue-100 dark:bg-blue-900/30 p-1.5 sm:p-2 shrink-0">
+                    <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </CardHeader>
+                <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
+                  <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-blue-600 dark:text-blue-400">
+                    {stats.dispatchedInverters.toLocaleString()}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">Sent to dealers</p>
+                </CardContent>
+              </Card>
+              <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-900/80">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3 sm:pb-2 sm:pt-5 sm:px-5">
+                  <CardTitle className="font-heading text-xs sm:text-sm font-semibold tracking-wide text-slate-600 dark:text-slate-400 truncate pr-1">
+                    Service Centers
+                  </CardTitle>
+                  <div className="rounded-lg bg-orange-100 dark:bg-orange-900/30 p-1.5 sm:p-2 shrink-0">
+                    <Building2 className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600 dark:text-orange-400" />
+                  </div>
+                </CardHeader>
+                <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
+                  <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-orange-600 dark:text-orange-400">–</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">Active centers</p>
+                </CardContent>
+              </Card>
+            </>
+        </section>
         )}
 
-        {user?.role === 'SERVICE_CENTER' && (
-          <>
-            <Card className="border-slate-200 dark:border-slate-700">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Total Service Jobs
-                </CardTitle>
-                <Wrench className="h-4 w-4 text-slate-500" />
+        {/* Dealer dashboard - quick links (Dealer Stock shown in header top-right) */}
+        {user?.role === 'DEALER' && (
+          <section className="space-y-6">
+            <Card className="rounded-xl border-2 border-blue-200/80 dark:border-blue-800/50 shadow-md bg-white dark:bg-slate-900/80">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100">Quick actions</CardTitle>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Go to your main areas</p>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {stats.serviceJobs.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">All time jobs</p>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Button
+                  variant="outline"
+                  className="justify-start gap-4 h-auto py-5 px-5 text-base font-semibold rounded-xl border-2 border-blue-300 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:border-blue-500 dark:hover:border-blue-500 shadow-sm hover:shadow-md transition-all duration-200 text-blue-700 dark:text-blue-300"
+                  onClick={() => navigate('/dealer/stock')}
+                >
+                  <Warehouse className="h-6 w-6 shrink-0 text-blue-600 dark:text-blue-400" />
+                  <span>Dealer Stock</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start gap-4 h-auto py-5 px-5 text-base font-semibold rounded-xl border-2 border-emerald-300 dark:border-emerald-700 bg-emerald-50/60 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 hover:border-emerald-500 dark:hover:border-emerald-500 shadow-sm hover:shadow-md transition-all duration-200 text-emerald-700 dark:text-emerald-300"
+                  onClick={() => navigate('/dealer/sales')}
+                >
+                  <ShoppingCart className="h-6 w-6 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  <span>Sales</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start gap-4 h-auto py-5 px-5 text-base font-semibold rounded-xl border-2 border-amber-300 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 hover:border-amber-500 dark:hover:border-amber-500 shadow-sm hover:shadow-md transition-all duration-200 text-amber-700 dark:text-amber-300"
+                  onClick={() => navigate('/dealer/transfer')}
+                >
+                  <ArrowRightLeft className="h-6 w-6 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>Transfer to Sub Dealer</span>
+                </Button>
               </CardContent>
             </Card>
-          </>
+          </section>
         )}
-      </div>
 
-      {/* Product Lines Section - Factory Admin Only */}
-      {user?.role === 'FACTORY_ADMIN' && models && Array.isArray(models) && models.length > 0 && (
-        <Card className="border border-slate-200 dark:border-slate-700 shadow-sm">
-          <CardHeader className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <Package className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-              Product Catalog
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
+        {/* Sub-dealer dashboard - quick links (Dealer Stock shown in header top-right) */}
+        {user?.role === 'SUB_DEALER' && (
+          <section className="space-y-6">
+            <Card className="rounded-xl border-2 border-green-200/80 dark:border-green-800/50 shadow-md bg-white dark:bg-slate-900/80">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100">Quick actions</CardTitle>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Go to your main areas</p>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Button
+                  variant="outline"
+                  className="justify-start gap-4 h-auto py-5 px-5 text-base font-semibold rounded-xl border-2 border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/40 hover:border-green-500 dark:hover:border-green-500 shadow-sm hover:shadow-md transition-all duration-200"
+                  onClick={() => navigate('/sub-dealer/stock')}
+                >
+                  <Warehouse className="h-6 w-6 shrink-0 text-green-600 dark:text-green-400" />
+                  <span>My Stock</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start gap-4 h-auto py-5 px-5 text-base font-semibold rounded-xl border-2 border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/40 hover:border-green-500 dark:hover:border-green-500 shadow-sm hover:shadow-md transition-all duration-200"
+                  onClick={() => navigate('/sub-dealer/sales')}
+                >
+                  <ShoppingCart className="h-6 w-6 shrink-0 text-green-600 dark:text-green-400" />
+                  <span>Sales</span>
+                </Button>
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+        {/* Product catalog - roles with access */}
+        {models && Array.isArray(models) && models.length > 0 && (
+          <section>
+            <Card className="rounded-2xl border-slate-200/80 dark:border-slate-700/80 shadow-sm overflow-hidden bg-white dark:bg-slate-900/80">
+              <CardHeader className="bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-800/80 dark:via-slate-900/80 dark:to-indigo-950/20 border-b border-slate-200/80 dark:border-slate-700/80 py-6 px-5 sm:px-6 md:px-8">
+                <div className="flex items-start gap-4">
+                  <div className="rounded-xl bg-white dark:bg-slate-800 p-3 shadow-md border border-slate-200/80 dark:border-slate-700/80 ring-2 ring-indigo-500/10 dark:ring-indigo-400/10">
+                    <Package className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div className="space-y-1.5 min-w-0">
+                    <CardTitle className="font-heading text-xl sm:text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-800 to-indigo-700 dark:from-slate-100 dark:to-indigo-300 bg-clip-text text-transparent">
+                      Product Catalog
+                    </CardTitle>
+                    <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 tracking-wide">
+                      Browse product lines and variants
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-5 sm:p-6 pt-6">
             {(() => {
               const categorizeModel = (model: any) => {
                 if (!model) return null;
@@ -632,14 +758,13 @@ export default function Dashboard() {
 
               try {
                 return (
-                  <div className="space-y-8">
-                    {/* Inverters - Grouped by Product Line */}
+                  <div className="space-y-0">
+                    {/* Inverters */}
                     {inverterModels.length > 0 && (() => {
                       try {
                         const groupedInverters = groupModelsByProductLine(inverterModels);
                         if (!groupedInverters || groupedInverters.size === 0) return null;
                         
-                        // Sort groups by power rating of their primary model
                         const sortedGroups = Array.from(groupedInverters.entries()).sort(([, groupA], [, groupB]) => {
                           try {
                             const sortedA = sortVariants(groupA);
@@ -648,13 +773,12 @@ export default function Dashboard() {
                             const primaryA = sortedA[0];
                             const primaryB = sortedB[0];
                             if (!primaryA || !primaryB) return 0;
-                            
+                            if (primaryA.active && !primaryB.active) return -1;
+                            if (!primaryA.active && primaryB.active) return 1;
                             const powerA = extractPowerRating(primaryA);
                             const powerB = extractPowerRating(primaryB);
-                            
                             const orderA = getPowerSortOrder(powerA);
                             const orderB = getPowerSortOrder(powerB);
-                            
                             return orderA - orderB;
                           } catch (err) {
                             return 0;
@@ -662,17 +786,20 @@ export default function Dashboard() {
                         });
                     
                         return (
-                          <div>
-                            <div className="flex items-center gap-2.5 mb-4">
-                              <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded-md">
-                                <Zap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          <section className="relative rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-white dark:bg-slate-900/50 shadow-sm overflow-hidden">
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-400 to-orange-500 dark:from-amber-500 dark:to-orange-600" aria-hidden />
+                            <div className="p-6 md:p-8 pl-7 md:pl-9">
+                              <div className="flex items-center gap-4 mb-6">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/50 shadow-sm">
+                                  <Sun className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                                </div>
+                                <div>
+                                  <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-0.5">OffGrid & hybrid</p>
+                                  <h3 className="font-heading text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Inverters</h3>
+                                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{inverterModels.length} models across {groupedInverters.size} product lines</p>
+                                </div>
                               </div>
-                              <div>
-                                <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Inverters</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">{inverterModels.length} models across {groupedInverters.size} product lines</p>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
                               {sortedGroups.map(([key, modelGroup]) => {
                                 if (!modelGroup || !Array.isArray(modelGroup) || modelGroup.length === 0) return null;
                                 const sortedModels = sortVariants(modelGroup);
@@ -686,21 +813,10 @@ export default function Dashboard() {
                                 return (
                                   <div
                                     key={key}
-                                    onClick={() => {
-                                      // Open PDF dialog when clicking on the card
-                                      if (primaryModel.datasheet) {
-                                        setSelectedModelForPdf(primaryModel);
-                                        setIsPdfDialogOpen(true);
-                                      } else {
-                                        // If no datasheet, show variant details dialog
-                                        setSelectedVariant(primaryModel);
-                                        setIsDialogOpen(true);
-                                      }
-                                    }}
-                                    className="group relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+                                    className="group relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200"
                                   >
                                     {/* Image Section */}
-                                    <div className="relative h-48 bg-slate-50 dark:bg-slate-800/50 overflow-hidden">
+                                    <div className="relative h-48 bg-slate-50 dark:bg-slate-800/50 overflow-hidden rounded-t-xl">
                                       <div className="absolute inset-0 flex items-center justify-center p-4">
                                         <img
                                           src={getModelImage(primaryModel)}
@@ -754,8 +870,8 @@ export default function Dashboard() {
                                         {getProductDisplayName(primaryModel)}
                                       </h4>
                                       
-                                      {/* Variant Display */}
-                                      <div className="mb-2">
+                                      {/* Variant Display - wrap so all buttons stay inside card */}
+                                      <div className="mb-2 min-w-0">
                                         <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">
                                           {hasMultipleVariants ? 'Select Variant' : 'Variant'}
                                         </p>
@@ -766,11 +882,18 @@ export default function Dashboard() {
                                             return (
                                             <button
                                               key={model._id}
-                                              onClick={() => {
-                                                navigate(`/factory/factory-stock?model=${model._id}`);
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                try {
+                                                  setSelectedVariant(model);
+                                                  setIsDialogOpen(true);
+                                                } catch (err) {
+                                                  console.error('Variant click error:', err);
+                                                }
                                               }}
                                               className={cn(
-                                                "inline-flex items-center px-2.5 py-1 text-[11px] font-medium rounded-md border transition-all duration-150 whitespace-nowrap relative cursor-pointer",
+                                                "inline-flex items-center justify-center shrink-0 px-5 py-1.5 text-xs font-medium rounded-lg border-2 transition-all duration-150 whitespace-nowrap relative cursor-pointer min-h-[32px]",
                                                 hasMultipleVariants
                                                   ? index % 2 === 0
                                                     ? 'border-blue-400 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-950/30'
@@ -791,19 +914,19 @@ export default function Dashboard() {
                                         </div>
                                       </div>
                                       
-                                      {/* Warranty Section */}
-                                      <div className="mt-auto pt-1.5 border-t border-slate-200 dark:border-slate-700">
+                                      {/* Warranty Section - single line, no wrap */}
+                                      <div className="mt-auto pt-1.5 border-t border-slate-200 dark:border-slate-700 min-w-0">
                                         <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">
                                           Warranty
                                         </p>
-                                        <div className="flex justify-between items-center gap-1.5">
-                                          <button className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded border border-blue-400 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-150 whitespace-nowrap">
+                                        <div className="flex flex-nowrap justify-between items-center gap-1.5">
+                                          <button type="button" className="inline-flex items-center shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded border border-blue-400 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-150 whitespace-nowrap">
                                             <Shield className="h-2 w-2 mr-0.5" />
-                                            <span>Parts: {primaryModel.warranty?.partsMonths || 12} months</span>
+                                            <span>Parts: {formatWarrantyYears(primaryModel.warranty?.partsMonths, 12)}</span>
                                           </button>
-                                          <button className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded border border-green-400 text-green-600 dark:text-green-400 bg-white dark:bg-slate-900 hover:bg-green-50 dark:hover:bg-green-950/30 transition-all duration-150 whitespace-nowrap">
+                                          <button type="button" className="inline-flex items-center shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded border border-green-400 text-green-600 dark:text-green-400 bg-white dark:bg-slate-900 hover:bg-green-50 dark:hover:bg-green-950/30 transition-all duration-150 whitespace-nowrap">
                                             <Calendar className="h-2 w-2 mr-0.5" />
-                                            <span>Service: {primaryModel.warranty?.serviceMonths || 24} months</span>
+                                            <span>Service: {formatWarrantyYears(primaryModel.warranty?.serviceMonths, 24)}</span>
                                           </button>
                                         </div>
                                       </div>
@@ -812,7 +935,8 @@ export default function Dashboard() {
                                 );
                               })}
                             </div>
-                          </div>
+                            </div>
+                        </section>
                         );
                       } catch (error) {
                         console.error('Error rendering inverters:', error);
@@ -824,32 +948,34 @@ export default function Dashboard() {
                   {batteryModels.length > 0 && (() => {
                     const groupedBatteries = groupModelsByProductLine(batteryModels, true);
                     
-                    // Sort battery groups by power rating
+                    // Sort battery groups: active first, then by power; discontinued at the end
                     const sortedBatteryGroups = Array.from(groupedBatteries.entries()).sort(([, groupA], [, groupB]) => {
                       const modelA = groupA[0];
                       const modelB = groupB[0];
-                      
+                      if (modelA?.active && !modelB?.active) return -1;
+                      if (!modelA?.active && modelB?.active) return 1;
                       const powerA = extractPowerRating(modelA);
                       const powerB = extractPowerRating(modelB);
-                      
                       const orderA = getPowerSortOrder(powerA);
                       const orderB = getPowerSortOrder(powerB);
-                      
                       return orderA - orderB;
                     });
                     
                     return (
-                      <div>
-                        <div className="flex items-center gap-2.5 mb-4">
-                          <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded-md">
-                            <Battery className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      <section className="relative mt-10 rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-white dark:bg-slate-900/50 shadow-sm overflow-hidden">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-green-600 dark:from-emerald-500 dark:to-green-600" aria-hidden />
+                        <div className="p-6 md:p-8 pl-7 md:pl-9">
+                          <div className="flex items-center gap-4 mb-6">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/50 shadow-sm">
+                              <Battery className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <div>
+                              <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-0.5">Energy storage</p>
+                              <h3 className="font-heading text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Batteries</h3>
+                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{batteryModels.length} models</p>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Batteries</h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">{batteryModels.length} models</p>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
                           {sortedBatteryGroups.map(([key, modelGroup]) => {
                             if (!modelGroup || !Array.isArray(modelGroup) || modelGroup.length === 0) return null;
                             const model = modelGroup[0];
@@ -859,21 +985,10 @@ export default function Dashboard() {
                             return (
                               <div
                                 key={key}
-                                onClick={() => {
-                                  // Open PDF dialog when clicking on the card
-                                  if (model.datasheet) {
-                                    setSelectedModelForPdf(model);
-                                    setIsPdfDialogOpen(true);
-                                  } else {
-                                    // If no datasheet, show variant details dialog
-                                    setSelectedVariant(model);
-                                    setIsDialogOpen(true);
-                                  }
-                                }}
-                                className="group relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+                                className="group relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200"
                               >
                                 {/* Image Section */}
-                                <div className="relative h-48 bg-slate-50 dark:bg-slate-800/50 overflow-hidden">
+                                <div className="relative h-48 bg-slate-50 dark:bg-slate-800/50 overflow-hidden rounded-t-xl">
                                   <div className="absolute inset-0 flex items-center justify-center p-4">
                                     <img
                                       src={getModelImage(model)}
@@ -927,17 +1042,24 @@ export default function Dashboard() {
                                     {getProductDisplayName(model)}
                                   </h4>
                                   
-                                  {/* Variant Display */}
-                                  <div className="mb-2">
+                                  {/* Variant Display - wrap so all buttons stay inside card */}
+                                  <div className="mb-2 min-w-0">
                                     <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">
                                       Variant
                                     </p>
                                     <div className="flex flex-wrap gap-1.5">
                                       <button
-                                        onClick={() => {
-                                          navigate(`/factory/factory-stock?model=${model._id}`);
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          try {
+                                            setSelectedVariant(model);
+                                            setIsDialogOpen(true);
+                                          } catch (err) {
+                                            console.error('Variant click error:', err);
+                                          }
                                         }}
-                                        className="inline-flex items-center px-2.5 py-1 text-[11px] font-medium rounded-md border border-red-400 text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/30 transition-all duration-150 relative cursor-pointer"
+                                        className="inline-flex items-center justify-center shrink-0 px-5 py-1.5 text-xs font-medium rounded-lg border-2 border-red-400 text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/30 transition-all duration-150 relative cursor-pointer min-h-[32px]"
                                         style={{ 
                                           maxWidth: '100%',
                                           overflow: 'hidden',
@@ -950,19 +1072,19 @@ export default function Dashboard() {
                                     </div>
                                   </div>
                                   
-                                  {/* Warranty Section */}
-                                  <div className="mt-auto pt-1.5 border-t border-slate-200 dark:border-slate-700">
+                                  {/* Warranty Section - single line, no wrap */}
+                                  <div className="mt-auto pt-1.5 border-t border-slate-200 dark:border-slate-700 min-w-0">
                                     <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">
                                       Warranty
                                     </p>
-                                    <div className="flex justify-between items-center gap-1.5">
-                                      <button className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded border border-blue-400 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-150 whitespace-nowrap">
+                                    <div className="flex flex-nowrap justify-between items-center gap-1.5">
+                                      <button type="button" className="inline-flex items-center shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded border border-blue-400 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-150 whitespace-nowrap">
                                         <Shield className="h-2 w-2 mr-0.5" />
-                                        <span>Parts: {model.warranty?.partsMonths || 12} months</span>
+                                        <span>Parts: {formatWarrantyYears(model.warranty?.partsMonths, 12)}</span>
                                       </button>
-                                      <button className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded border border-green-400 text-green-600 dark:text-green-400 bg-white dark:bg-slate-900 hover:bg-green-50 dark:hover:bg-green-950/30 transition-all duration-150 whitespace-nowrap">
+                                      <button type="button" className="inline-flex items-center shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded border border-green-400 text-green-600 dark:text-green-400 bg-white dark:bg-slate-900 hover:bg-green-50 dark:hover:bg-green-950/30 transition-all duration-150 whitespace-nowrap">
                                         <Calendar className="h-2 w-2 mr-0.5" />
-                                        <span>Service: {model.warranty?.serviceMonths || 24} months</span>
+                                        <span>Service: {formatWarrantyYears(model.warranty?.serviceMonths, 24)}</span>
                                       </button>
                                     </div>
                                   </div>
@@ -971,7 +1093,8 @@ export default function Dashboard() {
                             );
                           })}
                         </div>
-                      </div>
+                        </div>
+                      </section>
                     );
                   })()}
 
@@ -979,34 +1102,36 @@ export default function Dashboard() {
                   {vfdModels.length > 0 && (() => {
                     const groupedVFD = groupModelsByProductLine(vfdModels);
                     
-                    // Sort VFD groups by power rating
+                    // Sort VFD groups: active first, then by power; discontinued at the end
                     const sortedVFDGroups = Array.from(groupedVFD.entries()).sort(([, groupA], [, groupB]) => {
                       const sortedA = sortVariants(groupA);
                       const sortedB = sortVariants(groupB);
                       const primaryA = sortedA[0];
                       const primaryB = sortedB[0];
-                      
+                      if (primaryA?.active && !primaryB?.active) return -1;
+                      if (!primaryA?.active && primaryB?.active) return 1;
                       const powerA = extractPowerRating(primaryA);
                       const powerB = extractPowerRating(primaryB);
-                      
                       const orderA = getPowerSortOrder(powerA);
                       const orderB = getPowerSortOrder(powerB);
-                      
                       return orderA - orderB;
                     });
                     
                     return (
-                      <div>
-                        <div className="flex items-center gap-2.5 mb-4">
-                          <div className="p-2 bg-orange-50 dark:bg-orange-950/20 rounded-md">
-                            <Settings className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                      <section className="relative mt-10 rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-white dark:bg-slate-900/50 shadow-sm overflow-hidden">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-violet-400 to-indigo-600 dark:from-violet-500 dark:to-indigo-600" aria-hidden />
+                        <div className="p-6 md:p-8 pl-7 md:pl-9">
+                          <div className="flex items-center gap-4 mb-6">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-50 dark:bg-violet-950/50 border border-violet-200/80 dark:border-violet-800/50 shadow-sm">
+                              <Gauge className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+                            </div>
+                            <div>
+                              <p className="text-[11px] font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400 mb-0.5">Variable frequency drives</p>
+                              <h3 className="font-heading text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">VFD</h3>
+                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{vfdModels.length} models across {groupedVFD.size} product lines</p>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">VFD (Variable Frequency Drives)</h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">{vfdModels.length} models across {groupedVFD.size} product lines</p>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
                           {sortedVFDGroups.map(([key, modelGroup]) => {
                             if (!modelGroup || !Array.isArray(modelGroup) || modelGroup.length === 0) return null;
                             const sortedModels = sortVariants(modelGroup);
@@ -1024,7 +1149,7 @@ export default function Dashboard() {
                                   setSelectedVFDGroup({ models: sortedModels, displayName: vfdDisplayName });
                                   setIsVFDDialogOpen(true);
                                 }}
-                                className="group relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+                                className="group relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-700/80 overflow-hidden shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 cursor-pointer"
                               >
                                 <div className="relative h-48 bg-slate-50 dark:bg-slate-800/50 overflow-hidden">
                                   <div className="absolute inset-0 flex items-center justify-center p-4">
@@ -1040,7 +1165,7 @@ export default function Dashboard() {
                                     />
                                   </div>
                                   <div className="absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-slate-700" style={{ display: 'none' }}>
-                                    <Settings className="h-12 w-12 text-slate-300 dark:text-slate-600" />
+                                    <Gauge className="h-12 w-12 text-slate-300 dark:text-slate-600" />
                                   </div>
                                   
                                   {/* Status Badge - Top Left */}
@@ -1088,7 +1213,8 @@ export default function Dashboard() {
                             );
                           })}
                         </div>
-                      </div>
+                        </div>
+                      </section>
                     );
                   })()}
                 </div>
@@ -1103,39 +1229,42 @@ export default function Dashboard() {
               }
             })()}
 
-            {/* All Models Link */}
-            <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-              <Link to="/factory/inverter-models">
-                <Button variant="outline" className="w-full text-base py-6 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                  <Package className="h-5 w-5 mr-2" />
-                  View All Product Models
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+      </main>
 
       {/* Variant Details Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        setIsDialogOpen(open);
+        if (!open) {
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete('model');
+            return next;
+          });
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[95dvh] sm:max-h-[90vh] overflow-y-auto rounded-2xl border-slate-200/80 dark:border-slate-700/80 shadow-xl p-3 sm:p-6">
           {selectedVariant && (
             <>
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold">
+              <DialogHeader className="space-y-1 pb-2 sm:pb-4">
+                <DialogTitle className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-tight">
                   {selectedVariant.modelName || `${selectedVariant.brand} ${selectedVariant.productLine} ${selectedVariant.variant}`}
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 tracking-wide">
                   Complete product specifications and warranty information
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="space-y-6 mt-4">
-                <div className="relative aspect-video bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg overflow-hidden">
+              <div className="space-y-3 sm:space-y-6 mt-2 sm:mt-4">
+                <div className="relative h-20 sm:aspect-video sm:h-auto bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg overflow-hidden">
                   <img
                     src={getModelImage(selectedVariant)}
                     alt={selectedVariant.modelName || selectedVariant.modelCode}
-                    className="w-full h-full object-contain p-8"
+                    className="w-full h-full object-contain p-3 sm:p-8"
                     onError={(e) => {
                       getImageErrorHandler(selectedVariant)(e);
                       const placeholder = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
@@ -1143,92 +1272,93 @@ export default function Dashboard() {
                     }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700" style={{ display: 'none' }}>
-                    <Package className="h-20 w-20 text-slate-300 dark:text-slate-600" />
+                    <Package className="h-10 w-10 sm:h-20 sm:w-20 text-slate-300 dark:text-slate-600" />
                   </div>
                   
-                  <div className="absolute top-4 right-4">
+                  <div className="absolute top-1.5 right-1.5 sm:top-4 sm:right-4">
                     {selectedVariant.active ? (
-                      <span className="px-3 py-1.5 text-xs font-bold uppercase tracking-wide rounded-lg bg-emerald-500 text-white shadow-lg">
+                      <span className="px-2 py-0.5 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wide rounded-md sm:rounded-lg bg-emerald-500 text-white shadow-lg">
                         Active
                       </span>
                     ) : (
-                      <span className="px-3 py-1.5 text-xs font-bold uppercase tracking-wide rounded-lg bg-slate-500 text-white shadow-lg">
+                      <span className="px-2 py-0.5 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wide rounded-md sm:rounded-lg bg-slate-500 text-white shadow-lg">
                         Discontinued
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div className="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                      <Tag className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                  <div className="flex items-center gap-2 p-2 sm:items-start sm:gap-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg min-w-0">
+                    <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg shrink-0">
+                      <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Brand</p>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{selectedVariant.brand || 'N/A'}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                      <Package className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Product Line</p>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{selectedVariant.productLine || 'N/A'}</p>
+                    <div className="min-w-0">
+                      <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1 truncate">Brand</p>
+                      <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{selectedVariant.brand || 'N/A'}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                      <Settings className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  <div className="flex items-center gap-2 p-2 sm:items-start sm:gap-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg min-w-0">
+                    <div className="p-1.5 sm:p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg shrink-0">
+                      <Package className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 dark:text-indigo-400" />
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Variant</p>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{selectedVariant.variant || 'N/A'}</p>
+                    <div className="min-w-0">
+                      <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1 truncate">Product Line</p>
+                      <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{selectedVariant.productLine || 'N/A'}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                    <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                      <Hash className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                  <div className="flex items-center gap-2 p-2 sm:items-start sm:gap-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg min-w-0">
+                    <div className="p-1.5 sm:p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg shrink-0">
+                      <Settings className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Model Code</p>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 font-mono">{selectedVariant.modelCode || 'N/A'}</p>
+                    <div className="min-w-0">
+                      <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1 truncate">Variant</p>
+                      <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{selectedVariant.variant || 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-2 sm:items-start sm:gap-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg min-w-0">
+                    <div className="p-1.5 sm:p-2 bg-slate-100 dark:bg-slate-700 rounded-lg shrink-0">
+                      <Hash className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600 dark:text-slate-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1 truncate">Model Code</p>
+                      <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 font-mono truncate">{selectedVariant.modelCode || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-5 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Shield className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">Warranty Information</h3>
+                <div className="p-3 sm:p-5 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-4">
+                    <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <h3 className="font-heading font-bold text-sm sm:text-lg tracking-tight text-slate-900 dark:text-slate-100">Warranty Information</h3>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4">
                     <div>
-                      <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Parts Warranty</p>
-                      <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                        {selectedVariant.warranty?.partsMonths || 0} <span className="text-sm font-normal">months</span>
+                      <p className="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5 sm:mb-1">Parts Warranty</p>
+                      <p className="text-base sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                        {formatWarrantyYears(selectedVariant.warranty?.partsMonths, 0)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Service Warranty</p>
-                      <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                        {selectedVariant.warranty?.serviceMonths || 0} <span className="text-sm font-normal">months</span>
+                      <p className="text-[10px] sm:text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5 sm:mb-1">Service Warranty</p>
+                      <p className="text-base sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                        {formatWarrantyYears(selectedVariant.warranty?.serviceMonths, 0)}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {(selectedVariant.createdAt || selectedVariant.updatedAt) && (
-                  <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Calendar className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Timeline</p>
+                {/* Timeline (Created / Last Updated) - only for FACTORY_ADMIN; hidden for all other roles */}
+                {user && user.role === 'FACTORY_ADMIN' && (selectedVariant.createdAt || selectedVariant.updatedAt) && (
+                  <div className="pt-2 sm:pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-3">
+                      <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-slate-500 dark:text-slate-400" />
+                      <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">Timeline</p>
                     </div>
-                    <div className="space-y-1 text-xs text-slate-600 dark:text-slate-400">
+                    <div className="space-y-0.5 sm:space-y-1 text-[10px] sm:text-xs text-slate-600 dark:text-slate-400">
                       {selectedVariant.createdAt && (
                         <p>Created: {new Date(selectedVariant.createdAt).toLocaleDateString()}</p>
                       )}
@@ -1239,8 +1369,33 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
-                  {/* Datasheet View Button - Available for all roles */}
+                {/* Technical support videos - prominent, focusable to attract users */}
+                {selectedVariant.supportVideoLinks && selectedVariant.supportVideoLinks.length > 0 && (
+                  <div className="pt-2 sm:pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <div className="rounded-lg sm:rounded-xl bg-gradient-to-r from-rose-50 to-red-50 dark:from-rose-950/30 dark:to-red-950/30 border-2 border-rose-200 dark:border-rose-800/50 p-2 sm:p-4 space-y-2 sm:space-y-3">
+                      <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 sm:gap-2">
+                        <Video className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600 dark:text-rose-400 shrink-0" />
+                        Technical support videos
+                      </p>
+                      <div className="flex flex-wrap gap-2 sm:gap-3">
+                        {selectedVariant.supportVideoLinks.map((link: { title: string; url: string }, i: number) => (
+                          <Button
+                            key={i}
+                            type="button"
+                            className="min-h-[36px] sm:min-h-[44px] px-3 py-1.5 sm:px-5 sm:py-2.5 text-xs sm:text-sm justify-center bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-semibold shadow-md hover:shadow-lg focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 rounded-lg transition-all duration-200 hover:scale-[1.02]"
+                            onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}
+                          >
+                            <Video className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 shrink-0" />
+                            <span className="truncate max-w-[120px] sm:max-w-[200px]">{link.title || 'Video'}</span>
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-slate-200 dark:border-slate-700">
+                  {/* Technical Datasheet - same style as other action buttons */}
                   {selectedVariant.datasheet && (
                     <Button
                       onClick={() => {
@@ -1248,28 +1403,37 @@ export default function Dashboard() {
                         setSelectedModelForPdf(selectedVariant);
                         setIsPdfDialogOpen(true);
                       }}
-                      className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                      className="flex-1 min-w-0 sm:min-w-[140px] justify-center text-xs sm:text-sm py-2 sm:py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
                     >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Datasheet View
+                      <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 shrink-0" />
+                      <span className="truncate">Technical Datasheet</span>
                     </Button>
                   )}
-                  
-                  {/* View Full Details Button - Only for FACTORY_ADMIN */}
-                  {user?.role === 'FACTORY_ADMIN' && (
+                  {/* User Manual - same row, same style (e.g. Google Drive link) */}
+                  {selectedVariant.userManualUrl && (
+                    <Button
+                      type="button"
+                      onClick={() => window.open(selectedVariant.userManualUrl, '_blank', 'noopener,noreferrer')}
+                      className="flex-1 min-w-0 sm:min-w-[140px] justify-center text-xs sm:text-sm py-2 sm:py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+                    >
+                      <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 shrink-0" />
+                      User Manual
+                    </Button>
+                  )}
+                  {/* Full Life Cycle View - admin, service center, installer program manager */}
+                  {user?.role && ROLES_WITH_LIFECYCLE_ACCESS.includes(user.role) && (
                     <Button 
                       onClick={() => {
                         setIsDialogOpen(false);
-                        navigate(`/factory/inverter-models/${selectedVariant._id}`);
+                        navigate(`/lifecycle?modelId=${selectedVariant._id}`);
                       }}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      className="flex-1 min-w-0 sm:min-w-[140px] justify-center text-xs sm:text-sm py-2 sm:py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
                     >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Full Details
+                      <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 shrink-0" />
+                      <span className="truncate">Full Life Cycle View</span>
                     </Button>
                   )}
-                  
-                  <Button onClick={() => setIsDialogOpen(false)} variant="outline" className="flex-1">
+                  <Button onClick={() => setIsDialogOpen(false)} variant="outline" className="shrink-0 px-3 sm:px-5 justify-center text-xs sm:text-sm py-2">
                     Close
                   </Button>
                 </div>
@@ -1281,15 +1445,15 @@ export default function Dashboard() {
 
       {/* VFD Variants Dialog */}
       <Dialog open={isVFDDialogOpen} onOpenChange={setIsVFDDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border-slate-200/80 dark:border-slate-700/80 shadow-xl">
           {selectedVFDGroup && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-2xl font-bold font-mono">
+                <DialogTitle className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                   {selectedVFDGroup.displayName}
                 </DialogTitle>
-                <DialogDescription>
-                  All available variants - Click on any variant to view its complete lifecycle
+                <DialogDescription className="text-slate-500 dark:text-slate-400 tracking-wide">
+                  All available variants — click on any variant to view its complete lifecycle
                 </DialogDescription>
               </DialogHeader>
               
@@ -1359,65 +1523,40 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Quick Actions */}
-      <Card className="border-slate-200 dark:border-slate-700">
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {getQuickActions().map((action) => {
-              const Icon = action.icon;
-              return (
-                <Link key={action.path} to={action.path}>
-                  <Button
-                    variant="outline"
-                    className="w-full h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
-                  >
-                    <Icon className="h-6 w-6" />
-                    <span className="text-sm font-medium">{action.label}</span>
-                  </Button>
-                </Link>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* PDF Viewer Dialog */}
       <Dialog open={isPdfDialogOpen} onOpenChange={setIsPdfDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl lg:max-w-6xl max-h-[95dvh] sm:max-h-[95vh] overflow-hidden flex flex-col rounded-2xl border-slate-200/80 dark:border-slate-700/80 shadow-xl p-3 sm:p-6">
           {selectedModelForPdf && (
             <>
-              <DialogHeader className="flex-shrink-0 pb-4 border-b border-slate-200 dark:border-slate-700">
-                <DialogTitle className="text-2xl font-bold flex items-center gap-3">
-                  <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                  <span>
+              <DialogHeader className="flex-shrink-0 pb-3 sm:pb-4 border-b border-slate-200 dark:border-slate-700 space-y-1">
+                <DialogTitle className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2 sm:gap-3 truncate min-w-0">
+                  <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <span className="truncate">
                     {selectedModelForPdf.modelName || `${selectedModelForPdf.brand} ${selectedModelForPdf.productLine} ${selectedModelForPdf.variant}`}
                   </span>
                 </DialogTitle>
-                <DialogDescription className="mt-2">
-                  <span className="font-mono text-sm">{selectedModelForPdf.modelCode}</span>
-                  {' - '}
+                <DialogDescription className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 tracking-wide">
+                  <span className="font-mono font-medium">{selectedModelForPdf.modelCode}</span>
+                  {' — '}
                   Technical Datasheet
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="flex-1 overflow-hidden flex flex-col mt-4">
+              <div className="flex-1 min-h-0 overflow-hidden flex flex-col mt-2 sm:mt-4">
                 {selectedModelForPdf.datasheet ? (
                   <iframe
                     src={selectedModelForPdf.datasheet}
-                    className="w-full flex-1 border-2 border-slate-200 dark:border-slate-700 rounded-lg"
+                    className="w-full flex-1 min-h-0 border-2 border-slate-200 dark:border-slate-700 rounded-lg"
                     title={`Datasheet for ${selectedModelForPdf.modelCode}`}
                   />
                 ) : (
-                  <div className="flex-1 flex items-center justify-center p-12 bg-slate-50 dark:bg-slate-800 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600">
+                  <div className="flex-1 min-h-0 flex items-center justify-center p-6 sm:p-12 bg-slate-50 dark:bg-slate-800 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600">
                     <div className="text-center">
-                      <FileText className="h-16 w-16 text-slate-400 dark:text-slate-500 mx-auto mb-4" />
-                      <p className="text-lg font-semibold text-slate-600 dark:text-slate-400 mb-2">
+                      <FileText className="h-12 w-12 sm:h-16 sm:w-16 text-slate-400 dark:text-slate-500 mx-auto mb-3 sm:mb-4" />
+                      <p className="text-base sm:text-lg font-semibold text-slate-600 dark:text-slate-400 mb-1.5 sm:mb-2">
                         No Datasheet Available
                       </p>
-                      <p className="text-sm text-slate-500 dark:text-slate-500">
+                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-500">
                         This product model does not have a technical datasheet uploaded yet.
                       </p>
                     </div>
@@ -1425,28 +1564,34 @@ export default function Dashboard() {
                 )}
               </div>
               
-              <div className="flex-shrink-0 flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700 mt-4">
+              <div className="flex-shrink-0 flex justify-between items-center gap-3 pt-4 sm:pt-5 border-t border-slate-200 dark:border-slate-700 mt-4 sm:mt-5 flex-wrap">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsPdfDialogOpen(false);
+                    setIsDialogOpen(true);
+                  }}
+                  className="shrink-0 rounded-xl border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-400 dark:hover:border-slate-500 text-slate-700 dark:text-slate-200 font-medium text-sm py-2.5 px-5 shadow-sm hover:shadow transition-all"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
                 {selectedModelForPdf.datasheet && (
                   <Button
-                    variant="outline"
                     onClick={() => {
                       window.open(selectedModelForPdf.datasheet, '_blank');
                     }}
+                    className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium text-sm py-2.5 px-5 shadow-md hover:shadow-lg transition-all"
                   >
                     <FileText className="h-4 w-4 mr-2" />
                     Open in New Tab
                   </Button>
                 )}
-                <Button onClick={() => setIsPdfDialogOpen(false)} variant="outline">
-                  Close
-                </Button>
               </div>
             </>
           )}
         </DialogContent>
       </Dialog>
-      {/* End scrollable content wrapper */}
-      </div>
     </div>
   );
 }

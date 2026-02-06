@@ -174,3 +174,47 @@ export const listDealers = async (req, res) => {
     });
   }
 };
+
+/**
+ * ====================================================
+ * DELETE DEALER
+ * ====================================================
+ * 
+ * DELETE /api/dealers/:id
+ * Deletes a dealer account (FACTORY_ADMIN only)
+ * 
+ * Note: This will also delete all sub-dealers under this dealer
+ */
+export const deleteDealer = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const dealer = await User.findById(id);
+    if (!dealer) {
+      return res.status(404).json({
+        message: "Dealer not found",
+      });
+    }
+
+    if (dealer.role !== "DEALER") {
+      return res.status(400).json({
+        message: "User is not a dealer",
+      });
+    }
+
+    // Delete all sub-dealers under this dealer
+    await User.deleteMany({ parentDealer: id });
+
+    // Delete the dealer
+    await User.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      message: "Dealer and all sub-dealers deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete Dealer Error:", error);
+    return res.status(500).json({
+      message: "Failed to delete dealer",
+    });
+  }
+};

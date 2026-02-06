@@ -7,6 +7,13 @@ export default {
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
   ],
+  // Ensure page heading gradient is never purged (used via PAGE_HEADING_CLASS constant)
+  safelist: [
+    'font-heading', 'text-3xl', 'sm:text-4xl', 'md:text-5xl', 'font-bold', 'tracking-tight',
+    'bg-gradient-to-r', 'from-slate-800', 'via-slate-700', 'to-indigo-600',
+    'dark:from-slate-100', 'dark:via-slate-200', 'dark:to-indigo-400', 'bg-clip-text', 'text-transparent',
+    'text-base', 'sm:text-lg', 'text-slate-600', 'dark:text-slate-400', 'tracking-wide',
+  ],
   prefix: "",
   theme: {
     container: {
@@ -17,6 +24,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        heading: ["Plus Jakarta Sans", "Inter", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

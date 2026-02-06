@@ -4,6 +4,7 @@ import {
   listInverterModels,
   updateInverterModel,
   deleteInverterModel,
+  getUnitsByModel,
   uploadProductImage,
   uploadProductDatasheet,
 } from "../controllers/inverterModelController.js";
@@ -81,6 +82,19 @@ router.delete(
   requireAuth,
   requireRole("FACTORY_ADMIN"),
   deleteInverterModel
+);
+
+/**
+ * LIST UNITS BY MODEL (for Full Life Cycle View)
+ *
+ * GET /api/inverter-models/:modelId/units
+ * ROLE: FACTORY_ADMIN, SERVICE_CENTER, INSTALLER_PROGRAM_MANAGER
+ */
+router.get(
+  "/:modelId/units",
+  requireAuth,
+  requireRole("FACTORY_ADMIN", "SERVICE_CENTER", "INSTALLER_PROGRAM_MANAGER"),
+  getUnitsByModel
 );
 
 /**

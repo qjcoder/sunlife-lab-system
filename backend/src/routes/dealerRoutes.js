@@ -5,6 +5,7 @@ import {
   createDealer,
   createSubDealer,
   listDealers,
+  deleteDealer,
 } from "../controllers/dealerController.js";
 
 /**
@@ -53,15 +54,16 @@ router.post(
 
 /**
  * ====================================================
- * FACTORY_ADMIN → DEALER HIERARCHY
+ * DEALER HIERARCHY
  * ====================================================
- *
  * GET /api/dealers/hierarchy
+ * - FACTORY_ADMIN: full hierarchy
+ * - DEALER: own sub-dealers only (for Sub-Dealers page)
  */
 router.get(
   "/hierarchy",
   requireAuth,
-  requireRole("FACTORY_ADMIN"),
+  requireRole("FACTORY_ADMIN", "DEALER"),
   getDealerHierarchy
 );
 
@@ -77,6 +79,20 @@ router.get(
   requireAuth,
   requireRole("FACTORY_ADMIN"),
   listDealers
+);
+
+/**
+ * ====================================================
+ * FACTORY_ADMIN → DELETE DEALER
+ * ====================================================
+ *
+ * DELETE /api/dealers/:id
+ */
+router.delete(
+  "/:id",
+  requireAuth,
+  requireRole("FACTORY_ADMIN"),
+  deleteDealer
 );
 
 export default router;

@@ -76,10 +76,14 @@ export interface InverterLifecycle {
     customerName: string;
     customerContact?: string;
   };
+  /** 'factory' = direct factory sale (no dealer), 'dealer' = sold via dealer chain */
+  soldFrom?: 'factory' | 'dealer' | null;
   warranty: {
     startDate: string | null;
     status: string;
   };
+  /** Number of times this unit was serviced at a service center */
+  serviceVisitCount?: number;
   serviceJobs: Array<{
     serviceJob: {
       _id: string;
@@ -99,6 +103,15 @@ export interface InverterLifecycle {
       partName: string;
       partCode: string;
       quantity: number;
+      replacementDate?: string;
+      replacementType?: string;
+      costLiability?: string;
+      warrantyClaimEligible?: boolean;
+      dispatch?: {
+        dispatchNumber: string;
+        serviceCenter: string;
+        dispatchDate: string;
+      } | null;
     }>;
   }>;
 }

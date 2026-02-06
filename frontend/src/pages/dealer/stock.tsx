@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getDealerStock } from '@/api/stock-api';
+import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -11,7 +12,6 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
 export default function DealerStock() {
@@ -55,10 +55,8 @@ export default function DealerStock() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-            Dealer Stock
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-lg">
+          <h1 className={PAGE_HEADING_CLASS}>Dealer Stock</h1>
+          <p className={PAGE_SUBHEADING_CLASS}>
             {data?.dealer} - Total: {data?.count || 0} inverters
           </p>
         </div>
@@ -103,14 +101,7 @@ export default function DealerStock() {
                         {item.dispatchedAt ? new Date(item.dispatchedAt).toLocaleDateString() : '-'}
                       </TableCell>
                       <TableCell>{item.dispatchNumber || '-'}</TableCell>
-                      <TableCell>
-                        <Link
-                          to={`/lifecycle/${item.serialNumber || ''}`}
-                          className="text-primary hover:underline"
-                        >
-                          View Lifecycle
-                        </Link>
-                      </TableCell>
+                      <TableCell className="text-muted-foreground">—</TableCell>
                     </TableRow>
                   );
                 })}

@@ -21,6 +21,7 @@ import {
   LayoutDashboard,
   Keyboard,
   UserCog,
+  History,
 } from "lucide-react";
 
 type NavItem = {
@@ -40,16 +41,14 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Product Serial Entry", path: "/factory/inverter-registration", roles: ["FACTORY_ADMIN"], icon: PackagePlus, section: "MAIN MENU" },
   { label: "Factory Stock", path: "/factory/stock", roles: ["FACTORY_ADMIN"], icon: Warehouse, section: "MAIN MENU" },
   { label: "Product Dispatch", path: "/factory/dispatch", roles: ["FACTORY_ADMIN"], icon: Truck, section: "MAIN MENU" },
-  { label: "Dealers Network", path: "/factory/dealers", roles: ["FACTORY_ADMIN"], icon: Users, section: "MAIN MENU" },
-  { label: "Service Centers", path: "/factory/service-centers", roles: ["FACTORY_ADMIN"], icon: Building2, section: "MAIN MENU" },
-  { label: "Data Entry Operators", path: "/factory/operators", roles: ["FACTORY_ADMIN"], icon: UserCog, section: "MAIN MENU" },
+  { label: "Account Creation", path: "/factory/account-creation", roles: ["FACTORY_ADMIN"], icon: UserCog, section: "MAIN MENU" },
   { label: "Service Center Parts Dispatch", path: "/factory/part-dispatch", roles: ["FACTORY_ADMIN"], icon: Package, section: "MAIN MENU" },
 
-  /* -------- DEALER -------- */
+  /* -------- DEALER (workflow: stock → sales → sub-dealers → transfer) -------- */
   { label: "Dealer Stock", path: "/dealer/stock", roles: ["DEALER"], icon: Warehouse, section: "MAIN MENU" },
+  { label: "Sales", path: "/dealer/sales", roles: ["DEALER"], icon: ShoppingCart, section: "MAIN MENU" },
   { label: "Sub Dealers", path: "/dealer/sub-dealers", roles: ["DEALER"], icon: UserPlus, section: "MAIN MENU" },
   { label: "Transfer to Sub Dealer", path: "/dealer/transfer", roles: ["DEALER"], icon: ArrowRightLeft, section: "MAIN MENU" },
-  { label: "Sales", path: "/dealer/sales", roles: ["DEALER"], icon: ShoppingCart, section: "MAIN MENU" },
 
   /* -------- SUB DEALER -------- */
   { label: "My Stock", path: "/sub-dealer/stock", roles: ["SUB_DEALER"], icon: Warehouse, section: "MAIN MENU" },
@@ -58,6 +57,7 @@ const NAV_ITEMS: NavItem[] = [
   /* -------- SERVICE CENTER -------- */
   { label: "Service Jobs", path: "/service-center/jobs", roles: ["SERVICE_CENTER"], icon: Wrench, section: "MAIN MENU" },
   { label: "Create Service Job", path: "/service-center/jobs/create", roles: ["SERVICE_CENTER"], icon: FilePlus, section: "MAIN MENU" },
+  { label: "Product History", path: "/lifecycle", roles: ["FACTORY_ADMIN", "SERVICE_CENTER", "INSTALLER_PROGRAM_MANAGER"], icon: History, section: "MAIN MENU" },
   { label: "Parts Stock", path: "/service-center/stock", roles: ["SERVICE_CENTER"], icon: PackageSearch, section: "MAIN MENU" },
 
   /* -------- DATA ENTRY OPERATOR -------- */

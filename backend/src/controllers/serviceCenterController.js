@@ -98,3 +98,41 @@ export const listServiceCenters = async (req, res) => {
     });
   }
 };
+
+/**
+ * ====================================================
+ * DELETE SERVICE CENTER
+ * ====================================================
+ * 
+ * DELETE /api/service-centers/:id
+ * Deletes a service center account (FACTORY_ADMIN only)
+ */
+export const deleteServiceCenter = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const serviceCenter = await User.findById(id);
+    if (!serviceCenter) {
+      return res.status(404).json({
+        message: "Service center not found",
+      });
+    }
+
+    if (serviceCenter.role !== "SERVICE_CENTER") {
+      return res.status(400).json({
+        message: "User is not a service center",
+      });
+    }
+
+    await User.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      message: "Service center deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete Service Center Error:", error);
+    return res.status(500).json({
+      message: "Failed to delete service center",
+    });
+  }
+};

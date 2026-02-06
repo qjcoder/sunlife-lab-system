@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Calendar, Mail } from 'lucide-react';
+import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 const subDealerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -86,10 +87,8 @@ export default function SubDealers() {
     <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-          Sub-Dealers
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 text-lg">Manage sub-dealer accounts</p>
+        <h1 className={PAGE_HEADING_CLASS}>Sub-Dealers</h1>
+        <p className={PAGE_SUBHEADING_CLASS}>Manage sub-dealer accounts</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

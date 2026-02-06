@@ -91,3 +91,12 @@ export const listDealers = async (): Promise<Dealer[]> => {
   const response = await api.get<ListDealersResponse>('/api/dealers');
   return response.data.dealers;
 };
+
+export interface DeleteDealerResponse {
+  message: string;
+}
+
+export const deleteDealer = async (id: string): Promise<DeleteDealerResponse> => {
+  const response = await api.delete<DeleteDealerResponse>(`/api/dealers/${id}`);
+  return response.data;
+};

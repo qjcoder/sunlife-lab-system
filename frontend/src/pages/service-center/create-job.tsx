@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Hash, User, Phone, Wrench, Calendar, FileText, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Hash, User, Phone, Wrench, Calendar, FileText, Loader2, CheckCircle2, ArrowLeft, Scan } from 'lucide-react';
+import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 const serviceJobSchema = z.object({
   serialNumber: z.string().min(1, 'Serial number is required'),
@@ -25,6 +27,9 @@ type ServiceJobFormData = z.infer<typeof serviceJobSchema>;
 export default function CreateJob() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [scannerMode, setScannerMode] = useState(false);
+  const serialRef = useRef<HTMLInputElement>(null);
+
   const {
     register,
     handleSubmit,
@@ -33,6 +38,10 @@ export default function CreateJob() {
   } = useForm<ServiceJobFormData>({
     resolver: zodResolver(serviceJobSchema),
   });
+
+  useEffect(() => {
+    if (scannerMode && serialRef.current) serialRef.current.focus();
+  }, [scannerMode]);
 
   const mutation = useMutation({
     mutationFn: createServiceJob,
@@ -84,10 +93,8 @@ export default function CreateJob() {
           Back
         </Button>
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-            Create Service Job
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-lg">Record a new service job and repair request</p>
+          <h1 className={PAGE_HEADING_CLASS}>Create Service Job</h1>
+          <p className={PAGE_SUBHEADING_CLASS}>Record a new service job and repair request</p>
         </div>
       </div>
 
@@ -165,17 +172,47 @@ export default function CreateJob() {
               </h3>
               <div className="space-y-5">
                 <div className="space-y-3">
-                  <Label htmlFor="serialNumber" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                      <Hash className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    Inverter Serial Number
-                  </Label>
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor="serialNumber" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                      <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <Hash className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      Inverter Serial Number
+                    </Label>
+                    <Button
+                      type="button"
+                      variant={scannerMode ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => {
+                        setScannerMode(!scannerMode);
+                        if (!scannerMode) setTimeout(() => serialRef.current?.focus(), 100);
+                      }}
+                      className={cn(scannerMode && 'bg-green-600 hover:bg-green-700')}
+                    >
+                      <Scan className="h-4 w-4 mr-1" />
+                      {scannerMode ? 'Scanner ON' : 'Scanner'}
+                    </Button>
+                  </div>
                   <Input
                     id="serialNumber"
-                    {...register('serialNumber')}
-                    className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
-                    placeholder="Enter serial number"
+                    {...(function () {
+                      const { ref: regRef, ...rest } = register('serialNumber');
+                      return {
+                        ...rest,
+                        ref: (el: HTMLInputElement | null) => {
+                          regRef(el);
+                          serialRef.current = el;
+                        },
+                      };
+                    })()}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && scannerMode) {
+                        e.preventDefault();
+                        document.getElementById('reportedFault')?.focus();
+                      }
+                    }}
+                    className={cn("h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300", scannerMode && 'border-green-500 ring-2 ring-green-500/20')}
+                    placeholder={scannerMode ? 'Scan or type serial, then Enter' : 'Enter serial number'}
                   />
                   {errors.serialNumber && (
                     <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">

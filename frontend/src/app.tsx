@@ -13,15 +13,13 @@ import AppShell from "@/components/layout/app-shell";
 import Login from "@/pages/login/login";
 
 // Factory (FACTORY_ADMIN)
-import Dealers from "@/pages/factory/dealers";
 import InverterModels from "@/pages/factory/inverter-models";
 import ModelDetails from "@/pages/factory/model-details";
 import InverterRegistration from "@/pages/factory/inverter-registration";
 import FactoryDispatch from "@/pages/factory/factory-dispatch";
 import FactoryStock from "@/pages/factory/factory-stock";
 import PartDispatch from "@/pages/factory/part-dispatch";
-import ServiceCenters from "@/pages/factory/service-centers";
-import Operators from "@/pages/factory/operators";
+import AccountCreation from "@/pages/factory/account-creation";
 
 // Dealer
 import DealerStock from "@/pages/dealer/stock";
@@ -81,9 +79,11 @@ const App = () => {
                     path="factory"
                     element={<RoleRoute allowedRoles={["FACTORY_ADMIN"]} />}
                   >
-                    <Route path="dealers" element={<Dealers />} />
-                    <Route path="service-centers" element={<ServiceCenters />} />
-                    <Route path="operators" element={<Operators />} />
+                    <Route path="account-creation" element={<AccountCreation />} />
+                    <Route path="dealers" element={<AccountCreation />} />
+                    <Route path="service-centers" element={<AccountCreation />} />
+                    <Route path="operators" element={<AccountCreation />} />
+                    <Route path="installer-program-managers" element={<AccountCreation />} />
                     <Route path="inverter-models" element={<InverterModels />} />
                     <Route path="inverter-models/:modelId" element={<ModelDetails />} />
                     <Route path="inverter-registration" element={<InverterRegistration />} />

@@ -88,7 +88,7 @@ export const getInverterLifecycle = async (req, res) => {
       .lean();
 
     /* --------------------------------------------------
-     * 5️⃣ Attach replaced parts to each service job
+     * 5️⃣ Attach replaced parts to each service job (full details)
      * -------------------------------------------------- */
     const serviceTimeline = [];
 
@@ -104,7 +104,23 @@ export const getInverterLifecycle = async (req, res) => {
 
       serviceTimeline.push({
         serviceJob: job,
-        replacedParts,
+        replacedParts: replacedParts.map((rp) => ({
+          _id: rp._id,
+          partName: rp.partName,
+          partCode: rp.partCode,
+          quantity: rp.quantity,
+          replacementDate: rp.replacementDate,
+          replacementType: rp.replacementType,
+          costLiability: rp.costLiability,
+          warrantyClaimEligible: rp.warrantyClaimEligible,
+          dispatch: rp.dispatch
+            ? {
+                dispatchNumber: rp.dispatch.dispatchNumber,
+                serviceCenter: rp.dispatch.serviceCenter,
+                dispatchDate: rp.dispatch.dispatchDate,
+              }
+            : null,
+        })),
       });
     }
 
@@ -129,7 +145,17 @@ export const getInverterLifecycle = async (req, res) => {
     }
 
     /* --------------------------------------------------
-     * 7️⃣ Final lifecycle response (structured)
+     * 7️⃣ Sold from: dealer (via dispatch) vs direct factory
+     * -------------------------------------------------- */
+    const soldFrom =
+      inverter.saleDate && !factoryDispatch
+        ? "factory"
+        : inverter.saleDate && factoryDispatch
+          ? "dealer"
+          : null;
+
+    /* --------------------------------------------------
+     * 8️⃣ Final lifecycle response (structured)
      * -------------------------------------------------- */
     return res.json({
       factory: {
@@ -153,7 +179,11 @@ export const getInverterLifecycle = async (req, res) => {
           }
         : null,
 
+      soldFrom,
+
       warranty,
+
+      serviceVisitCount: serviceJobs.length,
 
       serviceJobs: serviceTimeline,
     });

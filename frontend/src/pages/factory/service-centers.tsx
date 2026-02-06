@@ -2,7 +2,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createServiceCenter, listServiceCenters } from '@/api/service-center-api';
+import { useState } from 'react';
+import { createServiceCenter, listServiceCenters, deleteServiceCenter } from '@/api/service-center-api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +17,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Users, Calendar, Mail } from 'lucide-react';
+import { Users, Calendar, Mail, Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 const serviceCenterSchema = z.object({
   name: z.string().min(1, 'Service center name is required'),
@@ -27,6 +30,7 @@ const serviceCenterSchema = z.object({
 type ServiceCenterFormData = z.infer<typeof serviceCenterSchema>;
 
 export default function ServiceCenters() {
+  const [deletingServiceCenterId, setDeletingServiceCenterId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const {
     register,
@@ -55,18 +59,40 @@ export default function ServiceCenters() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteServiceCenter,
+    onSuccess: () => {
+      toast.success('Service center deleted successfully');
+      setDeletingServiceCenterId(null);
+      queryClient.invalidateQueries({ queryKey: ['service-centers'] });
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to delete service center');
+      setDeletingServiceCenterId(null);
+    },
+  });
+
   const onSubmit = (data: ServiceCenterFormData) => {
     mutation.mutate(data);
+  };
+
+  const handleDelete = (id: string) => {
+    setDeletingServiceCenterId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deletingServiceCenterId) {
+      deleteMutation.mutate(deletingServiceCenterId);
+    }
   };
 
   return (
     <div className="space-y-4 sm:space-y-6 md:space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-3 sm:p-4 md:p-6">
       {/* Header */}
       <div className="space-y-1 sm:space-y-2">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-          Create Service Center
-        </h1>
-        <p className="text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-400">Create a new service center account for warranty and repairs</p>
+        <h1 className={PAGE_HEADING_CLASS}>Create Service Center</h1>
+        <p className={PAGE_SUBHEADING_CLASS}>Create a new service center account for warranty and repairs</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -127,6 +153,7 @@ export default function ServiceCenters() {
                       <TableHead>Name</TableHead>
                       <TableHead>Username (Email)</TableHead>
                       <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -151,6 +178,16 @@ export default function ServiceCenters() {
                             </span>
                           </div>
                         </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(sc.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -160,6 +197,19 @@ export default function ServiceCenters() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deletingServiceCenterId && (
+        <ConfirmDialog
+          title="Delete Service Center"
+          message="Are you sure you want to delete this service center? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={confirmDelete}
+          onCancel={() => setDeletingServiceCenterId(null)}
+          variant="danger"
+        />
+      )}
     </div>
   );
 }

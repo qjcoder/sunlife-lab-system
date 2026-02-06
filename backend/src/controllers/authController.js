@@ -56,7 +56,7 @@ export const login = async (req, res) => {
 
     if (!user) {
       return res.status(401).json({
-        message: "No account found with this email address. Please check your email and try again.",
+        message: "Invalid email or password. Please try again.",
       });
     }
 
@@ -77,7 +77,7 @@ export const login = async (req, res) => {
 
     if (!passwordValid) {
       return res.status(401).json({
-        message: "The password you entered is incorrect. Please check your password and try again.",
+        message: "Invalid email or password. Please try again.",
       });
     }
 

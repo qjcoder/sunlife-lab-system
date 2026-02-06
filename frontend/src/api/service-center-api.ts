@@ -53,3 +53,12 @@ export const listServiceCenters = async (): Promise<ServiceCenter[]> => {
   const response = await api.get<ListServiceCentersResponse>('/api/service-centers');
   return response.data.serviceCenters;
 };
+
+export interface DeleteServiceCenterResponse {
+  message: string;
+}
+
+export const deleteServiceCenter = async (id: string): Promise<DeleteServiceCenterResponse> => {
+  const response = await api.delete<DeleteServiceCenterResponse>(`/api/service-centers/${id}`);
+  return response.data;
+};

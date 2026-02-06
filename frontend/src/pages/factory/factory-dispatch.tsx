@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/store/auth-store';
+import { getDealerInvoicePrefix } from '@/lib/invoice-utils';
 import { createDispatch } from '@/api/dispatch-api';
 import { getFactoryStock } from '@/api/stock-api';
 import { Button } from '@/components/ui/button';
@@ -11,9 +13,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Loader2, Scan, Upload, X, Truck, Hash, Building2, Package } from 'lucide-react';
+import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 const dispatchSchema = z.object({
-  dispatchNumber: z.string().min(1, 'Dispatch number is required'),
+  dispatchNumber: z.string().optional(),
   dealer: z.string().min(1, 'Dealer name is required'),
   dispatchDate: z.string().min(1, 'Dispatch date is required'),
   remarks: z.string().optional(),
@@ -21,13 +24,19 @@ const dispatchSchema = z.object({
 
 type DispatchFormData = z.infer<typeof dispatchSchema>;
 
+const alnum = (s: string) => (s || '').replace(/\W/g, '');
+const firstN = (s: string, n: number) => alnum(s).slice(0, n);
+const lastN = (s: string, n: number) => alnum(s).slice(-n);
+
 export default function FactoryDispatch() {
+  const { user } = useAuth();
   const [selectedSerials, setSelectedSerials] = useState<string[]>([]);
   const [scannerMode, setScannerMode] = useState(false);
   const [scannerInput, setScannerInput] = useState('');
   const queryClient = useQueryClient();
   const scannerRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dispatchPrefix = getDealerInvoicePrefix(user?.name);
 
   const { data: stock, isLoading: stockLoading, error: stockError } = useQuery({
     queryKey: ['factory-stock'],
@@ -40,9 +49,24 @@ export default function FactoryDispatch() {
     return now.toISOString().split('T')[0]; // YYYY-MM-DD format
   };
 
+  const defaultDispatchNumber = (serials: string[], dateStr: string) => {
+    const d = (dateStr || getCurrentDateTime()).trim();
+    const [y, m, day] = d.split('-');
+    const ddmmyy = day && m && y ? `${day}${m}${y.slice(-2)}` : '';
+    if (serials.length === 0) return `${dispatchPrefix}${ddmmyy}0001`;
+    if (serials.length === 1) {
+      const suffix = lastN(serials[0], 4) || serials[0].slice(-4) || '0001';
+      return `${dispatchPrefix}${ddmmyy}${suffix}`;
+    }
+    const first = firstN(serials[0], 3) || '001';
+    const last = lastN(serials[serials.length - 1], 3) || '999';
+    return `${dispatchPrefix}${ddmmyy}${first}${last}`;
+  };
+
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
     reset,
     setValue,
@@ -173,13 +197,17 @@ export default function FactoryDispatch() {
       toast.error('Please select at least one inverter');
       return;
     }
-
+    const dispatchNumber = defaultDispatchNumber(selectedSerials, data.dispatchDate || getCurrentDateTime());
     mutation.mutate({
       ...data,
+      dispatchNumber,
       dispatchDate: data.dispatchDate || getCurrentDateTime(),
       serialNumbers: selectedSerials,
     });
   };
+
+  const dispatchDate = watch('dispatchDate') || getCurrentDateTime();
+  const dispatchNumberPreview = selectedSerials.length > 0 ? defaultDispatchNumber(selectedSerials, dispatchDate) : null;
 
   const toggleSerial = (serial: string) => {
     setSelectedSerials((prev) =>
@@ -195,10 +223,8 @@ export default function FactoryDispatch() {
     <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-orange-50/30 to-amber-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-          Product Dispatch
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 text-lg">Dispatch products to dealers</p>
+        <h1 className={PAGE_HEADING_CLASS}>Product Dispatch</h1>
+        <p className={PAGE_SUBHEADING_CLASS}>Dispatch products to dealers</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -266,17 +292,14 @@ export default function FactoryDispatch() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="dispatchNumber" className="text-sm font-semibold flex items-center gap-2">
+                <Label className="text-sm font-semibold flex items-center gap-2">
                   <Hash className="h-4 w-4 text-slate-500" />
                   Dispatch Number
                 </Label>
-                <Input id="dispatchNumber" {...register('dispatchNumber')} className="h-11" placeholder="Enter dispatch number" />
-                {errors.dispatchNumber && (
-                  <p className="text-sm text-destructive flex items-center gap-1 mt-1">
-                    <span>⚠</span>
-                    {errors.dispatchNumber.message}
-                  </p>
-                )}
+                <div className="h-11 px-4 flex items-center text-base border border-slate-200 dark:border-slate-600 rounded-md bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 font-medium">
+                  {dispatchNumberPreview ?? '—'}
+                </div>
+                <p className="text-xs text-muted-foreground">Auto-generated ({dispatchPrefix} + date + first & last serial digits). Add serials to generate.</p>
               </div>
 
               <div className="space-y-2">

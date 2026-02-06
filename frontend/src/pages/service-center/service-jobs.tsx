@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Loader2, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 export default function ServiceJobs() {
   const navigate = useNavigate();
@@ -46,10 +47,8 @@ export default function ServiceJobs() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-            Service Jobs
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-lg">Manage service jobs and repairs</p>
+          <h1 className={PAGE_HEADING_CLASS}>Service Jobs</h1>
+          <p className={PAGE_SUBHEADING_CLASS}>Manage service jobs and repairs</p>
         </div>
         <Button
           onClick={() => navigate('/service-center/create-job')}

@@ -113,3 +113,41 @@ export const listOperators = async (req, res) => {
     });
   }
 };
+
+/**
+ * ====================================================
+ * DELETE DATA ENTRY OPERATOR
+ * ====================================================
+ * 
+ * DELETE /api/operators/:id
+ * Deletes a data entry operator account (FACTORY_ADMIN only)
+ */
+export const deleteOperator = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const operator = await User.findById(id);
+    if (!operator) {
+      return res.status(404).json({
+        message: "Operator not found",
+      });
+    }
+
+    if (operator.role !== "DATA_ENTRY_OPERATOR") {
+      return res.status(400).json({
+        message: "User is not a data entry operator",
+      });
+    }
+
+    await User.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      message: "Data entry operator deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete Operator Error:", error);
+    return res.status(500).json({
+      message: "Failed to delete operator",
+    });
+  }
+};

@@ -2,33 +2,72 @@ import User from "../models/User.js";
 
 /**
  * ====================================================
- * DEALER HIERARCHY (Factory View)
+ * DEALER HIERARCHY (Factory View + Dealer's own sub-dealers)
  * ====================================================
  *
  * PURPOSE:
- * - Allow FACTORY_ADMIN to see:
- *   • All MAIN dealers
- *   • Their respective SUB-DEALERS
- *
- * DATA RULES:
- * - Main Dealer:
- *   role = "DEALER"
- *   parentDealer = null
- *
- * - Sub Dealer:
- *   role = "SUB_DEALER"
- *   parentDealer = ObjectId (main dealer)
+ * - FACTORY_ADMIN: full hierarchy (all dealers + sub-dealers)
+ * - DEALER: only own node with their sub-dealers (for Sub-Dealers page)
  *
  * ENDPOINT:
  * GET /api/dealers/hierarchy
  *
  * ACCESS:
- * FACTORY_ADMIN only
+ * FACTORY_ADMIN or DEALER
  */
 export const getDealerHierarchy = async (req, res) => {
   try {
+    const isDealer = req.user && req.user.role === "DEALER";
+    const dealerId = req.user?.userId;
+
+    if (isDealer && dealerId) {
+      /* --------------------------------------------------
+       * DEALER: return only this dealer's node with their sub-dealers
+       * -------------------------------------------------- */
+      const dealer = await User.findOne({
+        _id: dealerId,
+        role: "DEALER",
+        active: true,
+      })
+        .select("_id name email")
+        .lean();
+
+      if (!dealer) {
+        return res.status(404).json({ message: "Dealer not found" });
+      }
+
+      const children = await User.find({
+        role: "SUB_DEALER",
+        parentDealer: dealerId,
+        active: true,
+      })
+        .select("_id name email createdAt")
+        .lean();
+
+      const hierarchy = [
+        {
+          dealer: {
+            id: dealer._id,
+            name: dealer.name,
+            email: dealer.email,
+          },
+          subDealers: children.map((sd) => ({
+            id: sd._id,
+            name: sd.name,
+            email: sd.email,
+            createdAt: sd.createdAt,
+          })),
+        },
+      ];
+
+      return res.json({
+        count: hierarchy.length,
+        data: hierarchy,
+      });
+    }
+
     /* --------------------------------------------------
-     * 1️⃣ Load MAIN dealers
+     * FACTORY_ADMIN: full hierarchy
      * -------------------------------------------------- */
     const dealers = await User.find({
       role: "DEALER",
@@ -38,23 +77,17 @@ export const getDealerHierarchy = async (req, res) => {
       .select("_id name email")
       .lean();
 
-    /* --------------------------------------------------
-     * 2️⃣ Load SUB-DEALERS (FIXED)
-     * -------------------------------------------------- */
     const subDealers = await User.find({
-      role: "SUB_DEALER",          // ✅ CRITICAL FIX
+      role: "SUB_DEALER",
       parentDealer: { $ne: null },
       active: true,
     })
       .select("_id name email parentDealer createdAt")
       .lean();
 
-    /* --------------------------------------------------
-     * 3️⃣ Build hierarchy tree
-     * -------------------------------------------------- */
-    const hierarchy = dealers.map(dealer => {
+    const hierarchy = dealers.map((dealer) => {
       const children = subDealers.filter(
-        sd => String(sd.parentDealer) === String(dealer._id)
+        (sd) => String(sd.parentDealer) === String(dealer._id)
       );
 
       return {
@@ -63,7 +96,7 @@ export const getDealerHierarchy = async (req, res) => {
           name: dealer.name,
           email: dealer.email,
         },
-        subDealers: children.map(sd => ({
+        subDealers: children.map((sd) => ({
           id: sd._id,
           name: sd.name,
           email: sd.email,
@@ -72,9 +105,6 @@ export const getDealerHierarchy = async (req, res) => {
       };
     });
 
-    /* --------------------------------------------------
-     * 4️⃣ Response
-     * -------------------------------------------------- */
     return res.json({
       count: hierarchy.length,
       data: hierarchy,

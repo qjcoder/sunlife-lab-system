@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Plus, Trash2, Scan, Upload, Package, Building2, FileText, Hash, Loader2, CheckCircle2 } from 'lucide-react';
+import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 const dispatchSchema = z.object({
   serviceCenter: z.string().min(1, 'Service center is required'),
@@ -180,10 +181,8 @@ export default function PartDispatch() {
     <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-cyan-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-          Service Center Parts Dispatch
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 text-lg">Dispatch parts from factory to service center</p>
+        <h1 className={PAGE_HEADING_CLASS}>Service Center Parts Dispatch</h1>
+        <p className={PAGE_SUBHEADING_CLASS}>Dispatch parts from factory to service center</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

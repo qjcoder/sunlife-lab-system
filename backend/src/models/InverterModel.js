@@ -26,6 +26,14 @@ const inverterModelSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Product type: Inverter, Battery, or VFD
+    productType: {
+      type: String,
+      enum: ["Inverter", "Battery", "VFD"],
+      default: "Inverter",
+      trim: true,
+    },
+
     // Variant or capacity (e.g. 4kW, 6kW)
     variant: {
       type: String,
@@ -59,6 +67,21 @@ const inverterModelSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+
+    // User manual: Google Drive (or external) link to avoid storing large PDFs in DB
+    userManualUrl: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    // Technical support video links (e.g. YouTube: BMS method, Wifi method, dual output setting)
+    supportVideoLinks: [
+      {
+        title: { type: String, trim: true, required: true },
+        url: { type: String, trim: true, required: true },
+      },
+    ],
 
     // Warranty definition for this model
     warranty: {

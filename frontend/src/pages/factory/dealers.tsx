@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createDealer, listDealers, getDealerHierarchy } from '@/api/dealer-api';
+import { createDealer, listDealers, getDealerHierarchy, deleteDealer } from '@/api/dealer-api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,8 +17,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Users, Calendar, Mail, Network, Building2, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Users, Calendar, Mail, Network, Building2, Loader2, Trash2 } from 'lucide-react';
+import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const dealerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -30,6 +31,7 @@ type DealerFormData = z.infer<typeof dealerSchema>;
 
 export default function Dealers() {
   const [activeTab, setActiveTab] = useState<'dealers' | 'hierarchy'>('dealers');
+  const [deletingDealerId, setDeletingDealerId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const {
     register,
@@ -56,14 +58,39 @@ export default function Dealers() {
       toast.success('Dealer created successfully');
       reset();
       queryClient.invalidateQueries({ queryKey: ['dealers'] });
+      queryClient.invalidateQueries({ queryKey: ['dealer-hierarchy'] });
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to create dealer');
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteDealer,
+    onSuccess: () => {
+      toast.success('Dealer deleted successfully');
+      setDeletingDealerId(null);
+      queryClient.invalidateQueries({ queryKey: ['dealers'] });
+      queryClient.invalidateQueries({ queryKey: ['dealer-hierarchy'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete dealer');
+      setDeletingDealerId(null);
+    },
+  });
+
   const onSubmit = (data: DealerFormData) => {
     mutation.mutate(data);
+  };
+
+  const handleDelete = (id: string, name: string) => {
+    setDeletingDealerId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deletingDealerId) {
+      deleteMutation.mutate(deletingDealerId);
+    }
   };
 
   const renderHierarchyNode = (node: any, level = 0) => {
@@ -157,10 +184,8 @@ export default function Dealers() {
     <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-red-50/30 to-orange-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-          Dealers Network
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 text-lg">Manage dealer accounts and view network hierarchy</p>
+        <h1 className={PAGE_HEADING_CLASS}>Dealers Network</h1>
+        <p className={PAGE_SUBHEADING_CLASS}>Manage dealer accounts and view network hierarchy</p>
       </div>
 
       {/* Tabs */}
@@ -332,6 +357,19 @@ export default function Dealers() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deletingDealerId && (
+        <ConfirmDialog
+          title="Delete Dealer"
+          message={`Are you sure you want to delete this dealer? This will also delete all sub-dealers under this dealer. This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={confirmDelete}
+          onCancel={() => setDeletingDealerId(null)}
+          variant="danger"
+        />
       )}
     </div>
   );

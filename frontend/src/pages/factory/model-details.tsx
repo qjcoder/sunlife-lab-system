@@ -6,6 +6,7 @@ import { listServiceJobs } from '@/api/service-api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, Warehouse, Users, ShoppingCart, AlertTriangle, TrendingUp, Package, CheckCircle } from 'lucide-react';
+import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
 
@@ -139,10 +140,8 @@ export default function ModelDetails() {
           Back to Models
         </Button>
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-            {model.brand} {model.productLine} {model.variant}
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-lg">Model Code: {model.modelCode}</p>
+          <h1 className={PAGE_HEADING_CLASS}>{model.brand} {model.productLine} {model.variant}</h1>
+          <p className={PAGE_SUBHEADING_CLASS}>Model Code: {model.modelCode}</p>
         </div>
       </div>
 
@@ -311,11 +310,15 @@ export default function ModelDetails() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Parts Warranty</span>
-                  <span className="font-medium">{model.warranty.partsMonths} months</span>
+                  <span className="font-medium">
+                    {model.warranty.partsMonths === 12 ? '1 year' : model.warranty.partsMonths % 12 === 0 ? `${model.warranty.partsMonths / 12} years` : `${(model.warranty.partsMonths / 12).toFixed(1)} years`}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Service Warranty</span>
-                  <span className="font-medium">{model.warranty.serviceMonths} months</span>
+                  <span className="font-medium">
+                    {model.warranty.serviceMonths === 12 ? '1 year' : model.warranty.serviceMonths % 12 === 0 ? `${model.warranty.serviceMonths / 12} years` : `${(model.warranty.serviceMonths / 12).toFixed(1)} years`}
+                  </span>
                 </div>
               </div>
             </div>

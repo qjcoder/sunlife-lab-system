@@ -33,6 +33,7 @@ import authRoutes from "./routes/authRoutes.js";
 import dealerRoutes from "./routes/dealerRoutes.js";
 import serviceCenterRoutes from "./routes/serviceCenterRoutes.js";
 import operatorRoutes from "./routes/operatorRoutes.js";
+import installerProgramManagerRoutes from "./routes/installerProgramManagerRoutes.js";
 
 // 🏭 Factory Master Data
 import inverterModelRoutes from "./routes/inverterModelRoutes.js";
@@ -77,6 +78,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/dealers", dealerRoutes);
 app.use("/api/service-centers", serviceCenterRoutes);
 app.use("/api/operators", operatorRoutes);
+app.use("/api/installer-program-managers", installerProgramManagerRoutes);
 
 // 🏭 Inverter Models
 app.use("/api/inverter-models", inverterModelRoutes);

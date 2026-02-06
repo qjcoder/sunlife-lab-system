@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getDealerHierarchy } from '@/api/dealer-api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Building2, Users, Mail } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 export default function DealerHierarchy() {
   const { data, isLoading, error } = useQuery({
@@ -122,10 +122,8 @@ export default function DealerHierarchy() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-            Dealer Hierarchy
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-lg">View dealer and sub-dealer network structure</p>
+          <h1 className={PAGE_HEADING_CLASS}>Dealer Hierarchy</h1>
+          <p className={PAGE_SUBHEADING_CLASS}>View dealer and sub-dealer network structure</p>
         </div>
         <div className="flex gap-4">
           <Card className="border-red-200 dark:border-red-900 bg-gradient-to-br from-red-50 to-white dark:from-red-950/20 dark:to-slate-900">

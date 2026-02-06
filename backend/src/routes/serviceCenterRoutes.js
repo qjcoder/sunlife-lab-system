@@ -1,6 +1,6 @@
 import express from "express";
 import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
-import { createServiceCenter, listServiceCenters } from "../controllers/serviceCenterController.js";
+import { createServiceCenter, listServiceCenters, deleteServiceCenter } from "../controllers/serviceCenterController.js";
 
 /**
  * ====================================================
@@ -42,6 +42,19 @@ router.get(
   requireAuth,
   requireRole("FACTORY_ADMIN"),
   listServiceCenters
+);
+
+/**
+ * ====================================================
+ * FACTORY_ADMIN → DELETE SERVICE CENTER
+ * ====================================================
+ * DELETE /api/service-centers/:id
+ */
+router.delete(
+  "/:id",
+  requireAuth,
+  requireRole("FACTORY_ADMIN"),
+  deleteServiceCenter
 );
 
 export default router;

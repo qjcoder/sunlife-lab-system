@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createTransfer } from '@/api/transfer-api';
 import { getDealerStock } from '@/api/stock-api';
@@ -9,14 +9,21 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Users, Package, FileText, ArrowRight, Loader2, CheckCircle2, Hash } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Users, Package, FileText, ArrowRight, Loader2, CheckCircle2, Hash, Scan } from 'lucide-react';
+import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 export default function Transfer() {
   const [selectedSerials, setSelectedSerials] = useState<string[]>([]);
   const [subDealerId, setSubDealerId] = useState('');
   const [remarks, setRemarks] = useState('');
+  const [scannerMode, setScannerMode] = useState(false);
+  const [scanInput, setScanInput] = useState('');
+  const scanRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (scannerMode && scanRef.current) scanRef.current.focus();
+  }, [scannerMode]);
 
   const { data: stock } = useQuery({
     queryKey: ['dealer-stock'],
@@ -87,14 +94,35 @@ export default function Transfer() {
     );
   };
 
+  const availableSerials = (stock?.availableInverters || [])
+    .map((item) => item?.serialNumber)
+    .filter(Boolean) as string[];
+
+  const handleScanKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const serial = scanInput.trim();
+    if (!serial) return;
+    const normalized = serial.toUpperCase();
+    const match = availableSerials.find((s) => s.toUpperCase() === normalized || s === serial);
+    if (match) {
+      if (!selectedSerials.includes(match)) {
+        setSelectedSerials((prev) => [...prev, match]);
+        toast.success(`Added ${match}`);
+      }
+    } else {
+      toast.error(`Serial "${serial}" not found in your stock`);
+    }
+    setScanInput('');
+    scanRef.current?.focus();
+  };
+
   return (
     <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-          Transfer to Sub-Dealer
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 text-lg">Transfer inverters from dealer to sub-dealers</p>
+        <h1 className={PAGE_HEADING_CLASS}>Transfer to Sub-Dealer</h1>
+        <p className={PAGE_SUBHEADING_CLASS}>Transfer inverters from dealer to sub-dealers</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -205,6 +233,36 @@ export default function Transfer() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6 pb-6 px-6">
+            {(stock?.availableInverters?.length ?? 0) > 0 && (
+              <div className="mb-4 p-3 rounded-xl border-2 border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Scan className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Scan serial to add</span>
+                  <Button
+                    type="button"
+                    variant={scannerMode ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      setScannerMode(!scannerMode);
+                      if (!scannerMode) setTimeout(() => scanRef.current?.focus(), 100);
+                    }}
+                    className={cn("ml-auto", scannerMode && 'bg-green-600 hover:bg-green-700')}
+                  >
+                    {scannerMode ? 'Scanner ON' : 'Scanner'}
+                  </Button>
+                </div>
+                {scannerMode && (
+                  <Input
+                    ref={scanRef}
+                    value={scanInput}
+                    onChange={(e) => setScanInput(e.target.value)}
+                    onKeyDown={handleScanKeyDown}
+                    placeholder="Scan or type serial number, press Enter to add"
+                    className={cn("h-11", scannerMode && 'border-green-500 focus:ring-green-500')}
+                  />
+                )}
+              </div>
+            )}
             <div className="space-y-2 max-h-[600px] overflow-y-auto">
               {!stock || !stock.availableInverters || !Array.isArray(stock.availableInverters) || stock.availableInverters.length === 0 ? (
                 <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600">

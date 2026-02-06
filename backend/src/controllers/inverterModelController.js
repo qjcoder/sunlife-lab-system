@@ -1,4 +1,5 @@
 import InverterModel from "../models/InverterModel.js";
+import InverterUnit from "../models/InverterUnit.js";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -38,7 +39,7 @@ const __dirname = path.dirname(__filename);
  */
 export const createInverterModel = async (req, res) => {
   try {
-    const { brand, productLine, variant, modelCode, warranty } = req.body;
+    const { brand, productLine, variant, modelCode, warranty, productType } = req.body;
 
     // 1️⃣ Basic validation
     if (!brand || !productLine || !variant || !modelCode) {
@@ -70,10 +71,11 @@ export const createInverterModel = async (req, res) => {
     // Compute modelName from brand + productLine + variant
     const modelName = `${brand} ${productLine} ${variant}`.trim();
     
-    // Generate image path based on modelCode (or use provided image)
-    const imagePath = req.body.image || `/products/${modelCode.toLowerCase()}.jpg`;
+    // Generate image path based on modelCode (same schema as uploads: lowercase, hyphens)
+    const normalizedCode = (modelCode || '').trim().toLowerCase().replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || '';
+    const imagePath = req.body.image || (normalizedCode ? `/products/${normalizedCode}.jpg` : undefined);
     
-    // Generate datasheet path if provided
+    // Datasheet path only if provided (same schema: /products/datasheets/{modelCode}.pdf)
     const datasheetPath = req.body.datasheet || undefined;
     
     const inverterModel = await InverterModel.create({
@@ -82,8 +84,11 @@ export const createInverterModel = async (req, res) => {
       variant,
       modelCode,
       modelName,
+      productType: productType && ["Inverter", "Battery", "VFD"].includes(productType) ? productType : "Inverter",
       image: imagePath,
       datasheet: datasheetPath,
+      userManualUrl: req.body.userManualUrl || undefined,
+      supportVideoLinks: Array.isArray(req.body.supportVideoLinks) ? req.body.supportVideoLinks.filter((l) => l && (l.title || l.url)) : undefined,
       warranty,
       active: req.body.active !== undefined ? req.body.active : true, // default to true
     });
@@ -165,7 +170,7 @@ export const listInverterModels = async (req, res) => {
 export const updateInverterModel = async (req, res) => {
   try {
     const { id } = req.params;
-    const { brand, productLine, variant, modelCode, image, active, warranty } = req.body;
+    const { brand, productLine, variant, modelCode, image, active, warranty, productType } = req.body;
 
     // Find the model
     const model = await InverterModel.findById(id);
@@ -177,6 +182,7 @@ export const updateInverterModel = async (req, res) => {
 
     // Update fields
     if (brand !== undefined) model.brand = brand;
+    if (productType !== undefined && ["Inverter", "Battery", "VFD"].includes(productType)) model.productType = productType;
     if (productLine !== undefined) model.productLine = productLine;
     if (variant !== undefined) model.variant = variant;
     if (modelCode !== undefined) {
@@ -193,6 +199,12 @@ export const updateInverterModel = async (req, res) => {
     }
     if (image !== undefined) model.image = image;
     if (req.body.datasheet !== undefined) model.datasheet = req.body.datasheet;
+    if (req.body.userManualUrl !== undefined) model.userManualUrl = req.body.userManualUrl || null;
+    if (req.body.supportVideoLinks !== undefined) {
+      model.supportVideoLinks = Array.isArray(req.body.supportVideoLinks)
+        ? req.body.supportVideoLinks.filter((l) => l && (l.title || l.url))
+        : [];
+    }
     if (active !== undefined) model.active = active;
     if (warranty !== undefined) {
       if (warranty.partsMonths !== undefined) model.warranty.partsMonths = warranty.partsMonths;
@@ -249,6 +261,42 @@ export const deleteInverterModel = async (req, res) => {
     return res.status(500).json({
       message: "Failed to delete inverter model",
     });
+  }
+};
+
+/**
+ * LIST UNITS BY MODEL (for Full Life Cycle View - pick serial to see lifecycle)
+ *
+ * GET /api/inverter-models/:modelId/units
+ * Returns serial numbers and current stage for each unit of this model.
+ */
+export const getUnitsByModel = async (req, res) => {
+  try {
+    const { modelId } = req.params;
+    const model = await InverterModel.findById(modelId).lean();
+    if (!model) {
+      return res.status(404).json({ message: "Model not found" });
+    }
+    const units = await InverterUnit.find({ inverterModel: modelId })
+      .select("serialNumber dealer saleDate createdAt dispatch")
+      .sort({ createdAt: -1 })
+      .lean();
+    const list = units.map((u) => ({
+      serialNumber: u.serialNumber,
+      currentStage: u.saleDate
+        ? "sold"
+        : u.dealer
+          ? "dealer"
+          : u.dispatch
+            ? "dispatched"
+            : "factory",
+      registeredAt: u.createdAt,
+      saleDate: u.saleDate || null,
+    }));
+    return res.json({ model: { _id: model._id, modelCode: model.modelCode, brand: model.brand, productLine: model.productLine, variant: model.variant }, units: list });
+  } catch (error) {
+    console.error("Get Units By Model Error:", error);
+    return res.status(500).json({ message: "Failed to fetch units for model" });
   }
 };
 

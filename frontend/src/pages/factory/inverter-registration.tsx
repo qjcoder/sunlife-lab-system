@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Package, CheckCircle2, Upload, Scan, Hash, Calendar, Box, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 const singleSchema = z.object({
   serialNumber: z.string().min(1, 'Serial number is required'),
@@ -391,8 +391,8 @@ export default function InverterRegistration() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">Product Serial Entry</h1>
-          <p className="text-slate-600 dark:text-slate-400 text-lg">Register new product serial numbers</p>
+          <h1 className={PAGE_HEADING_CLASS}>Product Serial Entry</h1>
+          <p className={PAGE_SUBHEADING_CLASS}>Register new product serial numbers</p>
         </div>
         
         {/* Stock Summary Card */}

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getServiceCenterStock } from '@/api/service-api';
+import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -41,10 +42,8 @@ export default function ServiceCenterStock() {
     <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-          Service Center Stock
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 text-lg">
+        <h1 className={PAGE_HEADING_CLASS}>Service Center Stock</h1>
+        <p className={PAGE_SUBHEADING_CLASS}>
           {data?.serviceCenter} - Total: {data?.count || 0} parts
         </p>
       </div>

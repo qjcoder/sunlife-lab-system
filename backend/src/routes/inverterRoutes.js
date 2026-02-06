@@ -75,10 +75,12 @@ router.post(
  * FULL INVERTER LIFECYCLE
  * ====================================================
  * GET /api/inverters/:serialNumber/lifecycle
+ * ROLE: FACTORY_ADMIN, SERVICE_CENTER, INSTALLER_PROGRAM_MANAGER
  */
 router.get(
   "/:serialNumber/lifecycle",
   requireAuth,
+  requireRole("FACTORY_ADMIN", "SERVICE_CENTER", "INSTALLER_PROGRAM_MANAGER"),
   getInverterLifecycle
 );
 

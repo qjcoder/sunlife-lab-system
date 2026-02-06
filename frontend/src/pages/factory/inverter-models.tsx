@@ -1,9 +1,9 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { listModels, createModel, updateModel, deleteModel, uploadModelImage, uploadModelDatasheet } from '@/api/model-api';
+import { listModels, createModel, updateModel, deleteModel, uploadModelImage, uploadModelDatasheet, type InverterModel, type UpdateInverterModelRequest } from '@/api/model-api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,27 +11,32 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Boxes, Shield, Calendar, Upload, Zap, Battery, Settings, Tag, Hash, Loader2, CheckCircle2, Trash2, Image as ImageIcon, FileText, X } from 'lucide-react';
+import { Plus, Boxes, Shield, Calendar, Upload, Zap, Battery, Settings, Tag, Hash, Loader2, CheckCircle2, Trash2, Image as ImageIcon, FileText, X, BookOpen, Video } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { cn } from '@/lib/utils';
+import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 import { getProductImageWithHandler } from '@/lib/image-utils';
+
+const productTypeOptions = ['Inverter', 'Battery', 'VFD'] as const;
 
 const modelSchema = z.object({
   brand: z.string().min(1, 'Brand is required'),
+  productType: z.enum(productTypeOptions, { required_error: 'Product type is required' }),
   productLine: z.string().min(1, 'Product line is required'),
   variant: z.string().min(1, 'Variant is required'),
   modelCode: z.string().min(1, 'Model code is required'),
-  partsMonths: z.number().min(0),
-  serviceMonths: z.number().min(0),
+  partsYears: z.number().min(0, 'Must be 0 or more'),
+  serviceYears: z.number().min(0, 'Must be 0 or more'),
   image: z.string().optional(),
   datasheet: z.string().optional(),
+  userManualUrl: z.string().optional(),
+  supportVideoLinks: z.array(z.object({ title: z.string(), url: z.string() })).optional(),
   active: z.boolean().default(true),
 });
 
 type ModelFormData = z.infer<typeof modelSchema>;
 
 // Helper function to categorize models
-const categorizeModel = (model: any) => {
+const categorizeModel = (model: InverterModel | null | undefined) => {
   if (!model) return 'inverter';
   
   const productLine = (model.productLine || '').toLowerCase();
@@ -78,14 +83,19 @@ const categorizeModel = (model: any) => {
 };
 
 export default function InverterModels() {
-  const [editingModel, setEditingModel] = useState<any>(null);
+  const [editingModel, setEditingModel] = useState<InverterModel | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
-  const [imageUpdateModel, setImageUpdateModel] = useState<any>(null);
+  const [imageUpdateModel, setImageUpdateModel] = useState<InverterModel | null>(null);
   const [imageUpdatePreview, setImageUpdatePreview] = useState<string>('');
-  const [datasheetUpdateModel, setDatasheetUpdateModel] = useState<any>(null);
+  const [imageUpdateFile, setImageUpdateFile] = useState<File | null>(null);
+  const [datasheetUpdateModel, setDatasheetUpdateModel] = useState<InverterModel | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ modelId: string; modelName: string } | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const queryClient = useQueryClient();
+  const createImageInputRef = useRef<HTMLInputElement>(null);
+  const createDatasheetInputRef = useRef<HTMLInputElement>(null);
+  const editImageInputRef = useRef<HTMLInputElement>(null);
+  const editDatasheetInputRef = useRef<HTMLInputElement>(null);
   
   const {
     register,
@@ -95,11 +105,17 @@ export default function InverterModels() {
     setValue,
     watch,
     control,
+    getValues,
   } = useForm<ModelFormData>({
     resolver: zodResolver(modelSchema),
     defaultValues: {
       brand: 'Sunlife',
+      productType: 'Inverter',
+      partsYears: 1,
+      serviceYears: 2,
       active: true,
+      userManualUrl: '',
+      supportVideoLinks: [] as { title: string; url: string }[],
     },
   });
 
@@ -190,9 +206,9 @@ export default function InverterModels() {
   const categorizedModels = useMemo(() => {
     if (!models) return { inverter: [], battery: [], vfd: [] };
     
-    const inverter: any[] = [];
-    const battery: any[] = [];
-    const vfd: any[] = [];
+    const inverter: InverterModel[] = [];
+    const battery: InverterModel[] = [];
+    const vfd: InverterModel[] = [];
     
     models.forEach(model => {
       const category = categorizeModel(model);
@@ -216,13 +232,16 @@ export default function InverterModels() {
       setImagePreview('');
       queryClient.invalidateQueries({ queryKey: ['inverter-models'] });
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create model');
+    onError: (error: unknown) => {
+      const msg = error && typeof error === 'object' && 'response' in error && typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
+        ? (error as { response: { data: { message: string } } }).response.data.message
+        : 'Failed to create model';
+      toast.error(msg);
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => updateModel(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateInverterModelRequest }) => updateModel(id, data),
     onSuccess: () => {
       toast.success('Product model updated successfully');
       reset();
@@ -231,8 +250,11 @@ export default function InverterModels() {
       queryClient.invalidateQueries({ queryKey: ['inverter-models'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Invalidate dashboard to refresh warranty
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update model');
+    onError: (error: unknown) => {
+      const msg = error && typeof error === 'object' && 'response' in error && typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
+        ? (error as { response: { data: { message: string } } }).response.data.message
+        : 'Failed to update model';
+      toast.error(msg);
     },
   });
 
@@ -242,8 +264,11 @@ export default function InverterModels() {
       toast.success('Product model deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['inverter-models'] });
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete model');
+    onError: (error: unknown) => {
+      const msg = error && typeof error === 'object' && 'response' in error && typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
+        ? (error as { response: { data: { message: string } } }).response.data.message
+        : 'Failed to delete model';
+      toast.error(msg);
     },
   });
 
@@ -263,12 +288,15 @@ export default function InverterModels() {
       await updateModel(modelId, { active: newStatus });
       toast.success(`Model ${newStatus ? 'activated' : 'discontinued'} successfully`);
       queryClient.invalidateQueries({ queryKey: ['inverter-models'] });
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update model status');
+    } catch (error: unknown) {
+      const msg = error && typeof error === 'object' && 'response' in error && typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
+        ? (error as { response: { data: { message: string } } }).response.data.message
+        : 'Failed to update model status';
+      toast.error(msg);
     }
   };
 
-  const handleImageUpdate = (model: any) => {
+  const handleImageUpdate = (model: InverterModel) => {
     setImageUpdateModel(model);
     setImageUpdatePreview(model.image ? getProductImageWithHandler(model).src : '');
   };
@@ -276,29 +304,26 @@ export default function InverterModels() {
   const closeImageUpdateDialog = () => {
     setImageUpdateModel(null);
     setImageUpdatePreview('');
+    setImageUpdateFile(null);
   };
 
   const handleImageUpdateUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !imageUpdateModel) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
     }
-
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size should be less than 5MB');
       return;
     }
 
-    // Read file and set preview
+    setImageUpdateFile(file);
     const reader = new FileReader();
     reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setImageUpdatePreview(result);
+      setImageUpdatePreview((event.target?.result as string) || '');
     };
     reader.readAsDataURL(file);
   };
@@ -306,57 +331,61 @@ export default function InverterModels() {
   const handleImageUpdateSubmit = async () => {
     if (!imageUpdateModel) return;
 
-    const fileInput = document.getElementById('image-update-input') as HTMLInputElement;
-    const file = fileInput?.files?.[0];
-    
-    if (!file) {
+    if (!imageUpdateFile) {
       toast.error('Please select an image file');
       return;
     }
 
     try {
-      // Upload the actual file to the server
-      await uploadModelImage(imageUpdateModel._id, file, imageUpdateModel.modelCode);
+      await uploadModelImage(imageUpdateModel._id, imageUpdateFile, imageUpdateModel.modelCode);
       toast.success('Product image uploaded and updated successfully');
       queryClient.invalidateQueries({ queryKey: ['inverter-models'] });
       closeImageUpdateDialog();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to upload image');
+    } catch (error: unknown) {
+      const msg = error && typeof error === 'object' && 'response' in error && typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
+        ? (error as { response: { data: { message: string } } }).response.data.message
+        : 'Failed to upload image';
+      toast.error(msg);
     }
   };
+
+  // Normalize modelCode for file paths (same schema as backend: lowercase, hyphens)
+  const normalizedModelCodeForPath = (code: string) =>
+    (code || '').trim().toLowerCase().replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || '';
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
     }
-
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size should be less than 5MB');
       return;
     }
 
-    // Read file and set preview
+    const modelCode = getValues('modelCode');
+    const normalized = normalizedModelCodeForPath(modelCode);
+    const ext = file.name.includes('.') ? file.name.split('.').pop()!.toLowerCase() : 'jpg';
+    const validExt = ['jpg', 'jpeg', 'png', 'webp'].includes(ext) ? ext : 'jpg';
+    const imagePath = normalized
+      ? `/products/${normalized}.${validExt}`
+      : `/products/${file.name.toLowerCase().replace(/\s+/g, '-')}`;
+    if (!normalized) {
+      toast.info('Fill Model Code and re-select image to use schema naming (e.g. /products/model-code.jpg)');
+    }
+
+    setValue('image', imagePath);
     const reader = new FileReader();
     reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setImagePreview(result);
-      
-      // Extract filename and set image path
-      // For now, we'll use the filename. In production, you'd upload to server
-      const fileName = file.name.toLowerCase().replace(/\s+/g, '-');
-      const imagePath = `/products/${fileName}`;
-      setValue('image', imagePath);
+      setImagePreview((event.target?.result as string) || '');
     };
     reader.readAsDataURL(file);
   };
 
-  const handleDatasheetUpdate = (model: any) => {
+  const handleDatasheetUpdate = (model: InverterModel) => {
     setDatasheetUpdateModel(model);
   };
 
@@ -393,8 +422,11 @@ export default function InverterModels() {
       toast.success('Product datasheet uploaded and updated successfully');
       queryClient.invalidateQueries({ queryKey: ['inverter-models'] });
       closeDatasheetUpdateDialog();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to upload datasheet');
+    } catch (error: unknown) {
+      const msg = error && typeof error === 'object' && 'response' in error && typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
+        ? (error as { response: { data: { message: string } } }).response.data.message
+        : 'Failed to upload datasheet';
+      toast.error(msg);
     }
   };
 
@@ -403,14 +435,19 @@ export default function InverterModels() {
     const payload = {
       brand: data.brand,
       productLine: data.productLine,
+      productType: data.productType,
       variant: data.variant,
       modelCode: data.modelCode,
       warranty: {
-        partsMonths: data.partsMonths,
-        serviceMonths: data.serviceMonths,
+        partsMonths: Math.round((data.partsYears || 0) * 12),
+        serviceMonths: Math.round((data.serviceYears || 0) * 12),
       },
       image: data.image || undefined,
       datasheet: data.datasheet || undefined,
+      userManualUrl: data.userManualUrl || undefined,
+      supportVideoLinks: (data.supportVideoLinks && Array.isArray(data.supportVideoLinks))
+        ? data.supportVideoLinks.filter((l: { title?: string; url?: string }) => l && (l.title?.trim() || l.url?.trim()))
+        : undefined,
       active: data.active,
     };
 
@@ -421,7 +458,7 @@ export default function InverterModels() {
     }
   };
 
-  const renderCategorySection = (_category: string, categoryModels: any[], icon: any, title: string, color: string) => {
+  const renderCategorySection = (_category: string, categoryModels: InverterModel[], icon: React.ReactNode, title: string, color: string) => {
     if (categoryModels.length === 0) return null;
 
     return (
@@ -574,14 +611,17 @@ export default function InverterModels() {
                         e.stopPropagation();
                         setEditingModel(model);
                         setValue('brand', model.brand);
+                        setValue('productType', (model.productType as ModelFormData['productType']) || (categorizeModel(model).charAt(0).toUpperCase() + categorizeModel(model).slice(1)) as ModelFormData['productType']);
                         setValue('productLine', model.productLine);
                         setValue('variant', model.variant);
                         setValue('modelCode', model.modelCode);
-                        setValue('partsMonths', model.warranty?.partsMonths || 12);
-                        setValue('serviceMonths', model.warranty?.serviceMonths || 24);
+                        setValue('partsYears', (model.warranty?.partsMonths ?? 12) / 12);
+                        setValue('serviceYears', (model.warranty?.serviceMonths ?? 24) / 12);
                         setValue('active', model.active);
                         setValue('image', model.image || '');
                         setValue('datasheet', model.datasheet || '');
+                        setValue('userManualUrl', model.userManualUrl || '');
+                        setValue('supportVideoLinks', model.supportVideoLinks && Array.isArray(model.supportVideoLinks) ? model.supportVideoLinks : []);
                         setShowCreateForm(true);
                       }}
                     >
@@ -617,15 +657,13 @@ export default function InverterModels() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      {/* Fixed Header */}
-      <div className="sticky top-0 z-10 bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 backdrop-blur-sm border-b border-slate-200/50 dark:border-slate-700/50">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-                Create New Product Model
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400 text-lg">Create and manage product models and configurations</p>
+              <h1 className={PAGE_HEADING_CLASS}>Create New Product Model</h1>
+              <p className={PAGE_SUBHEADING_CLASS}>Create and manage product models and configurations</p>
             </div>
             <Button
               onClick={() => {
@@ -676,6 +714,60 @@ export default function InverterModels() {
               </Button>
             </div>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {/* Product Type - required selection */}
+              <div className="space-y-3">
+                <Label htmlFor="productType" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                  <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                    <Boxes className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  Product Type
+                </Label>
+                <Controller
+                  name="productType"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        if (value === 'Battery' && !watchedProductLine) setValue('productLine', 'Lithium');
+                        if (value === 'VFD' && !watchedProductLine) setValue('productLine', 'VFD');
+                      }}
+                    >
+                      <SelectTrigger className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20">
+                        <SelectValue placeholder="Select product type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Inverter">
+                          <span className="flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-amber-500" />
+                            Inverter
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="Battery">
+                          <span className="flex items-center gap-2">
+                            <Battery className="h-4 w-4 text-green-500" />
+                            Battery
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="VFD">
+                          <span className="flex items-center gap-2">
+                            <Settings className="h-4 w-4 text-orange-500" />
+                            VFD (Variable Frequency Drive)
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.productType && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
+                    <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.productType.message}</p>
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-5">
                 <div className="space-y-3">
                   <Label htmlFor="brand" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
@@ -690,7 +782,7 @@ export default function InverterModels() {
                     value="Sunlife"
                     disabled
                     readOnly
-                    className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-not-allowed"
+                    className="h-12 border-2 border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-not-allowed"
                   />
                   {errors.brand && (
                     <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -718,7 +810,7 @@ export default function InverterModels() {
                         }
                       }
                     })}
-                    className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
+                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
                     placeholder="e.g., MPPT SOLAR INVERTER"
                   />
                   {errors.productLine && (
@@ -749,7 +841,7 @@ export default function InverterModels() {
                         }
                       }
                     })}
-                    className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
+                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
                     placeholder="e.g., 800W, 1600W"
                   />
                   {errors.variant && (
@@ -770,7 +862,7 @@ export default function InverterModels() {
                   <Input
                     id="modelCode"
                     {...register('modelCode')}
-                    className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono bg-slate-50 dark:bg-slate-800/50"
+                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono bg-slate-50 dark:bg-slate-800/50"
                     placeholder="Auto-generated from Product Line and Variant"
                     readOnly={!editingModel}
                   />
@@ -795,41 +887,45 @@ export default function InverterModels() {
                 </h3>
                 <div className="grid grid-cols-2 gap-5">
                   <div className="space-y-3">
-                    <Label htmlFor="partsMonths" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <Label htmlFor="partsYears" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                       <Shield className="h-4 w-4 text-blue-600" />
-                      Parts Warranty (Months)
+                      Parts Warranty (Years)
                     </Label>
                     <Input
-                      id="partsMonths"
+                      id="partsYears"
                       type="number"
-                      {...register('partsMonths', { valueAsNumber: true })}
-                      className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
-                      placeholder="12"
+                      min={0}
+                      step={0.5}
+                      {...register('partsYears', { valueAsNumber: true })}
+                      className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
+                      placeholder="1"
                     />
-                    {errors.partsMonths && (
+                    {errors.partsYears && (
                       <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
                         <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
-                        <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.partsMonths.message}</p>
+                        <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.partsYears.message}</p>
                       </div>
                     )}
                   </div>
 
                   <div className="space-y-3">
-                    <Label htmlFor="serviceMonths" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <Label htmlFor="serviceYears" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                       <Calendar className="h-4 w-4 text-green-600" />
-                      Service Warranty (Months)
+                      Service Warranty (Years)
                     </Label>
                     <Input
-                      id="serviceMonths"
+                      id="serviceYears"
                       type="number"
-                      {...register('serviceMonths', { valueAsNumber: true })}
-                      className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
-                      placeholder="24"
+                      min={0}
+                      step={0.5}
+                      {...register('serviceYears', { valueAsNumber: true })}
+                      className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
+                      placeholder="2"
                     />
-                    {errors.serviceMonths && (
+                    {errors.serviceYears && (
                       <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
                         <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
-                        <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.serviceMonths.message}</p>
+                        <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.serviceYears.message}</p>
                       </div>
                     )}
                   </div>
@@ -849,25 +945,24 @@ export default function InverterModels() {
                     id="image"
                     placeholder="/products/image-name.jpg"
                     {...register('image')}
-                    className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono text-sm"
+                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono text-sm"
                   />
-                  <label htmlFor="imageUpload" className="cursor-pointer">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-12 px-6 border-2 border-purple-500 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 font-semibold"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload
-                    </Button>
-                    <input
-                      id="imageUpload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => createImageInputRef.current?.click()}
+                    className="h-12 px-6 border-2 border-purple-500 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 font-semibold"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload
+                  </Button>
+                  <input
+                    ref={createImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
                 </div>
                 {watchedImage && (
                   <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -901,44 +996,114 @@ export default function InverterModels() {
                     id="datasheet"
                     placeholder="/products/datasheets/model-code.pdf"
                     {...register('datasheet')}
-                    className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono text-sm"
+                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono text-sm"
                     disabled
                   />
-                  <label htmlFor="datasheetUpload" className="cursor-pointer">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-12 px-6 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 font-semibold"
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Upload PDF
-                    </Button>
-                    <input
-                      id="datasheetUpload"
-                      type="file"
-                      accept=".pdf,application/pdf"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-                            toast.error('Please select a PDF file');
-                            return;
-                          }
-                          if (file.size > 10 * 1024 * 1024) {
-                            toast.error('PDF size should be less than 10MB');
-                            return;
-                          }
-                          const fileName = file.name.toLowerCase().replace(/\s+/g, '-');
-                          const datasheetPath = `/products/datasheets/${fileName}`;
-                          setValue('datasheet', datasheetPath);
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => createDatasheetInputRef.current?.click()}
+                    className="h-12 px-6 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 font-semibold"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Upload PDF
+                  </Button>
+                  <input
+                    ref={createDatasheetInputRef}
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                          toast.error('Please select a PDF file');
+                          return;
                         }
-                      }}
-                    />
-                  </label>
+                        if (file.size > 10 * 1024 * 1024) {
+                          toast.error('PDF size should be less than 10MB');
+                          return;
+                        }
+                        const normalized = normalizedModelCodeForPath(getValues('modelCode'));
+                        const datasheetPath = normalized
+                          ? `/products/datasheets/${normalized}.pdf`
+                          : `/products/datasheets/${file.name.toLowerCase().replace(/\s+/g, '-')}`;
+                        if (!normalized) {
+                          toast.info('Fill Model Code and re-select PDF to use schema naming (e.g. /products/datasheets/model-code.pdf)');
+                        }
+                        setValue('datasheet', datasheetPath);
+                      }
+                    }}
+                  />
                 </div>
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                   Upload technical datasheet PDF for this product variant (max 10MB)
+                </p>
+              </div>
+
+              {/* User Manual (Google Drive / external link) */}
+              <div className="p-5 bg-gradient-to-br from-slate-50 to-emerald-50/30 dark:from-slate-800/50 dark:to-emerald-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
+                <Label htmlFor="userManualUrl" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-4">
+                  <BookOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  User Manual (link)
+                </Label>
+                <Input
+                  id="userManualUrl"
+                  placeholder="https://drive.google.com/... or any PDF link"
+                  {...register('userManualUrl')}
+                  className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-mono text-sm"
+                />
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  Add a Google Drive or external link to the user manual PDF to avoid storing large files in the database.
+                </p>
+              </div>
+
+              {/* Technical support video links (YouTube etc.) */}
+              <div className="p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-blue-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
+                <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-4">
+                  <Video className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  Technical support videos
+                </Label>
+                <div className="space-y-3">
+                  {(watch('supportVideoLinks') || []).map((_: unknown, index: number) => (
+                    <div key={index} className="flex gap-2 items-center flex-wrap">
+                      <Input
+                        placeholder="Title (e.g. BMS method, Wifi setup)"
+                        {...register(`supportVideoLinks.${index}.title`)}
+                        className="flex-1 min-w-[140px] h-10"
+                      />
+                      <Input
+                        placeholder="https://youtube.com/..."
+                        {...register(`supportVideoLinks.${index}.url`)}
+                        className="flex-1 min-w-[180px] h-10 font-mono text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0 h-10 w-10 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                        onClick={() => {
+                          const list = getValues('supportVideoLinks') || [];
+                          setValue('supportVideoLinks', list.filter((_, i) => i !== index));
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setValue('supportVideoLinks', [...(getValues('supportVideoLinks') || []), { title: '', url: '' }])}
+                    className="border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add video link
+                  </Button>
+                </div>
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  Add YouTube or other video links for BMS method, Wifi method, dual output setting, etc.
                 </p>
               </div>
 
@@ -958,7 +1123,7 @@ export default function InverterModels() {
                       value={field.value ? 'active' : 'discontinued'}
                       onValueChange={(value) => field.onChange(value === 'active')}
                     >
-                      <SelectTrigger id="active" className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300">
+                      <SelectTrigger id="active" className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1019,6 +1184,52 @@ export default function InverterModels() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-3">
+              <Label htmlFor="edit-productType" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <Boxes className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                Product Type
+              </Label>
+              <Controller
+                name="productType"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20">
+                      <SelectValue placeholder="Select product type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Inverter">
+                        <span className="flex items-center gap-2">
+                          <Zap className="h-4 w-4 text-amber-500" />
+                          Inverter
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="Battery">
+                        <span className="flex items-center gap-2">
+                          <Battery className="h-4 w-4 text-green-500" />
+                          Battery
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="VFD">
+                        <span className="flex items-center gap-2">
+                          <Settings className="h-4 w-4 text-orange-500" />
+                          VFD (Variable Frequency Drive)
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.productType && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
+                  <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.productType.message}</p>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-5">
               <div className="space-y-3">
                 <Label htmlFor="edit-brand" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
@@ -1033,7 +1244,7 @@ export default function InverterModels() {
                   value="Sunlife"
                   disabled
                   readOnly
-                  className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-not-allowed"
+                  className="h-12 border-2 border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-not-allowed"
                 />
                 {errors.brand && (
                   <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -1060,7 +1271,7 @@ export default function InverterModels() {
                       }
                     }
                   })}
-                  className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
+                  className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
                   placeholder="e.g., MPPT SOLAR INVERTER"
                 />
                 {errors.productLine && (
@@ -1090,7 +1301,7 @@ export default function InverterModels() {
                       }
                     }
                   })}
-                  className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
+                  className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
                   placeholder="e.g., 800W, 1600W"
                 />
                 {errors.variant && (
@@ -1111,7 +1322,7 @@ export default function InverterModels() {
                 <Input
                   id="edit-modelCode"
                   {...register('modelCode')}
-                  className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono bg-slate-50 dark:bg-slate-800/50"
+                  className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono bg-slate-50 dark:bg-slate-800/50"
                   placeholder="Model code"
                 />
                 {errors.modelCode && (
@@ -1130,41 +1341,45 @@ export default function InverterModels() {
               </h3>
               <div className="grid grid-cols-2 gap-5">
                 <div className="space-y-3">
-                  <Label htmlFor="edit-partsMonths" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                  <Label htmlFor="edit-partsYears" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <Shield className="h-4 w-4 text-blue-600" />
-                    Parts Warranty (Months)
+                    Parts Warranty (Years)
                   </Label>
                   <Input
-                    id="edit-partsMonths"
+                    id="edit-partsYears"
                     type="number"
-                    {...register('partsMonths', { valueAsNumber: true })}
-                    className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
-                    placeholder="12"
+                    min={0}
+                    step={0.5}
+                    {...register('partsYears', { valueAsNumber: true })}
+                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
+                    placeholder="1"
                   />
-                  {errors.partsMonths && (
+                  {errors.partsYears && (
                     <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
                       <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
-                      <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.partsMonths.message}</p>
+                      <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.partsYears.message}</p>
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="edit-serviceMonths" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                  <Label htmlFor="edit-serviceYears" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <Calendar className="h-4 w-4 text-green-600" />
-                    Service Warranty (Months)
+                    Service Warranty (Years)
                   </Label>
                   <Input
-                    id="edit-serviceMonths"
+                    id="edit-serviceYears"
                     type="number"
-                    {...register('serviceMonths', { valueAsNumber: true })}
-                    className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
-                    placeholder="24"
+                    min={0}
+                    step={0.5}
+                    {...register('serviceYears', { valueAsNumber: true })}
+                    className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
+                    placeholder="2"
                   />
-                  {errors.serviceMonths && (
+                  {errors.serviceYears && (
                     <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
                       <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
-                      <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.serviceMonths.message}</p>
+                      <p className="text-sm text-red-700 dark:text-red-300 font-medium">{errors.serviceYears.message}</p>
                     </div>
                   )}
                 </div>
@@ -1184,25 +1399,24 @@ export default function InverterModels() {
                   id="edit-image"
                   placeholder="/products/image-name.jpg"
                   {...register('image')}
-                  className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono text-sm"
+                  className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono text-sm"
                 />
-                <label htmlFor="edit-imageUpload" className="cursor-pointer">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-12 px-6 border-2 border-purple-500 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 font-semibold"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload
-                  </Button>
-                  <input
-                    id="edit-imageUpload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => editImageInputRef.current?.click()}
+                  className="h-12 px-6 border-2 border-purple-500 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 font-semibold"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload
+                </Button>
+                <input
+                  ref={editImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
               </div>
               {watchedImage && (
                 <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -1236,44 +1450,111 @@ export default function InverterModels() {
                   id="edit-datasheet"
                   placeholder="/products/datasheets/model-code.pdf"
                   {...register('datasheet')}
-                  className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono text-sm"
+                  className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 font-mono text-sm"
                 />
-                <label htmlFor="edit-datasheetUpload" className="cursor-pointer">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-12 px-6 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 font-semibold"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload
-                  </Button>
-                  <input
-                    id="edit-datasheetUpload"
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-                          toast.error('Please select a PDF file');
-                          return;
-                        }
-                        if (file.size > 10 * 1024 * 1024) {
-                          toast.error('PDF size should be less than 10MB');
-                          return;
-                        }
-                        const fileName = file.name.toLowerCase().replace(/\s+/g, '-');
-                        const datasheetPath = `/products/datasheets/${fileName}`;
-                        setValue('datasheet', datasheetPath);
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => editDatasheetInputRef.current?.click()}
+                  className="h-12 px-6 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 font-semibold"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Upload PDF
+                </Button>
+                <input
+                  ref={editDatasheetInputRef}
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                        toast.error('Please select a PDF file');
+                        return;
                       }
-                    }}
-                  />
-                </label>
+                      if (file.size > 10 * 1024 * 1024) {
+                        toast.error('PDF size should be less than 10MB');
+                        return;
+                      }
+                      const normalized = normalizedModelCodeForPath(getValues('modelCode'));
+                      const datasheetPath = normalized
+                        ? `/products/datasheets/${normalized}.pdf`
+                        : `/products/datasheets/${file.name.toLowerCase().replace(/\s+/g, '-')}`;
+                      if (!normalized) {
+                        toast.info('Fill Model Code and re-select PDF to use schema naming.');
+                      }
+                      setValue('datasheet', datasheetPath);
+                    }
+                  }}
+                />
               </div>
               <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                 Upload technical datasheet PDF for this product variant (max 10MB)
               </p>
+            </div>
+
+            {/* User Manual (Google Drive / external link) */}
+            <div className="p-5 bg-gradient-to-br from-slate-50 to-emerald-50/30 dark:from-slate-800/50 dark:to-emerald-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
+              <Label htmlFor="edit-userManualUrl" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-4">
+                <BookOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                User Manual (link)
+              </Label>
+              <Input
+                id="edit-userManualUrl"
+                placeholder="https://drive.google.com/... or any PDF link"
+                {...register('userManualUrl')}
+                className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-mono text-sm"
+              />
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Google Drive or external link to user manual PDF.
+              </p>
+            </div>
+
+            {/* Technical support video links */}
+            <div className="p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-blue-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
+              <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-4">
+                <Video className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                Technical support videos
+              </Label>
+              <div className="space-y-3">
+                {(watch('supportVideoLinks') || []).map((_: unknown, index: number) => (
+                  <div key={index} className="flex gap-2 items-center flex-wrap">
+                    <Input
+                      placeholder="Title (e.g. BMS method, Wifi setup)"
+                      {...register(`supportVideoLinks.${index}.title`)}
+                      className="flex-1 min-w-[140px] h-10"
+                    />
+                    <Input
+                      placeholder="https://youtube.com/..."
+                      {...register(`supportVideoLinks.${index}.url`)}
+                      className="flex-1 min-w-[180px] h-10 font-mono text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0 h-10 w-10 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                      onClick={() => {
+                        const list = getValues('supportVideoLinks') || [];
+                        setValue('supportVideoLinks', list.filter((_, i) => i !== index));
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setValue('supportVideoLinks', [...(getValues('supportVideoLinks') || []), { title: '', url: '' }])}
+                  className="border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add video link
+                </Button>
+              </div>
             </div>
 
             {/* Active/Discontinued Status */}
@@ -1292,7 +1573,7 @@ export default function InverterModels() {
                     value={field.value ? 'active' : 'discontinued'}
                     onValueChange={(value) => field.onChange(value === 'active')}
                   >
-                    <SelectTrigger id="edit-active" className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300">
+                    <SelectTrigger id="edit-active" className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1425,68 +1706,6 @@ export default function InverterModels() {
         </DialogContent>
       </Dialog>
 
-      {/* Image Update Dialog - Simple, Only Image Upload */}
-      <Dialog open={!!imageUpdateModel} onOpenChange={(isOpen) => {
-        if (!isOpen) closeImageUpdateDialog();
-      }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader className="pb-4 border-b-2 border-slate-200 dark:border-slate-700">
-            <DialogTitle className="text-2xl font-bold">
-              Update Product Image
-            </DialogTitle>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-              {imageUpdateModel && (
-                <>
-                  <span className="font-semibold">{imageUpdateModel.brand}</span>{' '}
-                  {imageUpdateModel.productLine} {imageUpdateModel.variant}
-                  <br />
-                  <span className="text-xs font-mono text-slate-500">{imageUpdateModel.modelCode}</span>
-                </>
-              )}
-            </p>
-          </DialogHeader>
-          
-          <div className="space-y-6 pt-4">
-            {/* Current Image Preview */}
-            {imageUpdatePreview && (
-              <div className="relative h-48 w-full rounded-md border-2 border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-800">
-                <img src={imageUpdatePreview} alt="Image Preview" className="object-contain h-full w-full" />
-              </div>
-            )}
-            
-            {/* File Upload */}
-            <div className="relative h-48 w-full rounded-md border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-800">
-              {imageUpdatePreview ? (
-                <img src={imageUpdatePreview} alt="Image Preview" className="object-contain h-full w-full" />
-              ) : (
-                <ImageIcon className="h-16 w-16 text-slate-400 dark:text-slate-600" />
-              )}
-              <input
-                id="image-update-input"
-                type="file"
-                accept="image/*"
-                className="absolute inset-0 opacity-0 cursor-pointer"
-                onChange={handleImageUpdateUpload}
-              />
-            </div>
-            {imageUpdateModel && (
-              <p className="text-sm text-muted-foreground text-center">
-                New image will be saved as: <span className="font-mono text-slate-700 dark:text-slate-300">
-                  {imageUpdateModel.modelCode.toLowerCase()}.{imageUpdatePreview.split('.').pop() || 'jpg'}
-                </span>
-              </p>
-            )}
-          </div>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={closeImageUpdateDialog}>Cancel</Button>
-            <Button onClick={handleImageUpdateSubmit}>
-              <Upload className="h-4 w-4 mr-2" />
-              Update Image
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Product Grid by Category */}
       {isLoading ? (
         <div className="flex items-center justify-center p-12">
@@ -1582,7 +1801,7 @@ export default function InverterModels() {
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpdateUpload}
-                className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 cursor-pointer"
+                className="h-12 border-2 border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300 cursor-pointer"
               />
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Image will be renamed to: <span className="font-mono font-semibold">
@@ -1605,7 +1824,7 @@ export default function InverterModels() {
                 type="button"
                 onClick={handleImageUpdateSubmit}
                 className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold"
-                disabled={!imageUpdatePreview}
+                disabled={!imageUpdateFile}
               >
                 <Upload className="h-4 w-4 mr-2" />
                 Update Image

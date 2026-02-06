@@ -4,7 +4,9 @@ export type UserRole =
   | "FACTORY_ADMIN"
   | "DEALER"
   | "SUB_DEALER"
-  | "SERVICE_CENTER";
+  | "SERVICE_CENTER"
+  | "DATA_ENTRY_OPERATOR"
+  | "INSTALLER_PROGRAM_MANAGER";
 
 export interface AuthUser {
   id: string;

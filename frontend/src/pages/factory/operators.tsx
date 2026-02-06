@@ -2,7 +2,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createOperator, listOperators } from '@/api/operator-api-admin';
+import { useState } from 'react';
+import { createOperator, listOperators, deleteOperator } from '@/api/operator-api-admin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +17,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Users, Calendar, Mail, Scan } from 'lucide-react';
+import { Users, Calendar, Mail, Scan, Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 const operatorSchema = z.object({
   name: z.string().min(1, 'Operator name is required'),
@@ -27,6 +30,7 @@ const operatorSchema = z.object({
 type OperatorFormData = z.infer<typeof operatorSchema>;
 
 export default function Operators() {
+  const [deletingOperatorId, setDeletingOperatorId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const {
     register,
@@ -57,20 +61,42 @@ export default function Operators() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteOperator,
+    onSuccess: () => {
+      toast.success('Data entry operator deleted successfully');
+      setDeletingOperatorId(null);
+      queryClient.invalidateQueries({ queryKey: ['operators'] });
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to delete operator');
+      setDeletingOperatorId(null);
+    },
+  });
+
   const onSubmit = (data: OperatorFormData) => {
     mutation.mutate(data);
   };
 
+  const handleDelete = (id: string) => {
+    setDeletingOperatorId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deletingOperatorId) {
+      deleteMutation.mutate(deletingOperatorId);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      {/* Fixed Header */}
-      <div className="sticky top-0 z-10 bg-gradient-to-br from-slate-50 via-purple-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 backdrop-blur-sm border-b border-slate-200/50 dark:border-slate-700/50">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-slate-50 via-purple-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
         <div className="p-3 sm:p-4 md:p-6">
           <div className="space-y-1 sm:space-y-2">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-              Data Entry Operators
-            </h1>
-            <p className="text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-400">Create and manage data entry operator accounts for serial number registration</p>
+            <h1 className={PAGE_HEADING_CLASS}>Data Entry Operators</h1>
+            <p className={PAGE_SUBHEADING_CLASS}>Create and manage data entry operator accounts for serial number registration</p>
           </div>
         </div>
       </div>
@@ -139,6 +165,7 @@ export default function Operators() {
                       <TableHead>Name</TableHead>
                       <TableHead>Username (Email)</TableHead>
                       <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -163,6 +190,16 @@ export default function Operators() {
                             </span>
                           </div>
                         </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(op.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -173,6 +210,19 @@ export default function Operators() {
         </Card>
       </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deletingOperatorId && (
+        <ConfirmDialog
+          title="Delete Data Entry Operator"
+          message="Are you sure you want to delete this data entry operator? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={confirmDelete}
+          onCancel={() => setDeletingOperatorId(null)}
+          variant="danger"
+        />
+      )}
     </div>
   );
 }
