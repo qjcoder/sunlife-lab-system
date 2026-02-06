@@ -49,7 +49,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
           className="absolute right-4 top-4"
           onClick={onClose}
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
         </Button>
       )}
       {children}

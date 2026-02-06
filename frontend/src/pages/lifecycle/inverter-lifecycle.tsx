@@ -56,7 +56,7 @@ export default function InverterLifecycle() {
   const topBar = (
     <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
       <Button type="button" variant="outline" size="sm" onClick={() => navigate(-1)} className="w-full sm:w-auto shrink-0">
-        <ArrowLeft className="h-4 w-4 mr-2" />
+        <ArrowLeft className="h-3.5 w-3.5 mr-2" />
         Back
       </Button>
       <form onSubmit={handleSerialSearch} className="flex gap-2 w-full sm:flex-1 sm:min-w-0 max-w-full sm:max-w-md">
@@ -68,7 +68,7 @@ export default function InverterLifecycle() {
           className="font-mono flex-1 min-w-0"
         />
         <Button type="submit" size="sm" disabled={!serialSearch.trim()} className="shrink-0">
-          <Search className="h-4 w-4 mr-1" />
+          <Search className="h-3.5 w-3.5 mr-1" />
           Go
         </Button>
       </form>
@@ -205,15 +205,15 @@ export default function InverterLifecycle() {
         <CardContent>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-1">
-              <Package className="h-4 w-4" /> Production
+              <Package className="h-3.5 w-3.5" /> Production
             </span>
-            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
             {directFactorySale ? (
               <>
                 <span className="inline-flex items-center rounded-md bg-amber-100 dark:bg-amber-900/50 px-2 py-1 font-medium">
                   Direct Factory Sale
                 </span>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-1">Customer</span>
               </>
             ) : (
@@ -221,13 +221,13 @@ export default function InverterLifecycle() {
                 {data.factoryDispatch && (
                   <>
                     <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-1">Dealer</span>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
                   </>
                 )}
                 {data.dealerTransfers && data.dealerTransfers.length > 0 ? (
                   <>
                     <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-1">Sub-dealer</span>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
                   </>
                 ) : null}
                 <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-1">Customer Sold</span>
@@ -235,7 +235,7 @@ export default function InverterLifecycle() {
             )}
             {(data.serviceVisitCount ?? 0) > 0 && (
               <>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="rounded-md bg-blue-100 dark:bg-blue-900/50 px-2 py-1">
                   Service center × {data.serviceVisitCount}
                 </span>

@@ -317,7 +317,7 @@ export default function DealerSales() {
                 <div className="flex items-center justify-between gap-2">
                   <Label htmlFor="serialNumber" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                      <Hash className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      <Hash className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                     </div>
                     Serial Number
                   </Label>
@@ -331,7 +331,7 @@ export default function DealerSales() {
                     }}
                     className={cn(singleScannerMode && 'bg-green-600 hover:bg-green-700')}
                   >
-                    <Scan className="h-4 w-4 mr-1" />
+                    <Scan className="h-3.5 w-3.5 mr-1" />
                     {singleScannerMode ? 'Scanner ON' : 'Scanner'}
                   </Button>
                 </div>
@@ -367,7 +367,7 @@ export default function DealerSales() {
               <div className="space-y-3">
                 <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                    <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <FileText className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   Invoice Number
                 </Label>
@@ -380,7 +380,7 @@ export default function DealerSales() {
               <div className="space-y-3">
                 <Label htmlFor="saleDate" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <div className="p-1.5 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
-                    <Calendar className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                    <Calendar className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
                   </div>
                   Sale Date
                 </Label>
@@ -402,7 +402,7 @@ export default function DealerSales() {
               <div className="space-y-3">
                 <Label htmlFor="customerName" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                    <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <User className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                   </div>
                   Customer Name
                 </Label>
@@ -423,7 +423,7 @@ export default function DealerSales() {
               <div className="space-y-3">
                 <Label htmlFor="customerContact" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                    <Phone className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    <Phone className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                   </div>
                   Customer Contact (Optional)
                 </Label>
@@ -443,12 +443,12 @@ export default function DealerSales() {
                 >
                   {singleMutation.isPending ? (
                     <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                       Recording Sale...
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="h-5 w-5 mr-2" />
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
                       Record Sale
                     </>
                   )}
@@ -484,7 +484,7 @@ export default function DealerSales() {
                     scannerMode && "bg-green-700 border-white/60"
                   )}
                 >
-                  <Scan className="h-4 w-4 mr-2" />
+                  <Scan className="h-3.5 w-3.5 mr-2" />
                   {scannerMode ? 'Scanner ON' : 'Scanner'}
                 </Button>
                 <input
@@ -500,7 +500,7 @@ export default function DealerSales() {
                   onClick={() => bulkFileInputRef.current?.click()}
                   className="bg-white/20 backdrop-blur-md text-white border-2 border-white/30 hover:bg-white/30 font-semibold transition-all duration-300"
                 >
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-3.5 w-3.5 mr-2" />
                   Upload Excel/CSV
                 </Button>
               </div>
@@ -512,7 +512,7 @@ export default function DealerSales() {
                 <Card className="border-2 border-green-400 bg-green-50/50 dark:bg-green-950/20 dark:border-green-700">
                   <CardContent className="py-4">
                     <Label htmlFor="bulk-scanner-input" className="text-sm font-semibold flex items-center gap-2 text-green-800 dark:text-green-200 mb-2">
-                      <Scan className="h-4 w-4" />
+                      <Scan className="h-3.5 w-3.5" />
                       Scanner mode – scan or type serial number; row is added automatically or press Enter
                     </Label>
                     <Input
@@ -534,7 +534,7 @@ export default function DealerSales() {
                 <Card className="border-2 border-slate-200 dark:border-slate-700 shadow-lg">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <Hash className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <Hash className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                       Serial numbers ({bulkSerials.length}) – same purchaser
                     </CardTitle>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">All units for one sale. Enter customer details once below.</p>
@@ -551,7 +551,7 @@ export default function DealerSales() {
                             onClick={() => removeBulkSerial(index)}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 shrink-0"
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-3.5 w-3.5" />
                           </Button>
                         </li>
                       ))}
@@ -584,7 +584,7 @@ export default function DealerSales() {
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-3">
                       <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                        <FileText className="h-4 w-4 text-emerald-600" />
+                        <FileText className="h-3.5 w-3.5 text-emerald-600" />
                         Invoice Number
                       </Label>
                       <div className="h-12 px-4 flex items-center text-base border-2 border-slate-200 dark:border-slate-600 rounded-md bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 font-medium">
@@ -594,7 +594,7 @@ export default function DealerSales() {
                     </div>
                     <div className="space-y-3">
                       <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                        <Calendar className="h-4 w-4 text-teal-600" />
+                        <Calendar className="h-3.5 w-3.5 text-teal-600" />
                         Sale Date
                       </Label>
                       <Input
@@ -606,7 +606,7 @@ export default function DealerSales() {
                     </div>
                     <div className="space-y-3 md:col-span-2">
                       <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                        <User className="h-4 w-4 text-blue-600" />
+                        <User className="h-3.5 w-3.5 text-blue-600" />
                         Customer Name
                       </Label>
                       <Input
@@ -618,7 +618,7 @@ export default function DealerSales() {
                     </div>
                     <div className="space-y-3 md:col-span-2">
                       <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                        <Phone className="h-4 w-4 text-purple-600" />
+                        <Phone className="h-3.5 w-3.5 text-purple-600" />
                         Customer Contact (Optional)
                       </Label>
                       <Input
@@ -666,12 +666,12 @@ export default function DealerSales() {
                   >
                     {bulkMutation.isPending ? (
                       <>
-                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                         Recording sale...
                       </>
                     ) : (
                       <>
-                        <CheckCircle2 className="h-5 w-5 mr-2" />
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
                         Record sale ({bulkSerials.length} unit{bulkSerials.length !== 1 ? 's' : ''})
                       </>
                     )}

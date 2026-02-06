@@ -145,7 +145,7 @@ export default function Transfer() {
               <div className="space-y-3">
                 <Label htmlFor="subDealer" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                    <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    <Users className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                   </div>
                   Sub-Dealer
                 </Label>
@@ -173,7 +173,7 @@ export default function Transfer() {
               <div className="space-y-3">
                 <Label htmlFor="remarks" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <div className="p-1.5 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
-                    <FileText className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+                    <FileText className="h-3.5 w-3.5 text-pink-600 dark:text-pink-400" />
                   </div>
                   Remarks (Optional)
                 </Label>
@@ -203,12 +203,12 @@ export default function Transfer() {
                 >
                   {mutation.isPending ? (
                     <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                       Transferring {selectedSerials.length} Product{selectedSerials.length !== 1 ? 's' : ''}...
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="h-5 w-5 mr-2" />
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
                       Create Transfer ({selectedSerials.length} product{selectedSerials.length !== 1 ? 's' : ''})
                     </>
                   )}
@@ -236,7 +236,7 @@ export default function Transfer() {
             {(stock?.availableInverters?.length ?? 0) > 0 && (
               <div className="mb-4 p-3 rounded-xl border-2 border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20">
                 <div className="flex items-center gap-2 mb-2">
-                  <Scan className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <Scan className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                   <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Scan serial to add</span>
                   <Button
                     type="button"
@@ -292,7 +292,7 @@ export default function Transfer() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <Hash className={cn(
-                            "h-4 w-4",
+                            "h-3.5 w-3.5",
                             selectedSerials.includes(item.serialNumber) ? "text-white" : "text-purple-600 dark:text-purple-400"
                           )} />
                           <p className={cn(

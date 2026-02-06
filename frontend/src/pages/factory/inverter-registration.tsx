@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { Package, CheckCircle2, Upload, Scan, Hash, Box, Loader2, Search, X, Sun, Battery, Gauge } from 'lucide-react';
-import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS, getModelDisplayName, extractPowerRating, sortModelsByPowerAndActive, categorizeModel } from '@/lib/utils';
+import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS, getModelDisplayName, getVariantDisplay, extractPowerRating, sortModelsByPowerAndActive, categorizeModel } from '@/lib/utils';
 
 const singleSchema = z.object({
   serialNumber: z.string().min(1, 'Serial number is required'),
@@ -152,6 +152,7 @@ export default function InverterRegistration() {
     return list.filter(
       (m) =>
         getModelDisplayName(m).toLowerCase().includes(q) ||
+        (getVariantDisplay(m) && getVariantDisplay(m).toLowerCase().includes(q)) ||
         (m.modelCode && m.modelCode.toLowerCase().includes(q))
     );
   }, [categorizedModels, selectedSingleCategory, singleModelSearch]);
@@ -163,6 +164,7 @@ export default function InverterRegistration() {
     return list.filter(
       (m) =>
         getModelDisplayName(m).toLowerCase().includes(q) ||
+        (getVariantDisplay(m) && getVariantDisplay(m).toLowerCase().includes(q)) ||
         (m.modelCode && m.modelCode.toLowerCase().includes(q))
     );
   }, [categorizedModels, selectedBulkCategory, bulkModelSearch]);
@@ -409,7 +411,7 @@ export default function InverterRegistration() {
           <Card className="w-full sm:w-auto">
             <CardContent className="px-3 py-2 sm:px-4 sm:py-2 flex items-center gap-2">
               <div className="p-1.5 rounded-md bg-primary/10">
-                <Package className="h-4 w-4 text-primary" />
+                <Package className="h-3.5 w-3.5 text-primary" />
               </div>
               <div className="space-y-0">
                 <p className="text-xs font-medium text-muted-foreground">Total Factory Stock</p>
@@ -436,7 +438,7 @@ export default function InverterRegistration() {
             <CardHeader className="shrink-0 flex flex-row items-start justify-between gap-3 space-y-0 pb-4 pt-5 px-4 sm:px-6">
               <div className="space-y-1">
                 <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
-                  <Box className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <Box className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   Single Registration
                 </CardTitle>
                 <CardDescription className="text-sm sm:text-base">Quick single product entry. Use scanner or type serial.</CardDescription>
@@ -454,7 +456,7 @@ export default function InverterRegistration() {
                   if (!scannerMode) setTimeout(() => singleSerialRef.current?.focus(), 100);
                 }}
               >
-                <Scan className="h-4 w-4 mr-2" />
+                <Scan className="h-3.5 w-3.5 mr-2" />
                 {scannerMode ? 'Scanner ON' : 'Enable Scanner'}
               </Button>
             </CardHeader>
@@ -481,7 +483,7 @@ export default function InverterRegistration() {
                               setValueSingle('inverterModel', '');
                             }}
                           >
-                            <Icon className="h-4 w-4" />
+                            <Icon className="h-3.5 w-3.5" />
                             {label}
                           </Button>
                         ))}
@@ -497,7 +499,10 @@ export default function InverterRegistration() {
                           value={
                             (() => {
                               const sel = models?.find((m) => m._id === selectedSingleModel);
-                              return sel ? getModelDisplayName(sel) : singleModelSearch;
+                              if (!sel) return singleModelSearch;
+                              const name = getModelDisplayName(sel);
+                              const variant = getVariantDisplay(sel);
+                              return variant ? `${name} ${variant}` : name;
                             })()
                           }
                           onChange={(e) => setSingleModelSearch(e.target.value)}
@@ -509,7 +514,7 @@ export default function InverterRegistration() {
                             selectedSingleModel && 'cursor-default'
                           )}
                         />
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                         {selectedSingleModel && (
                           <button
                             type="button"
@@ -521,12 +526,12 @@ export default function InverterRegistration() {
                             className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
                             aria-label="Clear selection"
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-3.5 w-3.5" />
                           </button>
                         )}
                       </div>
                       {!selectedSingleModel && singleModelListOpen && (
-                        <div className="max-h-[220px] overflow-y-auto rounded-lg border border-border p-2 space-y-2">
+                        <div className="max-h-[6rem] overflow-y-auto rounded-lg border border-border p-2 space-y-2 shadow-lg z-10 bg-background">
                           {filteredSingleModels.length === 0 ? (
                             <p className="text-sm text-muted-foreground py-4 text-center">No models</p>
                           ) : (
@@ -537,7 +542,9 @@ export default function InverterRegistration() {
                                 onClick={() => setValueSingle('inverterModel', model._id)}
                                 className="w-full flex items-center justify-between gap-2 text-left px-4 py-2.5 rounded-lg border-2 border-border bg-card text-foreground hover:border-primary/50 hover:bg-muted/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-sm"
                               >
-                                <span className="font-medium truncate">{getModelDisplayName(model)}</span>
+                                <span className="font-medium truncate">
+                                {[getModelDisplayName(model), getVariantDisplay(model)].filter(Boolean).join(' ')}
+                              </span>
                               </button>
                             ))
                           )}
@@ -549,7 +556,7 @@ export default function InverterRegistration() {
                         if (!selectedModel) return null;
                         return (
                           <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1.5">
-                            <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                            <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
                             {stockCount} in stock
                           </p>
                         );
@@ -584,7 +591,7 @@ export default function InverterRegistration() {
                       )}
                     </Label>
                     <div className="relative">
-                      <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                       <Input
                         id="serialNumber"
                         {...((): any => {
@@ -613,12 +620,12 @@ export default function InverterRegistration() {
                   <Button type="submit" disabled={singleMutation.isPending} className="w-full h-11 text-base">
                     {singleMutation.isPending ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                         Registering...
                       </>
                     ) : (
                       <>
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
                         Register Product
                       </>
                     )}
@@ -632,7 +639,7 @@ export default function InverterRegistration() {
             <CardHeader className="shrink-0 flex flex-row items-start justify-between gap-4 space-y-0 pb-4 pt-6 px-6 sm:px-8">
               <div className="space-y-2">
                 <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
-                  <Box className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <Box className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   Bulk Registration
                 </CardTitle>
                 <CardDescription className="text-base">Enter or upload serial numbers, one per line.</CardDescription>
@@ -651,7 +658,7 @@ export default function InverterRegistration() {
                     if (!bulkScannerMode) setTimeout(() => bulkSerialRef.current?.focus(), 100);
                   }}
                 >
-                  <Scan className="h-4 w-4 mr-2" />
+                  <Scan className="h-3.5 w-3.5 mr-2" />
                   {bulkScannerMode ? 'Scanner ON' : 'Scanner'}
                 </Button>
                 <Button
@@ -661,7 +668,7 @@ export default function InverterRegistration() {
                   className="border-blue-500/60 text-blue-700 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-500 hover:text-blue-800"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-3.5 w-3.5 mr-2" />
                   Upload Excel
                 </Button>
                 <input
@@ -693,7 +700,7 @@ export default function InverterRegistration() {
                               setValueBulk('inverterModel', '');
                             }}
                           >
-                            <Icon className="h-4 w-4" />
+                            <Icon className="h-3.5 w-3.5" />
                             {label}
                           </Button>
                         ))}
@@ -709,7 +716,10 @@ export default function InverterRegistration() {
                           value={
                             (() => {
                               const sel = models?.find((m) => m._id === selectedBulkModel);
-                              return sel ? getModelDisplayName(sel) : bulkModelSearch;
+                              if (!sel) return bulkModelSearch;
+                              const name = getModelDisplayName(sel);
+                              const variant = getVariantDisplay(sel);
+                              return variant ? `${name} ${variant}` : name;
                             })()
                           }
                           onChange={(e) => setBulkModelSearch(e.target.value)}
@@ -721,7 +731,7 @@ export default function InverterRegistration() {
                             selectedBulkModel && 'cursor-default'
                           )}
                         />
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                         {selectedBulkModel && (
                           <button
                             type="button"
@@ -733,12 +743,12 @@ export default function InverterRegistration() {
                             className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
                             aria-label="Clear selection"
                           >
-                            <X className="h-4 w-4" />
+                            <X className="h-3.5 w-3.5" />
                           </button>
                         )}
                       </div>
                       {!selectedBulkModel && bulkModelListOpen && (
-                        <div className="max-h-[220px] overflow-y-auto rounded-xl p-2 space-y-2.5 border border-border bg-card">
+                        <div className="max-h-[6rem] overflow-y-auto rounded-xl p-2 space-y-2.5 border border-border bg-card shadow-lg z-10">
                           {filteredBulkModels.length === 0 ? (
                             <p className="text-sm text-muted-foreground py-6 text-center">No models</p>
                           ) : (
@@ -749,7 +759,9 @@ export default function InverterRegistration() {
                                 onClick={() => setValueBulk('inverterModel', model._id)}
                                 className="w-full flex items-center justify-between gap-2 text-left px-4 py-3 rounded-xl border-2 border-border bg-card text-foreground hover:border-primary/50 hover:bg-muted/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                               >
-                                <span className="text-sm font-medium truncate">{getModelDisplayName(model)}</span>
+                                <span className="text-sm font-medium truncate">
+                                {[getModelDisplayName(model), getVariantDisplay(model)].filter(Boolean).join(' ')}
+                              </span>
                               </button>
                             ))
                           )}
@@ -830,12 +842,12 @@ export default function InverterRegistration() {
                   >
                     {bulkMutation.isPending ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                         Registering...
                       </>
                     ) : (
                       <>
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
                         Register {serialCount || 0} product{serialCount !== 1 ? 's' : ''}
                       </>
                     )}

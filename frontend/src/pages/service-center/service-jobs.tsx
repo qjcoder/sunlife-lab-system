@@ -54,7 +54,7 @@ export default function ServiceJobs() {
           onClick={() => navigate('/service-center/create-job')}
           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-3.5 w-3.5 mr-2" />
           Create Job
         </Button>
       </div>

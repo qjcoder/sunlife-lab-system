@@ -106,7 +106,7 @@ export default function ServiceJobDetails() {
       {/* Header */}
       <div className="space-y-4">
         <Button variant="ghost" onClick={() => navigate('/service-center/jobs')} className="mb-2">
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-3.5 w-3.5 mr-2" />
           Back
         </Button>
         <PageHeader title="Service Job Details" description={`Job ID: ${serviceJobId}`} />
@@ -156,7 +156,7 @@ export default function ServiceJobDetails() {
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger>
                   <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-3.5 w-3.5 mr-2" />
                     Add Part
                   </Button>
                 </DialogTrigger>

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Loader2, Package, Warehouse, Truck, Users, ShoppingCart, Sun, Battery, Gauge, FileDown } from 'lucide-react';
+import { Loader2, Package, Warehouse, Truck, Users, ShoppingCart, Sun, Battery, Gauge, FileDown, Printer, Search } from 'lucide-react';
 import { cn, PAGE_HEADING_FIRST, PAGE_HEADING_SECOND, PAGE_SUBHEADING_CLASS, getModelDisplayName, getVariantDisplay, categorizeModel, extractPowerRating } from '@/lib/utils';
 import { downloadStockPdf } from '@/lib/stock-pdf';
 import { Button } from '@/components/ui/button';
@@ -206,7 +206,7 @@ export default function FactoryStock() {
           <Card className="w-full sm:w-auto">
             <CardContent className="px-3 py-2 sm:px-4 sm:py-2 flex items-center gap-2">
               <div className="p-1.5 rounded-md bg-primary/10">
-                <Package className="h-4 w-4 text-primary" />
+                <Package className="h-3.5 w-3.5 text-primary" />
               </div>
               <div className="space-y-0">
                 <p className="text-xs font-medium text-muted-foreground">Total in Factory</p>
@@ -220,36 +220,52 @@ export default function FactoryStock() {
 
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden p-3 sm:p-4">
         <Card className="flex-1 min-h-0 flex flex-col overflow-hidden flex-shrink-0 break-inside-avoid">
-          <CardHeader className="shrink-0 flex flex-row items-start justify-between gap-3 space-y-0 py-4 px-4 sm:px-6 bg-gradient-to-r from-slate-100 via-primary/10 to-slate-100 dark:from-slate-800/80 dark:via-primary/15 dark:to-slate-800/80 border-b border-border rounded-t-lg">
-            <div className="space-y-0.5">
+          <CardHeader className="shrink-0 flex flex-col sm:flex-row sm:items-start justify-between gap-3 space-y-0 py-4 px-4 sm:px-6 bg-gradient-to-r from-slate-100 via-primary/10 to-slate-100 dark:from-slate-800/80 dark:via-primary/15 dark:to-slate-800/80 border-b border-border rounded-t-lg">
+            <div className="space-y-0.5 min-w-0">
               <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
                 <div className="p-1.5 rounded-lg bg-primary/20">
-                  <Warehouse className="h-5 w-5 text-primary shrink-0" />
+                  <Warehouse className="h-3.5 w-3.5 text-primary shrink-0" />
                 </div>
                 Product inventory
               </CardTitle>
               <p className="text-sm font-medium text-foreground/80">Search and view stock by model</p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:shrink-0 min-w-0">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="gap-1.5 h-9 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white border-0 shadow-md hover:shadow-lg font-semibold transition-all"
+                className="gap-1.5 h-9 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white border-0 shadow-md hover:shadow-lg font-semibold transition-all shrink-0"
                 onClick={() => {
                   downloadStockPdf(modelsByCategory, modelStatistics);
                   toast.success('Stock detail downloaded as PDF');
                 }}
               >
-                <FileDown className="h-4 w-4" />
+                <FileDown className="h-3.5 w-3.5" />
                 Download PDF
               </Button>
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-40 md:w-56 h-9 border-2 border-primary/50 bg-gradient-to-r from-primary/5 via-blue-50/50 to-indigo-50/50 dark:from-primary/10 dark:via-blue-950/20 dark:to-indigo-950/20 text-sm placeholder:text-foreground/50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary shadow-sm"
-              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-9 border-slate-300 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700 font-semibold transition-all shrink-0"
+                onClick={() => {
+                  downloadStockPdf(modelsByCategory, modelStatistics, true);
+                  toast.success('Opening stock report for print');
+                }}
+              >
+                <Printer className="h-3.5 w-3.5" />
+                Print
+              </Button>
+              <div className="relative w-full min-w-0 sm:w-40 md:w-56 basis-full sm:basis-auto">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full h-9 pl-8 border-2 border-primary/50 bg-gradient-to-r from-primary/5 via-blue-50/50 to-indigo-50/50 dark:from-primary/10 dark:via-blue-950/20 dark:to-indigo-950/20 text-sm placeholder:text-foreground/50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary shadow-sm"
+                />
+              </div>
             </div>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 overflow-auto pt-3 px-4 pb-5 sm:px-6 sm:pb-6 -mt-px border-t-0">
@@ -260,7 +276,7 @@ export default function FactoryStock() {
             <div key={key} className="space-y-3">
               <div className={cn('flex items-center gap-3 rounded-lg px-4 py-2.5 shadow-sm', config.headerClass)}>
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/20">
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-3.5 w-3.5" />
                 </div>
                 <div>
                   <h2 className="text-base font-bold tracking-tight">{title}</h2>

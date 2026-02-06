@@ -136,7 +136,7 @@ export default function ModelDetails() {
       {/* Header */}
       <div className="space-y-4">
         <Button variant="ghost" onClick={() => navigate('/factory/inverter-models')} className="mb-2">
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-3.5 w-3.5 mr-2" />
           Back to Models
         </Button>
         <div className="space-y-1">
@@ -152,7 +152,7 @@ export default function ModelDetails() {
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
               Factory Stock
             </CardTitle>
-            <Warehouse className="h-5 w-5 text-red-600 dark:text-red-400" />
+            <Warehouse className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-red-600 dark:text-red-400">
@@ -167,7 +167,7 @@ export default function ModelDetails() {
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
               With Dealers
             </CardTitle>
-            <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <Users className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
@@ -185,7 +185,7 @@ export default function ModelDetails() {
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
               With Sub-Dealers
             </CardTitle>
-            <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <Users className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
@@ -203,7 +203,7 @@ export default function ModelDetails() {
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
               Complaint Ratio
             </CardTitle>
-            <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <AlertTriangle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
@@ -221,14 +221,14 @@ export default function ModelDetails() {
         <Card className="border-slate-200 dark:border-slate-700">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-red-600" />
+              <TrendingUp className="h-3.5 w-3.5 text-red-600" />
               Complete Summary
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
               <div className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-blue-500" />
+                <Package className="h-3.5 w-3.5 text-blue-500" />
                 <span className="font-medium">Total Registered</span>
               </div>
               <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -238,7 +238,7 @@ export default function ModelDetails() {
 
             <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
               <div className="flex items-center gap-2">
-                <Warehouse className="h-5 w-5 text-green-500" />
+                <Warehouse className="h-3.5 w-3.5 text-green-500" />
                 <span className="font-medium">In Circulation</span>
               </div>
               <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -248,7 +248,7 @@ export default function ModelDetails() {
 
             <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
               <div className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-purple-500" />
+                <ShoppingCart className="h-3.5 w-3.5 text-purple-500" />
                 <span className="font-medium">Total Sold</span>
               </div>
               <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -258,7 +258,7 @@ export default function ModelDetails() {
 
             <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-orange-500" />
+                <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
                 <span className="font-medium">In Service</span>
               </div>
               <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -271,7 +271,7 @@ export default function ModelDetails() {
         <Card className="border-slate-200 dark:border-slate-700">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
+              <CheckCircle className="h-3.5 w-3.5 text-green-600" />
               Model Information
             </CardTitle>
           </CardHeader>

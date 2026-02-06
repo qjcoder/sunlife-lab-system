@@ -15,15 +15,19 @@ import InverterUnit from "../models/InverterUnit.js";
  */
 export const getFactoryInverterStock = async (req, res) => {
   try {
-    const stock = await InverterUnit.find({
-      dealer: null, // 👈 still in factory
-    })
-      .populate("inverterModel", "brand productLine variant modelCode")
-      .sort({ createdAt: -1 })
-      .lean();
+    const [stock, totalCount, dispatchedCount] = await Promise.all([
+      InverterUnit.find({ dealer: null })
+        .populate("inverterModel", "brand productLine variant modelCode")
+        .sort({ createdAt: -1 })
+        .lean(),
+      InverterUnit.countDocuments(),
+      InverterUnit.countDocuments({ dealer: { $ne: null, $exists: true } }),
+    ]);
 
     return res.json({
       count: stock.length,
+      totalCount: totalCount ?? 0,
+      dispatchedCount: dispatchedCount ?? 0,
       stock,
     });
   } catch (error) {

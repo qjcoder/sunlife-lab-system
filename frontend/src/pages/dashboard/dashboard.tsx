@@ -5,14 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getFactoryStock, getDealerStock } from '@/api/stock-api';
 import { listServiceJobs } from '@/api/service-api';
 import { listModels } from '@/api/model-api';
-import { Warehouse, Package, Wrench, TrendingUp, Building2, Sun, Battery, Gauge, Settings, Shield, Calendar, Hash, Tag, Eye, ArrowRight, ArrowLeft, X, FileText, BookOpen, Video, Users, ArrowRightLeft, ShoppingCart } from 'lucide-react';
+import { Warehouse, Package, Wrench, TrendingUp, Building2, Sun, Battery, Gauge, Settings, Shield, Calendar, Hash, Tag, Eye, ArrowRight, ArrowLeft, X, FileText, BookOpen, Video, Users, ArrowRightLeft, ShoppingCart, FileDown, Printer, Search } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { getProductImageWithHandler } from '@/lib/image-utils';
 import { cn, PAGE_HEADING_CLASS, getModelDisplayName } from '@/lib/utils';
 import { toast } from 'sonner';
+import { downloadCatalogPdf } from '@/lib/catalog-pdf';
 
 /** Roles that can see Full Life Cycle View */
 const ROLES_WITH_LIFECYCLE_ACCESS = ['FACTORY_ADMIN', 'SERVICE_CENTER', 'INSTALLER_PROGRAM_MANAGER'];
@@ -27,6 +29,7 @@ export default function Dashboard() {
   const [isVFDDialogOpen, setIsVFDDialogOpen] = useState(false);
   const [selectedModelForPdf, setSelectedModelForPdf] = useState<any>(null);
   const [isPdfDialogOpen, setIsPdfDialogOpen] = useState(false);
+  const [catalogSearchTerm, setCatalogSearchTerm] = useState('');
 
   /** Format warranty months as years for display (e.g. 12 → "1 year", 24 → "2 years") */
   const formatWarrantyYears = (months: number | undefined, defaultMonths: number): string => {
@@ -110,6 +113,19 @@ export default function Dashboard() {
     }
   }, [modelIdFromUrl, models]);
 
+  // Filter catalog by search term (model name / code)
+  const filteredCatalogModels = useMemo(() => {
+    if (!models || !Array.isArray(models)) return [];
+    const q = (catalogSearchTerm || '').toLowerCase().trim();
+    if (!q) return models;
+    return models.filter((m: any) => {
+      if (!m) return false;
+      const name = (getModelDisplayName(m) || '').toLowerCase();
+      const code = (m.modelCode || '').toLowerCase();
+      return name.includes(q) || code.includes(q);
+    });
+  }, [models, catalogSearchTerm]);
+
   // Calculate stock counts per model (for admin only) - MUST be at top level to avoid hook order violations
   const modelStockCounts = useMemo(() => {
     try {
@@ -140,10 +156,13 @@ export default function Dashboard() {
 
   const getDashboardStats = () => {
     if (user?.role === 'FACTORY_ADMIN') {
+      const total = factoryStock?.totalCount ?? factoryStock?.count ?? 0;
+      const available = factoryStock?.availableInverters?.length ?? factoryStock?.count ?? 0;
+      const dispatched = factoryStock?.dispatchedCount ?? Math.max(0, total - available);
       return {
-        totalInverters: factoryStock?.count || 0,
-        availableInverters: factoryStock?.availableInverters?.length || 0,
-        dispatchedInverters: (factoryStock?.count || 0) - (factoryStock?.availableInverters?.length || 0),
+        totalInverters: total,
+        availableInverters: available,
+        dispatchedInverters: dispatched,
         serviceJobs: 0,
       };
     }
@@ -404,7 +423,7 @@ export default function Dashboard() {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                      <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <Package className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Dealer Stock</p>
@@ -511,7 +530,7 @@ export default function Dashboard() {
                   className="justify-start gap-4 h-auto py-5 px-5 text-base font-semibold rounded-xl border-2 border-blue-300 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:border-blue-500 dark:hover:border-blue-500 shadow-sm hover:shadow-md transition-all duration-200 text-blue-700 dark:text-blue-300"
                   onClick={() => navigate('/dealer/stock')}
                 >
-                  <Warehouse className="h-6 w-6 shrink-0 text-blue-600 dark:text-blue-400" />
+                  <Warehouse className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
                   <span>Dealer Stock</span>
                 </Button>
                 <Button
@@ -519,7 +538,7 @@ export default function Dashboard() {
                   className="justify-start gap-4 h-auto py-5 px-5 text-base font-semibold rounded-xl border-2 border-emerald-300 dark:border-emerald-700 bg-emerald-50/60 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 hover:border-emerald-500 dark:hover:border-emerald-500 shadow-sm hover:shadow-md transition-all duration-200 text-emerald-700 dark:text-emerald-300"
                   onClick={() => navigate('/dealer/sales')}
                 >
-                  <ShoppingCart className="h-6 w-6 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                   <span>Sales</span>
                 </Button>
                 <Button
@@ -527,7 +546,7 @@ export default function Dashboard() {
                   className="justify-start gap-4 h-auto py-5 px-5 text-base font-semibold rounded-xl border-2 border-amber-300 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 hover:border-amber-500 dark:hover:border-amber-500 shadow-sm hover:shadow-md transition-all duration-200 text-amber-700 dark:text-amber-300"
                   onClick={() => navigate('/dealer/transfer')}
                 >
-                  <ArrowRightLeft className="h-6 w-6 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <ArrowRightLeft className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
                   <span>Transfer to Sub Dealer</span>
                 </Button>
               </CardContent>
@@ -549,7 +568,7 @@ export default function Dashboard() {
                   className="justify-start gap-4 h-auto py-5 px-5 text-base font-semibold rounded-xl border-2 border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/40 hover:border-green-500 dark:hover:border-green-500 shadow-sm hover:shadow-md transition-all duration-200"
                   onClick={() => navigate('/sub-dealer/stock')}
                 >
-                  <Warehouse className="h-6 w-6 shrink-0 text-green-600 dark:text-green-400" />
+                  <Warehouse className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" />
                   <span>My Stock</span>
                 </Button>
                 <Button
@@ -557,7 +576,7 @@ export default function Dashboard() {
                   className="justify-start gap-4 h-auto py-5 px-5 text-base font-semibold rounded-xl border-2 border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/40 hover:border-green-500 dark:hover:border-green-500 shadow-sm hover:shadow-md transition-all duration-200"
                   onClick={() => navigate('/sub-dealer/sales')}
                 >
-                  <ShoppingCart className="h-6 w-6 shrink-0 text-green-600 dark:text-green-400" />
+                  <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" />
                   <span>Sales</span>
                 </Button>
               </CardContent>
@@ -569,23 +588,57 @@ export default function Dashboard() {
         {models && Array.isArray(models) && models.length > 0 && (
           <section>
             <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm overflow-hidden bg-white dark:bg-slate-900/80">
-              <CardHeader className="bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-800/80 dark:via-slate-900/80 dark:to-indigo-950/20 border-b border-slate-200/80 dark:border-slate-700/80 py-3 px-4 sm:px-5">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-white dark:bg-slate-800 p-2 shadow-sm border border-slate-200/80 dark:border-slate-700/80 ring-2 ring-indigo-500/10 dark:ring-indigo-400/10">
-                    <Package className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <div className="space-y-0.5 min-w-0">
-                    <CardTitle className="font-heading text-lg sm:text-xl font-bold tracking-tight bg-gradient-to-r from-slate-800 to-indigo-700 dark:from-slate-100 dark:to-indigo-300 bg-clip-text text-transparent">
-                      Product Catalog
-                    </CardTitle>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                      Browse product lines and variants
-                    </p>
+              <CardHeader className="shrink-0 flex flex-col sm:flex-row sm:items-start justify-between gap-3 space-y-0 py-4 px-4 sm:px-6 bg-gradient-to-r from-slate-100 via-primary/10 to-slate-100 dark:from-slate-800/80 dark:via-primary/15 dark:to-slate-800/80 border-b border-border rounded-t-xl">
+                <div className="space-y-0.5 min-w-0">
+                  <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
+                    <div className="p-1.5 rounded-lg bg-primary/20">
+                      <Package className="h-3.5 w-3.5 text-primary shrink-0" />
+                    </div>
+                    Product Catalog
+                  </CardTitle>
+                  <p className="text-sm font-medium text-foreground/80">Search and view products by model</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:shrink-0 min-w-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 h-9 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white border-0 shadow-md hover:shadow-lg font-semibold transition-all shrink-0"
+                    onClick={() => {
+                      downloadCatalogPdf(models);
+                      toast.success('Product catalog downloaded as PDF');
+                    }}
+                  >
+                    <FileDown className="h-3.5 w-3.5" />
+                    Download PDF
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 h-9 border-slate-300 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700 font-semibold transition-all shrink-0"
+                    onClick={() => {
+                      downloadCatalogPdf(models, true);
+                      toast.success('Opening product catalog for print');
+                    }}
+                  >
+                    <Printer className="h-3.5 w-3.5" />
+                    Print
+                  </Button>
+                  <div className="relative w-full min-w-0 sm:w-40 md:w-56 basis-full sm:basis-auto">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+                    <Input
+                      placeholder="Search products..."
+                      value={catalogSearchTerm}
+                      onChange={(e) => setCatalogSearchTerm(e.target.value)}
+                      className="w-full h-9 pl-8 border-2 border-primary/50 bg-gradient-to-r from-primary/5 via-blue-50/50 to-indigo-50/50 dark:from-primary/10 dark:via-blue-950/20 dark:to-indigo-950/20 text-sm placeholder:text-foreground/50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary shadow-sm"
+                    />
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="p-3 sm:p-4 pt-3">
             {(() => {
+              const catalogModels = filteredCatalogModels;
               const categorizeModel = (model: any) => {
                 if (!model) return null;
                 
@@ -632,9 +685,9 @@ export default function Dashboard() {
                 return 'inverter';
               };
 
-              const inverterModels = (models && Array.isArray(models)) ? models.filter(m => m && categorizeModel(m) === 'inverter') : [];
-              const batteryModels = (models && Array.isArray(models)) ? models.filter(m => m && categorizeModel(m) === 'battery') : [];
-              const vfdModels = (models && Array.isArray(models)) ? models.filter(m => m && categorizeModel(m) === 'vfd') : [];
+              const inverterModels = (catalogModels && Array.isArray(catalogModels)) ? catalogModels.filter((m: any) => m && categorizeModel(m) === 'inverter') : [];
+              const batteryModels = (catalogModels && Array.isArray(catalogModels)) ? catalogModels.filter((m: any) => m && categorizeModel(m) === 'battery') : [];
+              const vfdModels = (catalogModels && Array.isArray(catalogModels)) ? catalogModels.filter((m: any) => m && categorizeModel(m) === 'vfd') : [];
 
               // modelStockCounts is now defined at component top level (above) to avoid hook order violations
 
@@ -680,6 +733,13 @@ export default function Dashboard() {
               };
 
               try {
+                if (catalogModels.length === 0) {
+                  return (
+                    <div className="py-12 text-center">
+                      <p className="text-slate-500 dark:text-slate-400">No products match your search. Try a different term.</p>
+                    </div>
+                  );
+                }
                 return (
                   <div className="space-y-0">
                     {/* Inverters */}
@@ -707,20 +767,18 @@ export default function Dashboard() {
                         });
                     
                         return (
-                          <section className="relative rounded-xl border border-slate-200/90 dark:border-slate-700/90 bg-white dark:bg-slate-900/50 shadow-sm overflow-hidden">
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-400 to-orange-500 dark:from-amber-500 dark:to-orange-600" aria-hidden />
-                            <div className="p-4 sm:p-5 pl-5 sm:pl-6">
-                              <div className="flex items-center gap-3 mb-4">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/50 shadow-sm">
-                                  <Sun className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                                </div>
-                                <div>
-                                  <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-0.5">OffGrid & hybrid</p>
-                                  <h3 className="font-heading text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">Inverters</h3>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{inverterModels.length} models across {groupedInverters.size} product lines</p>
-                                </div>
+                          <section className="relative rounded-xl border border-amber-500/30 dark:border-amber-500/20 bg-gradient-to-b from-amber-500/10 to-transparent dark:from-amber-500/15 dark:to-transparent shadow-sm overflow-hidden">
+                            <div className="rounded-t-xl flex items-center gap-3 px-4 sm:px-5 py-2.5 shadow-sm bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 dark:from-amber-600 dark:via-orange-600 dark:to-amber-700 text-white">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/20">
+                                <Sun className="h-3.5 w-3.5" />
                               </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                              <div>
+                                <h3 className="font-heading text-lg font-bold tracking-tight">Inverters</h3>
+                                <p className="text-xs font-medium opacity-90">{inverterModels.length} models across {groupedInverters.size} product lines</p>
+                              </div>
+                            </div>
+                            <div className="p-3 sm:p-4 md:p-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
                               {sortedGroups.map(([key, modelGroup]) => {
                                 if (!modelGroup || !Array.isArray(modelGroup) || modelGroup.length === 0) return null;
                                 const sortedModels = sortVariants(modelGroup);
@@ -734,11 +792,11 @@ export default function Dashboard() {
                                 return (
                                   <div
                                     key={key}
-                                    className="group relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200"
+                                    className="group relative bg-white dark:bg-slate-900 rounded-lg sm:rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200"
                                   >
                                     {/* Image Section */}
-                                    <div className="relative h-48 bg-slate-50 dark:bg-slate-800/50 overflow-hidden rounded-t-xl">
-                                      <div className="absolute inset-0 flex items-center justify-center p-4">
+                                    <div className="relative h-28 sm:h-40 md:h-48 bg-slate-50 dark:bg-slate-800/50 overflow-hidden rounded-t-lg sm:rounded-t-xl">
+                                      <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-4">
                                         <img
                                           src={getModelImage(primaryModel)}
                                           alt={productLineName}
@@ -755,15 +813,15 @@ export default function Dashboard() {
                                       </div>
                                       
                                       {/* Status Badge - Top Left */}
-                                      <div className="absolute top-2 left-2 z-10">
+                                      <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 z-10">
                                         {hasActive && !sortedModels.some(m => !m.active) ? (
-                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded bg-green-500 text-white">
-                                            <Shield className="h-2.5 w-2.5" />
+                                          <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold rounded bg-green-500 text-white">
+                                            <Shield className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
                                             Active
                                           </span>
                                         ) : (
-                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded bg-slate-500 text-white">
-                                            <X className="h-2.5 w-2.5" />
+                                          <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold rounded bg-slate-500 text-white">
+                                            <X className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
                                             Discontinued
                                           </span>
                                         )}
@@ -771,8 +829,8 @@ export default function Dashboard() {
                                       
                                       {/* Stock Count - Top Right (Admin Only) */}
                                       {user?.role === 'FACTORY_ADMIN' && (
-                                        <div className="absolute top-2 right-2 z-10">
-                                          <div className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
+                                        <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-10">
+                                          <div className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-500 text-white text-[10px] sm:text-xs font-bold rounded">
                                             {sortedModels.reduce((sum, m) => sum + (modelStockCounts[m._id] || 0), 0)}
                                           </div>
                                         </div>
@@ -780,23 +838,23 @@ export default function Dashboard() {
                                     </div>
                                     
                                     {/* Content Section */}
-                                    <div className="p-4 flex flex-col">
+                                    <div className="p-2.5 sm:p-4 flex flex-col">
                                       {/* Brand Name */}
-                                      <p className="text-xs font-medium text-red-600 dark:text-red-400 mb-0.5">
+                                      <p className="text-[10px] sm:text-xs font-medium text-red-600 dark:text-red-400 mb-0.5">
                                         {primaryModel.brand || 'SUNLIFE'}
                                       </p>
                                       
                                       {/* Product Name */}
-                                      <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-3 leading-tight">
+                                      <h4 className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-slate-100 mb-2 sm:mb-3 leading-tight">
                                         {getModelDisplayName(primaryModel)}
                                       </h4>
                                       
                                       {/* Variant Display - wrap so all buttons stay inside card */}
-                                      <div className="mb-2 min-w-0">
-                                        <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">
+                                      <div className="mb-1.5 sm:mb-2 min-w-0">
+                                        <p className="text-[9px] sm:text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1 sm:mb-1.5 uppercase tracking-wide">
                                           {hasMultipleVariants ? 'Select Variant' : 'Variant'}
                                         </p>
-                                        <div className="flex flex-wrap gap-1.5">
+                                        <div className="flex flex-wrap gap-1 sm:gap-1.5">
                                           {sortedModels.map((model, index) => {
                                             if (!model || !model._id) return null;
                                             const powerDisplay = getPowerDisplay(model);
@@ -814,7 +872,7 @@ export default function Dashboard() {
                                                 }
                                               }}
                                               className={cn(
-                                                "inline-flex items-center justify-center shrink-0 px-5 py-1.5 text-xs font-medium rounded-lg border-2 transition-all duration-150 whitespace-nowrap relative cursor-pointer min-h-[32px]",
+                                                "inline-flex items-center justify-center shrink-0 px-3 py-1 text-[10px] sm:px-5 sm:py-1.5 sm:text-xs font-medium rounded-md sm:rounded-lg border-2 transition-all duration-150 whitespace-nowrap relative cursor-pointer min-h-[26px] sm:min-h-[32px]",
                                                 hasMultipleVariants
                                                   ? index % 2 === 0
                                                     ? 'border-blue-400 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-950/30'
@@ -836,17 +894,17 @@ export default function Dashboard() {
                                       </div>
                                       
                                       {/* Warranty Section - single line, no wrap */}
-                                      <div className="mt-auto pt-1.5 border-t border-slate-200 dark:border-slate-700 min-w-0">
-                                        <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">
+                                      <div className="mt-auto pt-1 sm:pt-1.5 border-t border-slate-200 dark:border-slate-700 min-w-0">
+                                        <p className="text-[9px] sm:text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1 sm:mb-1.5 uppercase tracking-wide">
                                           Warranty
                                         </p>
-                                        <div className="flex flex-nowrap justify-between items-center gap-1.5">
-                                          <button type="button" className="inline-flex items-center shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded border border-blue-400 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-150 whitespace-nowrap">
-                                            <Shield className="h-2 w-2 mr-0.5" />
+                                        <div className="flex flex-nowrap justify-between items-center gap-1 sm:gap-1.5">
+                                          <button type="button" className="inline-flex items-center shrink-0 px-1 sm:px-1.5 py-0.5 text-[8px] sm:text-[10px] font-medium rounded border border-blue-400 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-150 whitespace-nowrap">
+                                            <Shield className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-0.5" />
                                             <span>Parts: {formatWarrantyYears(primaryModel.warranty?.partsMonths, 12)}</span>
                                           </button>
-                                          <button type="button" className="inline-flex items-center shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded border border-green-400 text-green-600 dark:text-green-400 bg-white dark:bg-slate-900 hover:bg-green-50 dark:hover:bg-green-950/30 transition-all duration-150 whitespace-nowrap">
-                                            <Calendar className="h-2 w-2 mr-0.5" />
+                                          <button type="button" className="inline-flex items-center shrink-0 px-1 sm:px-1.5 py-0.5 text-[8px] sm:text-[10px] font-medium rounded border border-green-400 text-green-600 dark:text-green-400 bg-white dark:bg-slate-900 hover:bg-green-50 dark:hover:bg-green-950/30 transition-all duration-150 whitespace-nowrap">
+                                            <Calendar className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-0.5" />
                                             <span>Service: {formatWarrantyYears(primaryModel.warranty?.serviceMonths, 24)}</span>
                                           </button>
                                         </div>
@@ -881,20 +939,18 @@ export default function Dashboard() {
                     });
                     
                     return (
-                      <section className="relative mt-6 rounded-xl border border-slate-200/90 dark:border-slate-700/90 bg-white dark:bg-slate-900/50 shadow-sm overflow-hidden">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-green-600 dark:from-emerald-500 dark:to-green-600" aria-hidden />
-                        <div className="p-4 sm:p-5 pl-5 sm:pl-6">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/50 shadow-sm">
-                              <Battery className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-0.5">Energy storage</p>
-                              <h3 className="font-heading text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">Batteries</h3>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{batteryModels.length} models</p>
-                            </div>
+                      <section className="relative mt-6 rounded-xl border border-emerald-500/30 dark:border-emerald-500/20 bg-gradient-to-b from-emerald-500/10 to-transparent dark:from-emerald-500/15 dark:to-transparent shadow-sm overflow-hidden">
+                        <div className="rounded-t-xl flex items-center gap-3 px-4 sm:px-5 py-2.5 shadow-sm bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 dark:from-emerald-600 dark:via-green-600 dark:to-teal-600 text-white">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/20">
+                            <Battery className="h-3.5 w-3.5" />
                           </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                          <div>
+                            <h3 className="font-heading text-lg font-bold tracking-tight">Batteries</h3>
+                            <p className="text-xs font-medium opacity-90">{batteryModels.length} models</p>
+                          </div>
+                        </div>
+                        <div className="p-3 sm:p-4 md:p-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
                           {sortedBatteryGroups.map(([key, modelGroup]) => {
                             if (!modelGroup || !Array.isArray(modelGroup) || modelGroup.length === 0) return null;
                             const model = modelGroup[0];
@@ -907,8 +963,8 @@ export default function Dashboard() {
                                 className="group relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200"
                               >
                                 {/* Image Section */}
-                                <div className="relative h-48 bg-slate-50 dark:bg-slate-800/50 overflow-hidden rounded-t-xl">
-                                  <div className="absolute inset-0 flex items-center justify-center p-4">
+                                <div className="relative h-28 sm:h-40 md:h-48 bg-slate-50 dark:bg-slate-800/50 overflow-hidden rounded-t-lg sm:rounded-t-xl">
+                                  <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-4">
                                     <img
                                       src={getModelImage(model)}
                                       alt={productLineName}
@@ -925,15 +981,15 @@ export default function Dashboard() {
                                   </div>
                                   
                                   {/* Status Badge - Top Left */}
-                                  <div className="absolute top-2 left-2 z-10">
+                                  <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 z-10">
                                     {model.active ? (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded bg-green-500 text-white">
-                                        <Shield className="h-2.5 w-2.5" />
+                                      <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold rounded bg-green-500 text-white">
+                                        <Shield className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
                                         Active
                                       </span>
                                     ) : (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded bg-slate-500 text-white">
-                                        <X className="h-2.5 w-2.5" />
+                                      <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold rounded bg-slate-500 text-white">
+                                        <X className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
                                         Discontinued
                                       </span>
                                     )}
@@ -941,8 +997,8 @@ export default function Dashboard() {
                                   
                                   {/* Stock Count - Top Right (Admin Only) */}
                                   {user?.role === 'FACTORY_ADMIN' && (
-                                    <div className="absolute top-2 right-2 z-10">
-                                      <div className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
+                                    <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-10">
+                                      <div className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-500 text-white text-[10px] sm:text-xs font-bold rounded">
                                         {modelStockCounts[model._id] || 0}
                                       </div>
                                     </div>
@@ -950,23 +1006,23 @@ export default function Dashboard() {
                                 </div>
                                 
                                 {/* Content Section */}
-                                <div className="p-4 flex flex-col">
+                                <div className="p-2.5 sm:p-4 flex flex-col">
                                   {/* Brand Name */}
-                                  <p className="text-xs font-medium text-red-600 dark:text-red-400 mb-0.5">
+                                  <p className="text-[10px] sm:text-xs font-medium text-red-600 dark:text-red-400 mb-0.5">
                                     {model.brand || 'SUNLIFE'}
                                   </p>
                                   
                                   {/* Product Name */}
-                                  <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-3 leading-tight">
+                                  <h4 className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-slate-100 mb-2 sm:mb-3 leading-tight">
                                     {getModelDisplayName(model)}
                                   </h4>
                                   
                                   {/* Variant Display - wrap so all buttons stay inside card */}
-                                  <div className="mb-2 min-w-0">
-                                    <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">
+                                  <div className="mb-1.5 sm:mb-2 min-w-0">
+                                    <p className="text-[9px] sm:text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1 sm:mb-1.5 uppercase tracking-wide">
                                       Variant
                                     </p>
-                                    <div className="flex flex-wrap gap-1.5">
+                                    <div className="flex flex-wrap gap-1 sm:gap-1.5">
                                       <button
                                         type="button"
                                         onClick={(e) => {
@@ -978,7 +1034,7 @@ export default function Dashboard() {
                                             console.error('Variant click error:', err);
                                           }
                                         }}
-                                        className="inline-flex items-center justify-center shrink-0 px-5 py-1.5 text-xs font-medium rounded-lg border-2 border-red-400 text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/30 transition-all duration-150 relative cursor-pointer min-h-[32px]"
+                                        className="inline-flex items-center justify-center shrink-0 px-3 py-1 text-[10px] sm:px-5 sm:py-1.5 sm:text-xs font-medium rounded-md sm:rounded-lg border-2 border-red-400 text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/30 transition-all duration-150 relative cursor-pointer min-h-[26px] sm:min-h-[32px]"
                                         style={{ 
                                           maxWidth: '100%',
                                           overflow: 'hidden',
@@ -992,17 +1048,17 @@ export default function Dashboard() {
                                   </div>
                                   
                                   {/* Warranty Section - single line, no wrap */}
-                                  <div className="mt-auto pt-1.5 border-t border-slate-200 dark:border-slate-700 min-w-0">
-                                    <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide">
+                                  <div className="mt-auto pt-1 sm:pt-1.5 border-t border-slate-200 dark:border-slate-700 min-w-0">
+                                    <p className="text-[9px] sm:text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1 sm:mb-1.5 uppercase tracking-wide">
                                       Warranty
                                     </p>
-                                    <div className="flex flex-nowrap justify-between items-center gap-1.5">
-                                      <button type="button" className="inline-flex items-center shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded border border-blue-400 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-150 whitespace-nowrap">
-                                        <Shield className="h-2 w-2 mr-0.5" />
+                                    <div className="flex flex-nowrap justify-between items-center gap-1 sm:gap-1.5">
+                                      <button type="button" className="inline-flex items-center shrink-0 px-1 sm:px-1.5 py-0.5 text-[8px] sm:text-[10px] font-medium rounded border border-blue-400 text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-150 whitespace-nowrap">
+                                        <Shield className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-0.5" />
                                         <span>Parts: {formatWarrantyYears(model.warranty?.partsMonths, 12)}</span>
                                       </button>
-                                      <button type="button" className="inline-flex items-center shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded border border-green-400 text-green-600 dark:text-green-400 bg-white dark:bg-slate-900 hover:bg-green-50 dark:hover:bg-green-950/30 transition-all duration-150 whitespace-nowrap">
-                                        <Calendar className="h-2 w-2 mr-0.5" />
+                                      <button type="button" className="inline-flex items-center shrink-0 px-1 sm:px-1.5 py-0.5 text-[8px] sm:text-[10px] font-medium rounded border border-green-400 text-green-600 dark:text-green-400 bg-white dark:bg-slate-900 hover:bg-green-50 dark:hover:bg-green-950/30 transition-all duration-150 whitespace-nowrap">
+                                        <Calendar className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-0.5" />
                                         <span>Service: {formatWarrantyYears(model.warranty?.serviceMonths, 24)}</span>
                                       </button>
                                     </div>
@@ -1035,20 +1091,18 @@ export default function Dashboard() {
                     });
                     
                     return (
-                      <section className="relative mt-6 rounded-xl border border-slate-200/90 dark:border-slate-700/90 bg-white dark:bg-slate-900/50 shadow-sm overflow-hidden">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-violet-400 to-indigo-600 dark:from-violet-500 dark:to-indigo-600" aria-hidden />
-                        <div className="p-4 sm:p-5 pl-5 sm:pl-6">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-50 dark:bg-violet-950/50 border border-violet-200/80 dark:border-violet-800/50 shadow-sm">
-                              <Gauge className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400 mb-0.5">Variable frequency drives</p>
-                              <h3 className="font-heading text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">VFD</h3>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{vfdModels.length} models across {groupedVFD.size} product lines</p>
-                            </div>
+                      <section className="relative mt-6 rounded-xl border border-violet-500/30 dark:border-violet-500/20 bg-gradient-to-b from-violet-500/10 to-transparent dark:from-violet-500/15 dark:to-transparent shadow-sm overflow-hidden">
+                        <div className="rounded-t-xl flex items-center gap-3 px-4 sm:px-5 py-2.5 shadow-sm bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 dark:from-violet-600 dark:via-purple-600 dark:to-indigo-600 text-white">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/20">
+                            <Gauge className="h-3.5 w-3.5" />
                           </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                          <div>
+                            <h3 className="font-heading text-lg font-bold tracking-tight">VFD</h3>
+                            <p className="text-xs font-medium opacity-90">{vfdModels.length} models across {groupedVFD.size} product lines</p>
+                          </div>
+                        </div>
+                        <div className="p-3 sm:p-4 md:p-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
                           {sortedVFDGroups.map(([key, modelGroup]) => {
                             if (!modelGroup || !Array.isArray(modelGroup) || modelGroup.length === 0) return null;
                             const sortedModels = sortVariants(modelGroup);
@@ -1066,10 +1120,10 @@ export default function Dashboard() {
                                   setSelectedVFDGroup({ models: sortedModels, displayName: vfdDisplayName });
                                   setIsVFDDialogOpen(true);
                                 }}
-                                className="group relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-700/80 overflow-hidden shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 cursor-pointer"
+                                className="group relative bg-white dark:bg-slate-900 rounded-lg sm:rounded-xl border border-slate-200/80 dark:border-slate-700/80 overflow-hidden shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 cursor-pointer"
                               >
-                                <div className="relative h-48 bg-slate-50 dark:bg-slate-800/50 overflow-hidden">
-                                  <div className="absolute inset-0 flex items-center justify-center p-4">
+                                <div className="relative h-28 sm:h-40 md:h-48 bg-slate-50 dark:bg-slate-800/50 overflow-hidden">
+                                  <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-4">
                                     <img
                                       src={getModelImage(primaryModel)}
                                       alt={vfdDisplayName}
@@ -1086,15 +1140,15 @@ export default function Dashboard() {
                                   </div>
                                   
                                   {/* Status Badge - Top Left */}
-                                  <div className="absolute top-2 left-2 z-10">
+                                  <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 z-10">
                                     {hasActive && !hasDiscontinued ? (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded bg-green-500 text-white">
-                                        <Shield className="h-2.5 w-2.5" />
+                                      <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold rounded bg-green-500 text-white">
+                                        <Shield className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
                                         Active
                                       </span>
                                     ) : (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded bg-slate-500 text-white">
-                                        <X className="h-2.5 w-2.5" />
+                                      <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold rounded bg-slate-500 text-white">
+                                        <X className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
                                         Discontinued
                                       </span>
                                     )}
@@ -1102,28 +1156,28 @@ export default function Dashboard() {
                                   
                                   {/* Stock Count - Top Right (Admin Only) */}
                                   {user?.role === 'FACTORY_ADMIN' && (
-                                    <div className="absolute top-2 right-2 z-10">
-                                      <div className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
+                                    <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-10">
+                                      <div className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-red-500 text-white text-[10px] sm:text-xs font-bold rounded">
                                         {sortedModels.reduce((sum, m) => sum + (modelStockCounts[m._id] || 0), 0)}
                                       </div>
                                     </div>
                                   )}
                                 </div>
                                 
-                                <div className="p-4">
-                                  <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-2 leading-tight font-mono">
+                                <div className="p-2.5 sm:p-4">
+                                  <h4 className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-slate-100 mb-1.5 sm:mb-2 leading-tight font-mono">
                                     {vfdDisplayName}
                                   </h4>
                                   
-                                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
+                                  <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mb-2 sm:mb-3">
                                     {sortedModels.length} variant{sortedModels.length > 1 ? 's' : ''} available
                                   </p>
                                   
-                                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-                                    <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                                  <div className="flex items-center justify-between pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800">
+                                    <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 dark:text-slate-500">
                                       Click to view variants
                                     </span>
-                                    <ArrowRight className="h-3 w-3 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
+                                    <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
                                   </div>
                                 </div>
                               </div>
@@ -1208,7 +1262,7 @@ export default function Dashboard() {
                 <div className="grid grid-cols-2 gap-2 sm:gap-4">
                   <div className="flex items-center gap-2 p-2 sm:items-start sm:gap-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg min-w-0">
                     <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg shrink-0">
-                      <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+                      <Tag className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1 truncate">Brand</p>
@@ -1218,7 +1272,7 @@ export default function Dashboard() {
 
                   <div className="flex items-center gap-2 p-2 sm:items-start sm:gap-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg min-w-0">
                     <div className="p-1.5 sm:p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg shrink-0">
-                      <Package className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 dark:text-indigo-400" />
+                      <Package className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1 truncate">Product Line</p>
@@ -1228,7 +1282,7 @@ export default function Dashboard() {
 
                   <div className="flex items-center gap-2 p-2 sm:items-start sm:gap-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg min-w-0">
                     <div className="p-1.5 sm:p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg shrink-0">
-                      <Settings className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
+                      <Settings className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1 truncate">Variant</p>
@@ -1238,7 +1292,7 @@ export default function Dashboard() {
 
                   <div className="flex items-center gap-2 p-2 sm:items-start sm:gap-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg min-w-0">
                     <div className="p-1.5 sm:p-2 bg-slate-100 dark:bg-slate-700 rounded-lg shrink-0">
-                      <Hash className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600 dark:text-slate-400" />
+                      <Hash className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-slate-600 dark:text-slate-400" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1 truncate">Model Code</p>
@@ -1249,7 +1303,7 @@ export default function Dashboard() {
 
                 <div className="p-3 sm:p-5 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
                   <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-4">
-                    <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <Shield className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <h3 className="font-heading font-bold text-sm sm:text-lg tracking-tight text-slate-900 dark:text-slate-100">Warranty Information</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-2 sm:gap-4">
@@ -1291,7 +1345,7 @@ export default function Dashboard() {
                   <div className="pt-2 sm:pt-4 border-t border-slate-200 dark:border-slate-700">
                     <div className="rounded-lg sm:rounded-xl bg-gradient-to-r from-rose-50 to-red-50 dark:from-rose-950/30 dark:to-red-950/30 border-2 border-rose-200 dark:border-rose-800/50 p-2 sm:p-4 space-y-2 sm:space-y-3">
                       <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 sm:gap-2">
-                        <Video className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600 dark:text-rose-400 shrink-0" />
+                        <Video className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-rose-600 dark:text-rose-400 shrink-0" />
                         Technical support videos
                       </p>
                       <div className="flex flex-wrap gap-2 sm:gap-3">
@@ -1374,8 +1428,8 @@ export default function Dashboard() {
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
                   {selectedVFDGroup?.models && Array.isArray(selectedVFDGroup.models) && selectedVFDGroup.models.map((model: any, _index: number) => {
                     if (!model || !model._id) return null;
                     return (
@@ -1393,35 +1447,35 @@ export default function Dashboard() {
                         }
                       }}
                       className={cn(
-                        "p-4 rounded-lg border-2 transition-all duration-200 text-left",
-                        "hover:shadow-lg hover:-translate-y-1",
+                        "p-2.5 sm:p-4 rounded-md sm:rounded-lg border-2 transition-all duration-200 text-left",
+                        "hover:shadow-lg hover:-translate-y-0.5 sm:hover:-translate-y-1",
                         model.active
                           ? "border-slate-200 dark:border-slate-700 hover:border-orange-400 dark:hover:border-orange-500 bg-white dark:bg-slate-900"
                           : "border-slate-300 dark:border-slate-600 opacity-60 bg-slate-50 dark:bg-slate-800"
                       )}
                     >
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between gap-1 sm:gap-2 mb-1.5 sm:mb-2 min-w-0">
                         <span className={cn(
-                          "text-sm font-semibold",
+                          "text-xs sm:text-sm font-semibold truncate min-w-0",
                           model.active ? "text-slate-900 dark:text-slate-100" : "text-slate-500 dark:text-slate-400 line-through"
                         )}>
                           {model.variant || model.modelCode}
                         </span>
                         {model.active ? (
-                          <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-emerald-500 text-white">
+                          <span className="px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-bold uppercase rounded bg-emerald-500 text-white shrink-0">
                             Active
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-slate-500 text-white">
+                          <span className="px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-bold uppercase rounded bg-slate-500 text-white shrink-0">
                             Discontinued
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                      <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-mono truncate">
                         {model.modelCode}
                       </p>
-                      <div className="mt-2 flex items-center text-xs text-blue-600 dark:text-blue-400">
-                        <Eye className="h-3 w-3 mr-1" />
+                      <div className="mt-1.5 sm:mt-2 flex items-center text-[10px] sm:text-xs text-blue-600 dark:text-blue-400">
+                        <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1 shrink-0" />
                         View Details
                       </div>
                     </button>
@@ -1447,7 +1501,7 @@ export default function Dashboard() {
             <>
               <DialogHeader className="flex-shrink-0 pb-3 sm:pb-4 border-b border-slate-200 dark:border-slate-700 space-y-1">
                 <DialogTitle className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2 sm:gap-3 truncate min-w-0">
-                  <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <FileText className="h-3.5 w-3.5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400 shrink-0" />
                   <span className="truncate">
                     {getModelDisplayName(selectedModelForPdf) || selectedModelForPdf.modelCode}
                   </span>
@@ -1490,7 +1544,7 @@ export default function Dashboard() {
                   }}
                   className="shrink-0 rounded-xl border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-400 dark:hover:border-slate-500 text-slate-700 dark:text-slate-200 font-medium text-sm py-2.5 px-5 shadow-sm hover:shadow transition-all"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <ArrowLeft className="h-3.5 w-3.5 mr-2" />
                   Back
                 </Button>
                 {selectedModelForPdf.datasheet && (
@@ -1500,7 +1554,7 @@ export default function Dashboard() {
                     }}
                     className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium text-sm py-2.5 px-5 shadow-md hover:shadow-lg transition-all"
                   >
-                    <FileText className="h-4 w-4 mr-2" />
+                    <FileText className="h-3.5 w-3.5 mr-2" />
                     Open in New Tab
                   </Button>
                 )}

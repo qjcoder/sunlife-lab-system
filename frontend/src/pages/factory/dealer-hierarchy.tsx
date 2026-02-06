@@ -54,9 +54,9 @@ export default function DealerHierarchy() {
               : "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
           )}>
             {level === 0 ? (
-              <Building2 className="h-5 w-5" />
+              <Building2 className="h-3.5 w-3.5" />
             ) : (
-              <Users className="h-5 w-5" />
+              <Users className="h-3.5 w-3.5" />
             )}
           </div>
 
@@ -85,7 +85,7 @@ export default function DealerHierarchy() {
                   </div>
                   <div className="space-y-2 mt-4">
                     <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                      <Mail className="h-4 w-4" />
+                      <Mail className="h-3.5 w-3.5" />
                       <span>{node.dealer.email}</span>
                     </div>
                   </div>

@@ -248,7 +248,7 @@ export default function AccountCreation() {
               level === 0 ? 'bg-gradient-to-br from-red-600 to-red-700 text-white' : 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
             )}
           >
-            {level === 0 ? <Building2 className="h-5 w-5" /> : <Users className="h-5 w-5" />}
+            {level === 0 ? <Building2 className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
           </div>
           <Card className={cn('flex-1 border-2', level === 0 ? 'border-red-200' : 'border-blue-200')}>
             <CardContent className="p-4">
@@ -259,7 +259,7 @@ export default function AccountCreation() {
                 </span>
               </div>
               <div className="flex items-center gap-2 mt-2 text-sm text-slate-600">
-                <Mail className="h-4 w-4" />
+                <Mail className="h-3.5 w-3.5" />
                 {node.dealer.email}
               </div>
             </CardContent>
@@ -352,7 +352,7 @@ export default function AccountCreation() {
                   }}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </TableCell>
             </TableRow>
@@ -385,7 +385,7 @@ export default function AccountCreation() {
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-3.5 w-3.5" />
               {tab.label}
             </button>
           );
@@ -414,7 +414,7 @@ export default function AccountCreation() {
                 dealerSubTab === 'hierarchy' ? 'border-red-600 text-red-600' : 'border-transparent text-slate-600'
               )}
             >
-              <Network className="h-4 w-4" />
+              <Network className="h-3.5 w-3.5" />
               Network Hierarchy
             </button>
           </div>

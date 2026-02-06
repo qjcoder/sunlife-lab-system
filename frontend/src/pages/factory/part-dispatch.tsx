@@ -195,7 +195,7 @@ export default function PartDispatch() {
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
                 <div className="p-1.5 rounded-lg bg-teal-500/20">
-                  <Box className="h-5 w-5 text-teal-600 dark:text-teal-400 shrink-0" />
+                  <Box className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
                 </div>
                 Dispatch Information
               </CardTitle>
@@ -212,11 +212,11 @@ export default function PartDispatch() {
                   if (!scannerMode) setTimeout(() => partCodeRef.current?.focus(), 100);
                 }}
               >
-                <Scan className="h-4 w-4 mr-2" />
+                <Scan className="h-3.5 w-3.5 mr-2" />
                 {scannerMode ? 'Scanner ON' : 'Scanner'}
               </Button>
               <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="h-3.5 w-3.5 mr-2" />
                 Upload Excel/CSV
               </Button>
               <input
@@ -232,7 +232,7 @@ export default function PartDispatch() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="serviceCenter" className="text-sm font-semibold flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-slate-500" />
+                  <Building2 className="h-3.5 w-3.5 text-slate-500" />
                   Service Center
                 </Label>
                 <Input id="serviceCenter" {...register('serviceCenter')} className="h-11" placeholder="Enter service center name" />
@@ -246,7 +246,7 @@ export default function PartDispatch() {
 
               <div className="space-y-2">
                 <Label htmlFor="remarks" className="text-sm font-semibold flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-slate-500" />
+                  <FileText className="h-3.5 w-3.5 text-slate-500" />
                   Remarks (Optional)
                 </Label>
                 <Input id="remarks" {...register('remarks')} className="h-11" placeholder="Any additional notes" />
@@ -254,7 +254,7 @@ export default function PartDispatch() {
 
               <div className="space-y-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
                 <Label className="text-sm font-semibold flex items-center gap-2">
-                  <Package className="h-4 w-4 text-slate-500" />
+                  <Package className="h-3.5 w-3.5 text-slate-500" />
                   Parts to Dispatch: <span className="text-primary font-bold">{dispatchedItems.length}</span>
                 </Label>
                 {dispatchedItems.length === 0 && (
@@ -270,12 +270,12 @@ export default function PartDispatch() {
                 >
                   {mutation.isPending ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                       Dispatching...
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
                       Create Dispatch ({dispatchedItems.length} part{dispatchedItems.length !== 1 ? 's' : ''})
                     </>
                   )}
@@ -289,7 +289,7 @@ export default function PartDispatch() {
           <CardHeader className="shrink-0 pb-4 pt-5 px-4 sm:px-6 bg-gradient-to-r from-slate-50 to-cyan-50/50 dark:from-slate-800/50 dark:to-cyan-950/30 border-b border-border">
             <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
               <div className="p-1.5 rounded-lg bg-cyan-500/20">
-                <Box className="h-5 w-5 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                <Box className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
               </div>
               Add Parts (Bulk Operations)
             </CardTitle>
@@ -300,7 +300,7 @@ export default function PartDispatch() {
               {scannerMode && (
                 <div className="p-4 bg-green-50 dark:bg-green-950/20 border-2 border-green-200 dark:border-green-800 rounded-lg">
                   <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
-                    <Scan className="h-4 w-4 text-green-600" />
+                    <Scan className="h-3.5 w-3.5 text-green-600" />
                     Scanner Mode Active
                   </Label>
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -312,7 +312,7 @@ export default function PartDispatch() {
 
               <div className="space-y-2">
                 <Label htmlFor="partCode" className="text-sm font-semibold flex items-center gap-2">
-                  <Hash className="h-4 w-4 text-slate-500" />
+                  <Hash className="h-3.5 w-3.5 text-slate-500" />
                   Part Code
                 </Label>
                 <Input
@@ -329,7 +329,7 @@ export default function PartDispatch() {
 
               <div className="space-y-2">
                 <Label htmlFor="partName" className="text-sm font-semibold flex items-center gap-2">
-                  <Package className="h-4 w-4 text-slate-500" />
+                  <Package className="h-3.5 w-3.5 text-slate-500" />
                   Part Name
                 </Label>
                 <Input
@@ -343,7 +343,7 @@ export default function PartDispatch() {
 
               <div className="space-y-2">
                 <Label htmlFor="quantity" className="text-sm font-semibold flex items-center gap-2">
-                  <Package className="h-4 w-4 text-slate-500" />
+                  <Package className="h-3.5 w-3.5 text-slate-500" />
                   Quantity
                 </Label>
                 <Input
@@ -363,7 +363,7 @@ export default function PartDispatch() {
                 onClick={addItem} 
                 className="w-full h-11"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-3.5 w-3.5 mr-2" />
                 Add Part to Dispatch List
               </Button>
 
@@ -386,7 +386,7 @@ export default function PartDispatch() {
           <CardHeader className="border-b border-border bg-gradient-to-r from-amber-50 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/20">
             <CardTitle className="flex items-center gap-3 text-foreground">
               <div className="p-2 bg-amber-500/20 rounded-lg">
-                <Package className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                <Package className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
               </div>
               <span className="text-xl font-bold">Parts to Dispatch ({dispatchedItems.length})</span>
             </CardTitle>
@@ -420,7 +420,7 @@ export default function PartDispatch() {
                           onClick={() => removeItem(index)}
                           className="hover:bg-destructive/10 hover:text-destructive"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </TableCell>
                     </TableRow>

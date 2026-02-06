@@ -719,12 +719,12 @@ export default function InverterModels() {
             >
               {showCreateForm ? (
                 <>
-                  <X className="h-4 w-4 mr-2" />
+                  <X className="h-3.5 w-3.5 mr-2" />
                   Hide Form
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-3.5 w-3.5 mr-2" />
                   Create Model
                 </>
               )}
@@ -750,7 +750,7 @@ export default function InverterModels() {
               <div className="space-y-3">
                 <Label htmlFor="productType" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                    <Boxes className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <Boxes className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                   </div>
                   Product Type
                 </Label>
@@ -772,19 +772,19 @@ export default function InverterModels() {
                       <SelectContent>
                         <SelectItem value="Inverter">
                           <span className="flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-amber-500" />
+                            <Zap className="h-3.5 w-3.5 text-amber-500" />
                             Inverter
                           </span>
                         </SelectItem>
                         <SelectItem value="Battery">
                           <span className="flex items-center gap-2">
-                            <Battery className="h-4 w-4 text-green-500" />
+                            <Battery className="h-3.5 w-3.5 text-green-500" />
                             Battery
                           </span>
                         </SelectItem>
                         <SelectItem value="VFD">
                           <span className="flex items-center gap-2">
-                            <Settings className="h-4 w-4 text-orange-500" />
+                            <Settings className="h-3.5 w-3.5 text-orange-500" />
                             VFD (Variable Frequency Drive)
                           </span>
                         </SelectItem>
@@ -804,7 +804,7 @@ export default function InverterModels() {
                 <div className="space-y-2 sm:space-y-3">
                   <Label htmlFor="brand" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg shrink-0">
-                      <Hash className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                      <Hash className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     Brand
                   </Label>
@@ -827,7 +827,7 @@ export default function InverterModels() {
                 <div className="space-y-2 sm:space-y-3">
                   <Label htmlFor="productLine" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg shrink-0">
-                      <Boxes className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                      <Boxes className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                     </div>
                     Product Line
                   </Label>
@@ -856,7 +856,7 @@ export default function InverterModels() {
               <div className="space-y-2 sm:space-y-3">
                 <Label htmlFor="variant" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg shrink-0">
-                    <Tag className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <Tag className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                   </div>
                   Variant
                 </Label>
@@ -884,7 +884,7 @@ export default function InverterModels() {
               <div className="space-y-2 sm:space-y-3">
                 <Label htmlFor="modelCode" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <div className="p-1.5 bg-teal-100 dark:bg-teal-900/30 rounded-lg shrink-0">
-                    <Hash className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                    <Hash className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
                   </div>
                   Model Code (Auto-generated)
                 </Label>
@@ -910,13 +910,13 @@ export default function InverterModels() {
 
               <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-blue-950/20 rounded-xl sm:rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
                 <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-5 text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <Shield className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                   Warranty Information (Editable)
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                   <div className="space-y-2 sm:space-y-3">
                     <Label htmlFor="partsYears" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                      <Shield className="h-4 w-4 text-blue-600 shrink-0" />
+                      <Shield className="h-3.5 w-3.5 text-blue-600 shrink-0" />
                       Parts Warranty (Years)
                     </Label>
                     <Input
@@ -938,7 +938,7 @@ export default function InverterModels() {
 
                   <div className="space-y-2 sm:space-y-3">
                     <Label htmlFor="serviceYears" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                      <Calendar className="h-4 w-4 text-green-600 shrink-0" />
+                      <Calendar className="h-3.5 w-3.5 text-green-600 shrink-0" />
                       Service Warranty (Years)
                     </Label>
                     <Input
@@ -964,7 +964,7 @@ export default function InverterModels() {
               <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-purple-50/30 dark:from-slate-800/50 dark:to-purple-950/20 rounded-xl sm:rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
                 <Label htmlFor="image" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-3 sm:mb-4">
                   <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg shrink-0">
-                    <Upload className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    <Upload className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                   </div>
                   Product Image
                 </Label>
@@ -981,7 +981,7 @@ export default function InverterModels() {
                     onClick={() => createImageInputRef.current?.click()}
                     className="h-11 sm:h-12 px-6 border-2 border-purple-500 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 font-semibold shrink-0"
                   >
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-3.5 w-3.5 mr-2" />
                     Upload
                   </Button>
                   <input
@@ -1015,7 +1015,7 @@ export default function InverterModels() {
               <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-amber-50/30 dark:from-slate-800/50 dark:to-amber-950/20 rounded-xl sm:rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
                 <Label htmlFor="datasheet" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-3 sm:mb-4">
                   <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg shrink-0">
-                    <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <FileText className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                   </div>
                   Technical Datasheet (PDF)
                 </Label>
@@ -1033,7 +1033,7 @@ export default function InverterModels() {
                     onClick={() => createDatasheetInputRef.current?.click()}
                     className="h-11 sm:h-12 px-6 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 font-semibold shrink-0"
                   >
-                    <FileText className="h-4 w-4 mr-2" />
+                    <FileText className="h-3.5 w-3.5 mr-2" />
                     Upload PDF
                   </Button>
                   <input
@@ -1072,7 +1072,7 @@ export default function InverterModels() {
               {/* User Manual (Google Drive / external link) */}
               <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-emerald-50/30 dark:from-slate-800/50 dark:to-emerald-950/20 rounded-xl sm:rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
                 <Label htmlFor="userManualUrl" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-3 sm:mb-4">
-                  <BookOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <BookOpen className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   User Manual (link)
                 </Label>
                 <Input
@@ -1089,7 +1089,7 @@ export default function InverterModels() {
               {/* Technical support video links (YouTube etc.) */}
               <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-blue-950/20 rounded-xl sm:rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
                 <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-3 sm:mb-4">
-                  <Video className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <Video className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                   Technical support videos
                 </Label>
                 <div className="space-y-3">
@@ -1115,7 +1115,7 @@ export default function InverterModels() {
                           setValue('supportVideoLinks', list.filter((_, i) => i !== index));
                         }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   ))}
@@ -1126,7 +1126,7 @@ export default function InverterModels() {
                     onClick={() => setValue('supportVideoLinks', [...(getValues('supportVideoLinks') || []), { title: '', url: '' }])}
                     className="border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-3.5 w-3.5 mr-2" />
                     Add video link
                   </Button>
                 </div>
@@ -1139,7 +1139,7 @@ export default function InverterModels() {
               <div className="space-y-3">
                 <Label htmlFor="active" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                    <Tag className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                    <Tag className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
                   </div>
                   Status
                 </Label>
@@ -1171,12 +1171,12 @@ export default function InverterModels() {
                 >
                   {createMutation.isPending ? (
                     <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                       Saving...
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="h-5 w-5 mr-2" />
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
                       Create Model
                     </>
                   )}
@@ -1215,7 +1215,7 @@ export default function InverterModels() {
             <div className="space-y-3">
               <Label htmlFor="edit-productType" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                  <Boxes className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <Boxes className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                 </div>
                 Product Type
               </Label>
@@ -1230,19 +1230,19 @@ export default function InverterModels() {
                     <SelectContent>
                       <SelectItem value="Inverter">
                         <span className="flex items-center gap-2">
-                          <Zap className="h-4 w-4 text-amber-500" />
+                          <Zap className="h-3.5 w-3.5 text-amber-500" />
                           Inverter
                         </span>
                       </SelectItem>
                       <SelectItem value="Battery">
                         <span className="flex items-center gap-2">
-                          <Battery className="h-4 w-4 text-green-500" />
+                          <Battery className="h-3.5 w-3.5 text-green-500" />
                           Battery
                         </span>
                       </SelectItem>
                       <SelectItem value="VFD">
                         <span className="flex items-center gap-2">
-                          <Settings className="h-4 w-4 text-orange-500" />
+                          <Settings className="h-3.5 w-3.5 text-orange-500" />
                           VFD (Variable Frequency Drive)
                         </span>
                       </SelectItem>
@@ -1262,7 +1262,7 @@ export default function InverterModels() {
               <div className="space-y-2 sm:space-y-3">
                 <Label htmlFor="edit-brand" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg shrink-0">
-                    <Hash className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                    <Hash className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   Brand
                 </Label>
@@ -1285,7 +1285,7 @@ export default function InverterModels() {
               <div className="space-y-2 sm:space-y-3">
                 <Label htmlFor="edit-productLine" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg shrink-0">
-                    <Boxes className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    <Boxes className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                   </div>
                   Product Line
                 </Label>
@@ -1314,7 +1314,7 @@ export default function InverterModels() {
             <div className="space-y-2 sm:space-y-3">
               <Label htmlFor="edit-variant" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg shrink-0">
-                  <Tag className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <Tag className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                 </div>
                 Variant
               </Label>
@@ -1342,7 +1342,7 @@ export default function InverterModels() {
             <div className="space-y-2 sm:space-y-3">
               <Label htmlFor="edit-modelCode" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <div className="p-1.5 bg-teal-100 dark:bg-teal-900/30 rounded-lg shrink-0">
-                  <Hash className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                  <Hash className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
                 </div>
                 Model Code
               </Label>
@@ -1362,13 +1362,13 @@ export default function InverterModels() {
 
             <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-blue-950/20 rounded-xl sm:rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
               <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-5 text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
+                <Shield className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                 Warranty Information (Editable)
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div className="space-y-2 sm:space-y-3">
                   <Label htmlFor="edit-partsYears" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <Shield className="h-4 w-4 text-blue-600 shrink-0" />
+                    <Shield className="h-3.5 w-3.5 text-blue-600 shrink-0" />
                     Parts Warranty (Years)
                   </Label>
                   <Input
@@ -1390,7 +1390,7 @@ export default function InverterModels() {
 
                   <div className="space-y-2 sm:space-y-3">
                     <Label htmlFor="edit-serviceYears" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                      <Calendar className="h-4 w-4 text-green-600 shrink-0" />
+                      <Calendar className="h-3.5 w-3.5 text-green-600 shrink-0" />
                       Service Warranty (Years)
                     </Label>
                     <Input
@@ -1416,7 +1416,7 @@ export default function InverterModels() {
             <div className="p-5 bg-gradient-to-br from-slate-50 to-purple-50/30 dark:from-slate-800/50 dark:to-purple-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
               <Label htmlFor="edit-image" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-4">
                 <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                  <Upload className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <Upload className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                 </div>
                 Product Image
               </Label>
@@ -1433,7 +1433,7 @@ export default function InverterModels() {
                   onClick={() => editImageInputRef.current?.click()}
                   className="h-12 px-6 border-2 border-purple-500 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 font-semibold"
                 >
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-3.5 w-3.5 mr-2" />
                   Upload
                 </Button>
                 <input
@@ -1467,7 +1467,7 @@ export default function InverterModels() {
             <div className="p-5 bg-gradient-to-br from-slate-50 to-amber-50/30 dark:from-slate-800/50 dark:to-amber-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
               <Label htmlFor="edit-datasheet" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-4">
                 <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                  <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <FileText className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                 </div>
                 Technical Datasheet (PDF)
               </Label>
@@ -1484,7 +1484,7 @@ export default function InverterModels() {
                   onClick={() => editDatasheetInputRef.current?.click()}
                   className="h-12 px-6 border-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 font-semibold"
                 >
-                  <FileText className="h-4 w-4 mr-2" />
+                  <FileText className="h-3.5 w-3.5 mr-2" />
                   Upload PDF
                 </Button>
                 <input
@@ -1523,7 +1523,7 @@ export default function InverterModels() {
             {/* User Manual (Google Drive / external link) */}
             <div className="p-5 bg-gradient-to-br from-slate-50 to-emerald-50/30 dark:from-slate-800/50 dark:to-emerald-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
               <Label htmlFor="edit-userManualUrl" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-4">
-                <BookOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <BookOpen className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 User Manual (link)
               </Label>
               <Input
@@ -1540,7 +1540,7 @@ export default function InverterModels() {
             {/* Technical support video links */}
             <div className="p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-blue-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
               <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-4">
-                <Video className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <Video className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                 Technical support videos
               </Label>
               <div className="space-y-3">
@@ -1566,7 +1566,7 @@ export default function InverterModels() {
                         setValue('supportVideoLinks', list.filter((_, i) => i !== index));
                       }}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 ))}
@@ -1577,7 +1577,7 @@ export default function InverterModels() {
                   onClick={() => setValue('supportVideoLinks', [...(getValues('supportVideoLinks') || []), { title: '', url: '' }])}
                   className="border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-3.5 w-3.5 mr-2" />
                   Add video link
                 </Button>
               </div>
@@ -1587,7 +1587,7 @@ export default function InverterModels() {
             <div className="space-y-3">
               <Label htmlFor="edit-active" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                  <Tag className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                  <Tag className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
                 </div>
                 Status
               </Label>
@@ -1619,12 +1619,12 @@ export default function InverterModels() {
               >
                 {updateMutation.isPending ? (
                   <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="h-5 w-5 mr-2" />
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
                     Update Model
                   </>
                 )}
@@ -1725,7 +1725,7 @@ export default function InverterModels() {
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={closeDatasheetUpdateDialog}>Cancel</Button>
             <Button onClick={handleDatasheetUpdateSubmit}>
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-3.5 w-3.5 mr-2" />
               Update Datasheet
             </Button>
           </div>
@@ -1777,13 +1777,13 @@ export default function InverterModels() {
               )}
             >
               <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
-                <Zap className="h-5 w-5 sm:h-6 sm:w-6" />
+                <Zap className="h-3.5 w-3.5 sm:h-6 sm:w-6" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold leading-none tracking-tight text-card-foreground text-base sm:text-lg">Inverters</p>
                 <p className="text-sm text-muted-foreground mt-1">{categorizedModels.inverter.length} models</p>
               </div>
-              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             </Card>
             <Card
               role="button"
@@ -1796,13 +1796,13 @@ export default function InverterModels() {
               )}
             >
               <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
-                <Battery className="h-5 w-5 sm:h-6 sm:w-6" />
+                <Battery className="h-3.5 w-3.5 sm:h-6 sm:w-6" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold leading-none tracking-tight text-card-foreground text-base sm:text-lg">Batteries</p>
                 <p className="text-sm text-muted-foreground mt-1">{categorizedModels.battery.length} models</p>
               </div>
-              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             </Card>
             <Card
               role="button"
@@ -1815,40 +1815,40 @@ export default function InverterModels() {
               )}
             >
               <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
-                <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
+                <Settings className="h-3.5 w-3.5 sm:h-6 sm:w-6" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold leading-none tracking-tight text-card-foreground text-base sm:text-lg">VFD</p>
                 <p className="text-sm text-muted-foreground mt-1">{categorizedModels.vfd.length} models</p>
               </div>
-              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             </Card>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-6">
           <Button type="button" variant="outline" onClick={() => setSelectedCategory(null)} className="gap-2">
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-3.5 w-3.5" />
             Back to categories
           </Button>
           {selectedCategory === 'inverter' && renderCategorySection(
             'inverter',
             categorizedModels.inverter,
-            <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />,
+            <Zap className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />,
             'Inverters',
             'bg-blue-100 dark:bg-blue-900/30'
           )}
           {selectedCategory === 'battery' && renderCategorySection(
             'battery',
             categorizedModels.battery,
-            <Battery className="h-5 w-5 text-green-600 dark:text-green-400" />,
+            <Battery className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />,
             'Batteries',
             'bg-green-100 dark:bg-green-900/30'
           )}
           {selectedCategory === 'vfd' && renderCategorySection(
             'vfd',
             categorizedModels.vfd,
-            <Settings className="h-5 w-5 text-orange-600 dark:text-orange-400" />,
+            <Settings className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />,
             'VFD (Variable Frequency Drives)',
             'bg-orange-100 dark:bg-orange-900/30'
           )}
@@ -1898,7 +1898,7 @@ export default function InverterModels() {
             <div className="space-y-3">
               <Label htmlFor="image-update-input" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                  <Upload className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <Upload className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 Select New Image
               </Label>
@@ -1932,7 +1932,7 @@ export default function InverterModels() {
                 className="flex-1 font-semibold"
                 disabled={!imageUpdateFile}
               >
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="h-3.5 w-3.5 mr-2" />
                 Update Image
               </Button>
             </div>

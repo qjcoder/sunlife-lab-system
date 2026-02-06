@@ -89,7 +89,7 @@ export default function CreateJob() {
           onClick={() => navigate('/service-center/jobs')}
           className="hover:bg-slate-100 dark:hover:bg-slate-800"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-3.5 w-3.5 mr-2" />
           Back
         </Button>
         <div className="space-y-1">
@@ -116,14 +116,14 @@ export default function CreateJob() {
             {/* Customer Information Section */}
             <div className="p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-blue-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
               <h3 className="text-lg font-bold mb-5 text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <User className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                 Customer Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-3">
                   <Label htmlFor="customerName" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                      <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <User className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                     </div>
                     Customer Name
                   </Label>
@@ -144,7 +144,7 @@ export default function CreateJob() {
                 <div className="space-y-3">
                   <Label htmlFor="customerContact" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                      <Phone className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                      <Phone className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     Customer Contact
                   </Label>
@@ -167,7 +167,7 @@ export default function CreateJob() {
             {/* Service Job Information Section */}
             <div className="p-5 bg-gradient-to-br from-slate-50 to-purple-50/30 dark:from-slate-800/50 dark:to-purple-950/20 rounded-2xl border-2 border-slate-200/60 dark:border-slate-700/60">
               <h3 className="text-lg font-bold mb-5 text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Wrench className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <Wrench className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                 Service Job Details
               </h3>
               <div className="space-y-5">
@@ -175,7 +175,7 @@ export default function CreateJob() {
                   <div className="flex items-center justify-between gap-2">
                     <Label htmlFor="serialNumber" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                       <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                        <Hash className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        <Hash className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                       </div>
                       Inverter Serial Number
                     </Label>
@@ -189,7 +189,7 @@ export default function CreateJob() {
                       }}
                       className={cn(scannerMode && 'bg-green-600 hover:bg-green-700')}
                     >
-                      <Scan className="h-4 w-4 mr-1" />
+                      <Scan className="h-3.5 w-3.5 mr-1" />
                       {scannerMode ? 'Scanner ON' : 'Scanner'}
                     </Button>
                   </div>
@@ -225,7 +225,7 @@ export default function CreateJob() {
                 <div className="space-y-3">
                   <Label htmlFor="reportedFault" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                      <Wrench className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      <Wrench className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
                     </div>
                     Reported Fault
                   </Label>
@@ -246,7 +246,7 @@ export default function CreateJob() {
                 <div className="space-y-3">
                   <Label htmlFor="visitDate" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <div className="p-1.5 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
-                      <Calendar className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                      <Calendar className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
                     </div>
                     Visit Date
                   </Label>
@@ -268,7 +268,7 @@ export default function CreateJob() {
                 <div className="space-y-3">
                   <Label htmlFor="remarks" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                      <FileText className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                      <FileText className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
                     </div>
                     Remarks (Optional)
                   </Label>
@@ -290,12 +290,12 @@ export default function CreateJob() {
               >
                 {mutation.isPending ? (
                   <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                     Creating Service Job...
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="h-5 w-5 mr-2" />
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
                     Create Service Job
                   </>
                 )}

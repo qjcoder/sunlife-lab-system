@@ -379,7 +379,7 @@ export default function OperatorSerialEntry() {
                   )}
                   onClick={() => setScannerMode(!scannerMode)}
                 >
-                  <Scan className="h-4 w-4 mr-2" />
+                  <Scan className="h-3.5 w-3.5 mr-2" />
                   {scannerMode ? 'Scanner Active' : 'Enable Scanner'}
                 </Button>
               </CardTitle>
@@ -388,7 +388,7 @@ export default function OperatorSerialEntry() {
               {/* Model Selection - Category wise */}
               <div className="space-y-3">
                 <Label className="text-sm font-bold flex items-center gap-2">
-                  <Package className="h-4 w-4" />
+                  <Package className="h-3.5 w-3.5" />
                   Product category &amp; model
                 </Label>
                 <div className="flex flex-wrap gap-2">
@@ -404,7 +404,7 @@ export default function OperatorSerialEntry() {
                         setValueSingle('inverterModel', '');
                       }}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-3.5 w-3.5" />
                       {label}
                     </Button>
                   ))}
@@ -445,7 +445,7 @@ export default function OperatorSerialEntry() {
               {/* Serial Number Input */}
               <div className="space-y-2">
                 <Label htmlFor="serialNumber" className="text-sm font-bold flex items-center gap-2">
-                  <Hash className="h-4 w-4" />
+                  <Hash className="h-3.5 w-3.5" />
                   Serial Number
                 </Label>
                 <Input
@@ -475,7 +475,7 @@ export default function OperatorSerialEntry() {
               {/* Manufacturing Date */}
               <div className="space-y-2">
                 <Label htmlFor="manufacturingDate" className="text-sm font-bold flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="h-3.5 w-3.5" />
                   Manufacturing Date
                 </Label>
                 <Input
@@ -495,12 +495,12 @@ export default function OperatorSerialEntry() {
               >
                 {singleMutation.isPending ? (
                   <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                     Processing...
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="h-5 w-5 mr-2" />
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
                     Enter Serial Number
                   </>
                 )}
@@ -530,7 +530,7 @@ export default function OperatorSerialEntry() {
                     )}
                     onClick={() => setBulkScannerMode(!bulkScannerMode)}
                   >
-                    <Scan className="h-4 w-4 mr-2" />
+                    <Scan className="h-3.5 w-3.5 mr-2" />
                     {bulkScannerMode ? 'Scanner Active' : 'Enable Scanner'}
                   </Button>
                   <input
@@ -548,7 +548,7 @@ export default function OperatorSerialEntry() {
                     className="bg-white/20 backdrop-blur-md text-white border-white/30 hover:bg-white/30"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-3.5 w-3.5 mr-2" />
                     Upload Excel/CSV
                   </Button>
                 </div>
@@ -558,7 +558,7 @@ export default function OperatorSerialEntry() {
               {/* Model Selection - Category wise */}
               <div className="space-y-3">
                 <Label className="text-sm font-bold flex items-center gap-2">
-                  <Package className="h-4 w-4" />
+                  <Package className="h-3.5 w-3.5" />
                   Product category &amp; model
                 </Label>
                 <div className="flex flex-wrap gap-2">
@@ -574,7 +574,7 @@ export default function OperatorSerialEntry() {
                         setValueBulk('inverterModel', '');
                       }}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-3.5 w-3.5" />
                       {label}
                     </Button>
                   ))}
@@ -615,7 +615,7 @@ export default function OperatorSerialEntry() {
               {/* Serial Numbers Textarea */}
               <div className="space-y-2">
                 <Label htmlFor="bulkSerialNumbers" className="text-sm font-bold flex items-center gap-2">
-                  <Hash className="h-4 w-4" />
+                  <Hash className="h-3.5 w-3.5" />
                   Serial Numbers ({serialCount} entered)
                 </Label>
                 <textarea
@@ -652,7 +652,7 @@ export default function OperatorSerialEntry() {
               {/* Manufacturing Date */}
               <div className="space-y-2">
                 <Label htmlFor="bulkManufacturingDate" className="text-sm font-bold flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="h-3.5 w-3.5" />
                   Manufacturing Date
                 </Label>
                 <Input
@@ -672,12 +672,12 @@ export default function OperatorSerialEntry() {
               >
                 {bulkMutation.isPending ? (
                   <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                     Processing...
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="h-5 w-5 mr-2" />
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
                     Enter Serial Numbers
                   </>
                 )}
@@ -693,7 +693,7 @@ export default function OperatorSerialEntry() {
                       size="sm"
                       onClick={() => setBulkResult(null)}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
@@ -766,7 +766,7 @@ export default function OperatorSerialEntry() {
         <Card className="border-2 border-slate-200 dark:border-slate-800 shadow-lg sticky top-6">
           <CardHeader className="bg-gradient-to-r from-slate-500 via-slate-600 to-slate-700 dark:from-slate-600 dark:via-slate-700 dark:to-slate-800 border-b-0">
             <CardTitle className="flex items-center gap-3 text-white">
-              <History className="h-5 w-5" />
+              <History className="h-3.5 w-3.5" />
               <span>Entry History</span>
             </CardTitle>
           </CardHeader>
@@ -825,7 +825,7 @@ export default function OperatorSerialEntry() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertCircle className="h-5 w-5" />
+              <AlertCircle className="h-3.5 w-3.5" />
               Serial Number Already Exists
             </DialogTitle>
             <DialogDescription>
@@ -838,17 +838,17 @@ export default function OperatorSerialEntry() {
                 <p className="font-mono font-bold text-lg mb-3">{duplicateDialog.serialNumber}</p>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
+                    <User className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="font-semibold">Entered by:</span>
                     <span>{duplicateDialog.enteredBy}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="font-semibold">Date:</span>
                     <span>{duplicateDialog.enteredDate}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="font-semibold">Time:</span>
                     <span>{duplicateDialog.enteredTime}</span>
                   </div>

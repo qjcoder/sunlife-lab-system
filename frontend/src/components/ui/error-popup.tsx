@@ -34,7 +34,7 @@ export function ErrorPopup({
           className="absolute top-3 right-3 z-10 text-gray-400 hover:text-gray-600 transition-colors"
           aria-label="Close"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
         </button>
 
         {/* Content - with top padding to accommodate icon */}

@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { getModelDisplayName, getVariantDisplay } from '@/lib/utils';
+import { getModelDisplayName, getVariantDisplay, extractPowerRating } from '@/lib/utils';
 
 type ModelStats = {
   totalRegistered: number;
@@ -19,15 +19,30 @@ type CategoryRow = {
 };
 
 /**
- * Generate and download a PDF of factory stock detail by category.
+ * Generate a PDF of factory stock detail by category.
+ * @param openForPrint - If true, opens PDF in new window for printing; if false and alsoOpenForPrint, downloads and opens for print.
+ * @param alsoOpenForPrint - If true when downloading, also opens PDF in new tab for printing.
  */
+const margin = 14;
+
+/** Sort models by power (low to high) then by display name. */
+function sortModelsAscending(models: Array<{ _id: string; [key: string]: unknown }>): Array<{ _id: string; [key: string]: unknown }> {
+  return [...models].sort((a, b) => {
+    const pa = extractPowerRating(a);
+    const pb = extractPowerRating(b);
+    if (pa !== pb) return pa - pb;
+    return getModelDisplayName(a).localeCompare(getModelDisplayName(b), undefined, { numeric: true });
+  });
+}
+
 export function downloadStockPdf(
   modelsByCategory: CategoryRow[],
-  modelStatistics: Record<string, ModelStats>
+  modelStatistics: Record<string, ModelStats>,
+  openForPrint?: boolean,
+  alsoOpenForPrint?: boolean
 ): void {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = doc.getPageWidth();
-  const centerX = pageWidth / 2;
   let y = 14;
 
   // Compute summary totals from all models in categories
@@ -50,20 +65,20 @@ export function downloadStockPdf(
     }
   }
 
-  // Title (centered)
+  // Title (left)
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text('Factory Stock Detail', centerX, y, { align: 'center' });
-  y += 8;
+  doc.text('Factory Stock Detail', margin, y, { align: 'left' });
+  y += 6;
 
-  // Date (centered) and Summary table on the right
+  // Date (left)
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Generated: ${new Date().toLocaleString()}`, centerX, y, { align: 'center' });
+  doc.text(`Generated: ${new Date().toLocaleString()}`, margin, y, { align: 'left' });
+  y += 6;
 
-  // Summary table at right side of top heading (position via margin.left)
+  // Summary table (left-aligned, minor spacing)
   const summaryTableWidth = 50;
-  const summaryLeft = pageWidth - 14 - summaryTableWidth;
   const summaryData = [
     ['Total Units', String(totalUnits)],
     ['In Factory', String(totalInFactory)],
@@ -75,17 +90,17 @@ export function downloadStockPdf(
   autoTable(doc, {
     head: [['Summary', 'Count']],
     body: summaryData,
-    startY: 12,
+    startY: y,
     tableWidth: summaryTableWidth,
     theme: 'grid',
-    styles: { fontSize: 8, halign: 'center' },
-    headStyles: { fillColor: [66, 66, 66], fontSize: 8, halign: 'center' },
+    styles: { fontSize: 8, halign: 'left' },
+    headStyles: { fillColor: [66, 66, 66], fontSize: 8, halign: 'left' },
     columnStyles: { 0: { cellWidth: 32 }, 1: { cellWidth: 18 } },
-    margin: { left: summaryLeft, right: 14, top: 12, bottom: 5 },
+    margin: { left: margin, right: 14 },
   });
 
   const summaryTbl = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable;
-  y = Math.max(32, (summaryTbl?.finalY ?? 32) + 4);
+  y = (summaryTbl?.finalY ?? y) + 6;
 
   const tableHead = [
     'Model',
@@ -100,8 +115,9 @@ export function downloadStockPdf(
 
   for (const { title, models } of modelsByCategory) {
     if (models.length === 0) continue;
+    const sorted = sortModelsAscending(models);
 
-    const body = models.map((model) => {
+    const body = sorted.map((model) => {
       const stats = modelStatistics[model._id];
       if (!stats) return null;
       return [
@@ -118,34 +134,32 @@ export function downloadStockPdf(
 
     if (body.length === 0) continue;
 
-    // Category heading (centered)
-    if (y > 35) {
-      y += 6;
-    }
+    // Category heading (left)
+    if (y > 35) y += 4;
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text(title, centerX, y, { align: 'center' });
-    y += 6;
+    doc.text(title, margin, y, { align: 'left' });
+    y += 5;
 
     autoTable(doc, {
       head: [tableHead],
       body,
       startY: y,
       theme: 'grid',
-      styles: { fontSize: 8, halign: 'center' },
-      headStyles: { fillColor: [66, 66, 66], fontSize: 8, halign: 'center' },
+      styles: { fontSize: 8, halign: 'left' },
+      headStyles: { fillColor: [66, 66, 66], fontSize: 8, halign: 'left' },
       columnStyles: {
-        0: { cellWidth: 38, halign: 'center' },
-        1: { cellWidth: 18, halign: 'center' },
-        2: { cellWidth: 18, halign: 'center' },
-        3: { cellWidth: 18, halign: 'center' },
-        4: { cellWidth: 18, halign: 'center' },
-        5: { cellWidth: 18, halign: 'center' },
-        6: { cellWidth: 18, halign: 'center' },
-        7: { cellWidth: 14, halign: 'center' },
+        0: { cellWidth: 38, halign: 'left' },
+        1: { cellWidth: 18, halign: 'left' },
+        2: { cellWidth: 18, halign: 'left' },
+        3: { cellWidth: 18, halign: 'left' },
+        4: { cellWidth: 18, halign: 'left' },
+        5: { cellWidth: 18, halign: 'left' },
+        6: { cellWidth: 18, halign: 'left' },
+        7: { cellWidth: 14, halign: 'left' },
       },
-      margin: { left: 14, right: 14 },
-      tableWidth: pageWidth - 28,
+      margin: { left: margin, right: margin },
+      tableWidth: pageWidth - margin * 2,
     });
 
     const tbl = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable;
@@ -158,5 +172,25 @@ export function downloadStockPdf(
     }
   }
 
-  doc.save(`factory-stock-${new Date().toISOString().slice(0, 10)}.pdf`);
+  const filename = `factory-stock-${new Date().toISOString().slice(0, 10)}.pdf`;
+  if (openForPrint) {
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } else if (alsoOpenForPrint) {
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } else {
+    doc.save(filename);
+  }
 }

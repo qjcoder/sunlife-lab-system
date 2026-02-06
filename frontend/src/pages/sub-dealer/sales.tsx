@@ -112,7 +112,7 @@ export default function SubDealerSales() {
               <div className="flex items-center justify-between gap-2">
                 <Label htmlFor="serialNumber" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                    <Hash className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <Hash className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                   </div>
                   Serial Number
                 </Label>
@@ -126,7 +126,7 @@ export default function SubDealerSales() {
                   }}
                   className={cn(scannerMode && 'bg-green-600 hover:bg-green-700')}
                 >
-                  <Scan className="h-4 w-4 mr-1" />
+                  <Scan className="h-3.5 w-3.5 mr-1" />
                   {scannerMode ? 'Scanner ON' : 'Scanner'}
                 </Button>
               </div>
@@ -162,7 +162,7 @@ export default function SubDealerSales() {
             <div className="space-y-3">
               <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                  <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <FileText className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 Invoice Number
               </Label>
@@ -175,7 +175,7 @@ export default function SubDealerSales() {
             <div className="space-y-3">
               <Label htmlFor="saleDate" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <div className="p-1.5 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
-                  <Calendar className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                  <Calendar className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
                 </div>
                 Sale Date
               </Label>
@@ -197,7 +197,7 @@ export default function SubDealerSales() {
             <div className="space-y-3">
               <Label htmlFor="customerName" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <User className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                 </div>
                 Customer Name
               </Label>
@@ -218,7 +218,7 @@ export default function SubDealerSales() {
             <div className="space-y-3">
               <Label htmlFor="customerContact" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                  <Phone className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <Phone className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                 </div>
                 Customer Contact (Optional)
               </Label>
@@ -238,12 +238,12 @@ export default function SubDealerSales() {
               >
                 {singleMutation.isPending ? (
                   <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
                     Recording Sale...
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="h-5 w-5 mr-2" />
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-2" />
                     Record Sale
                   </>
                 )}

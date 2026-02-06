@@ -393,7 +393,7 @@ const Login = () => {
                       : "border-gray-200 bg-white hover:border-gray-300"
                   }`}
                 >
-                  <RoleIcon className={`h-5 w-5 ${isSelected ? roleConfig.accentText : "text-gray-400"}`} />
+                  <RoleIcon className={`h-3.5 w-3.5 ${isSelected ? roleConfig.accentText : "text-gray-400"}`} />
                   <span className={`text-sm font-medium ${isSelected ? roleConfig.accentText : "text-gray-600"}`}>
                     {role.label}
                   </span>
@@ -416,7 +416,7 @@ const Login = () => {
                 Email Address
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                 <Input
                   id="email"
                   type="email"
@@ -455,7 +455,7 @@ const Login = () => {
                 Password
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                 <Input
                   id="password"
                   type="password"
@@ -492,7 +492,7 @@ const Login = () => {
                   type="checkbox"
                   id="rememberMe"
                   {...register("rememberMe")}
-                  className={`h-4 w-4 rounded border-gray-300 ${
+                  className={`h-3.5 w-3.5 rounded border-gray-300 ${
                     selectedRole === "FACTORY_ADMIN" ? "text-red-600 focus:ring-red-500" :
                     selectedRole === "DEALER" ? "text-blue-600 focus:ring-blue-500" :
                     selectedRole === "SUB_DEALER" ? "text-green-600 focus:ring-green-500" :

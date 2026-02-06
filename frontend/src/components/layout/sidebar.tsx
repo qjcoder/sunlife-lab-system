@@ -142,7 +142,7 @@ const Sidebar = ({ onClose }: SidebarProps) => {
                     <>
                       <Icon
                         className={cn(
-                          "h-5 w-5 flex-shrink-0",
+                          "h-3.5 w-3.5 flex-shrink-0",
                           isActive ? "text-white" : "text-slate-500 dark:text-slate-400"
                         )}
                       />

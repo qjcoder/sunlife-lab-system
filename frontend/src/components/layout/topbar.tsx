@@ -49,7 +49,7 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
           onClick={onMenuClick}
           className="lg:hidden h-9 w-9"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-3.5 w-3.5" />
         </Button>
         
         <div className={cn(
@@ -74,7 +74,7 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
       {/* Search Bar - Hidden on mobile */}
       <div className="hidden md:flex flex-1 max-w-md mx-4">
         <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 text-slate-400" />
           <Input
             type="text"
             placeholder="Search..."
@@ -106,7 +106,7 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
             colors.primaryLight, "dark:hover:bg-slate-800"
           )}
         >
-          <Bell className={cn("h-4 w-4 sm:h-5 sm:w-5", colors.accentText, "dark:text-slate-400")} />
+          <Bell className={cn("h-3.5 w-3.5 sm:h-5 sm:w-5", colors.accentText, "dark:text-slate-400")} />
           <span className={cn(
             "absolute top-1 right-1 h-2 w-2 rounded-full border-2 border-white dark:border-slate-900",
             colors.primary
@@ -122,7 +122,7 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
             colors.primaryLight, "dark:hover:bg-slate-800"
           )}
         >
-          <MessageSquare className={cn("h-4 w-4 sm:h-5 sm:w-5", colors.accentText, "dark:text-slate-400")} />
+          <MessageSquare className={cn("h-3.5 w-3.5 sm:h-5 sm:w-5", colors.accentText, "dark:text-slate-400")} />
           <span className={cn(
             "absolute top-1 right-1 h-2 w-2 rounded-full border-2 border-white dark:border-slate-900",
             colors.primary
@@ -156,7 +156,7 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
             )}
             title="Logout"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>

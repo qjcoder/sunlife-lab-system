@@ -31,6 +31,8 @@ export interface InverterStockItem {
 
 export interface FactoryStockResponse {
   count: number;
+  totalCount?: number;
+  dispatchedCount?: number;
   availableInverters: InverterStockItem[];
 }
 
@@ -41,9 +43,16 @@ export interface DealerStockResponse {
 }
 
 export const getFactoryStock = async (): Promise<FactoryStockResponse> => {
-  const response = await api.get<{ count: number; stock: InverterStockItem[] }>('/api/factory-inverter-stock');
+  const response = await api.get<{
+    count: number;
+    totalCount?: number;
+    dispatchedCount?: number;
+    stock: InverterStockItem[];
+  }>('/api/factory-inverter-stock');
   return {
     count: response.data.count,
+    totalCount: response.data.totalCount,
+    dispatchedCount: response.data.dispatchedCount,
     availableInverters: response.data.stock,
   };
 };
