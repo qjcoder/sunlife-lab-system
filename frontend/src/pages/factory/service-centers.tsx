@@ -88,13 +88,13 @@ export default function ServiceCenters() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 md:space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-3 sm:p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
-      <div className="space-y-1 sm:space-y-2">
+      <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 space-y-1">
         <h1 className={PAGE_HEADING_CLASS}>Create Service Center</h1>
         <p className={PAGE_SUBHEADING_CLASS}>Create a new service center account for warranty and repairs</p>
       </div>
-
+      <div className="space-y-4 sm:space-y-5 px-4 sm:px-5 md:px-6 pb-4 pt-0">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <Card>
           <CardHeader>
@@ -196,6 +196,7 @@ export default function ServiceCenters() {
             )}
           </CardContent>
         </Card>
+      </div>
       </div>
 
       {/* Delete Confirmation Dialog */}

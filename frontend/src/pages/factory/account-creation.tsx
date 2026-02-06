@@ -363,12 +363,12 @@ export default function AccountCreation() {
   };
 
   return (
-    <div className="space-y-6 min-h-screen bg-gradient-to-br from-slate-50 via-red-50/30 to-orange-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
-      <div className="space-y-2">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-red-50/30 to-orange-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 space-y-1">
         <h1 className={PAGE_HEADING_CLASS}>Account Creation</h1>
         <p className={PAGE_SUBHEADING_CLASS}>Create and manage accounts for different roles</p>
       </div>
-
+      <div className="space-y-4 sm:space-y-5 px-4 sm:px-5 md:px-6 pb-4 pt-0">
       {/* Role tabs */}
       <div className="flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-700 pb-4">
         {ROLE_TABS.map((tab) => {
@@ -542,6 +542,7 @@ export default function AccountCreation() {
           variant="danger"
         />
       )}
+      </div>
     </div>
   );
 }

@@ -223,8 +223,8 @@ export default function FactoryStock() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
       <div className="bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-        <div className="px-4 md:px-6 py-3 md:py-4 flex items-center justify-between gap-3">
-          <div className="space-y-1 md:space-y-2">
+        <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 flex items-center justify-between gap-3">
+          <div className="space-y-1">
             <h1 className={PAGE_HEADING_CLASS}>Factory Stock</h1>
             <p className={PAGE_SUBHEADING_CLASS}>Product inventory and distribution statistics</p>
           </div>
@@ -240,7 +240,7 @@ export default function FactoryStock() {
       </div>
 
       {/* Scrollable Content */}
-      <div className="space-y-6 px-4 md:px-6 pb-6 pt-4">
+      <div className="space-y-4 sm:space-y-5 px-4 sm:px-5 md:px-6 pb-4 pt-3 sm:pt-4">
       {/* Product Detail Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
         {filteredModels.map((model) => {

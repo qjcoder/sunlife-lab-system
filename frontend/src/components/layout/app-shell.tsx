@@ -1,14 +1,22 @@
-import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./sidebar";
 import Topbar from "./topbar";
 import { cn } from "@/lib/utils";
 
 const AppShell = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+  const location = useLocation();
+  const isInverterModels = location.pathname.includes("inverter-models");
+
+  // Scroll main content to top when navigating to a new page
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
-    <div className="flex h-screen w-full bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-screen max-h-screen overflow-hidden w-full bg-slate-50 dark:bg-slate-950">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -31,8 +39,19 @@ const AppShell = () => {
       <div className="flex flex-col flex-1 overflow-hidden w-full lg:w-auto">
         <Topbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
-        <main className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 bg-white dark:bg-slate-900">
-          <div className="max-w-7xl mx-auto">
+        <main
+          ref={mainRef}
+          className={cn(
+            "flex-1 min-h-0 flex flex-col p-3 sm:p-4 md:p-6 bg-white dark:bg-slate-900",
+            isInverterModels ? "overflow-hidden" : "overflow-auto"
+          )}
+        >
+          <div
+            className={cn(
+              "max-w-7xl mx-auto w-full h-full min-h-0 flex flex-col",
+              isInverterModels && "overflow-hidden"
+            )}
+          >
             <Outlet />
           </div>
         </main>

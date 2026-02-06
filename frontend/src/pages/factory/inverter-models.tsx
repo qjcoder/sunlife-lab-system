@@ -150,7 +150,19 @@ export default function InverterModels() {
   const createDatasheetInputRef = useRef<HTMLInputElement>(null);
   const editImageInputRef = useRef<HTMLInputElement>(null);
   const editDatasheetInputRef = useRef<HTMLInputElement>(null);
-  
+
+  // Lock page scroll so only the form card scrolls (zero page scrolling)
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.overflow;
+    const prevBody = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = prevHtml;
+      document.body.style.overflow = prevBody;
+    };
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -714,12 +726,12 @@ export default function InverterModels() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="h-full min-h-0 max-h-full flex flex-col overflow-hidden bg-muted/30">
       {/* Header - ShadCN card-style bar */}
-      <header className="border-b bg-card">
-        <div className="px-4 py-4 sm:px-6 sm:py-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1 sm:space-y-1.5">
+      <header className="shrink-0 border-b bg-card">
+        <div className="px-4 py-2 sm:px-5 sm:py-2.5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-0.5">
               <h1 className={PAGE_HEADING_CLASS}>Create Product Model</h1>
               <p className={PAGE_SUBHEADING_CLASS}>Create and manage product models and configurations</p>
             </div>
@@ -731,7 +743,7 @@ export default function InverterModels() {
                   setEditingModel(null);
                 }
               }}
-              size="lg"
+              size="default"
               className="w-full sm:w-auto"
             >
               {showCreateForm ? (
@@ -750,29 +762,18 @@ export default function InverterModels() {
         </div>
       </header>
 
-      {/* Scrollable Content */}
-      <div className="space-y-6 sm:space-y-8 p-4 sm:p-6">
+      {/* Content - when form open: only form scrolls; when closed: browse/category scrolls */}
+      <div
+        className={cn(
+          'flex-1 min-h-0 min-w-0 flex flex-col p-3 sm:p-4',
+          showCreateForm ? 'overflow-hidden' : 'overflow-auto space-y-4 sm:space-y-5'
+        )}
+      >
 
-      {/* Create Form at Top */}
+      {/* Create Form - only content when open; form body scrolls inside card */}
       {showCreateForm && (
-        <Card>
-          <CardHeader className="p-4 sm:p-6 pb-0">
-            <div className="flex items-center justify-between gap-4">
-              <CardTitle className="text-xl sm:text-2xl">Create Product Model</CardTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0"
-                onClick={() => {
-                  setShowCreateForm(false);
-                  reset();
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-4">
+        <Card className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
+          <CardContent className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:p-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
               {/* Product Type - required selection */}
               <div className="space-y-3">
@@ -1760,8 +1761,8 @@ export default function InverterModels() {
         </DialogContent>
       </Dialog>
 
-      {/* Product Grid by Category */}
-      {isLoading ? (
+      {/* Product Grid by Category - hidden when create form is open */}
+      {!showCreateForm && (isLoading ? (
         <Card>
           <CardContent className="py-16">
             <div className="flex flex-col items-center justify-center text-center">
@@ -1786,14 +1787,14 @@ export default function InverterModels() {
           </CardContent>
         </Card>
       ) : selectedCategory === null ? (
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader className="text-center space-y-1.5 pb-4 sm:pb-6">
+        <Card className="max-w-5xl mx-auto">
+          <CardHeader className="text-center space-y-1.5 pb-4 sm:pb-5 pt-5 sm:pt-6 px-5 sm:px-8">
             <CardTitle className="text-xl sm:text-2xl">Browse by category</CardTitle>
             <CardDescription className="text-sm sm:text-base">
               Select a category to view and manage its product models.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 px-5 sm:px-8 pb-5 sm:pb-6">
             <Card
               role="button"
               tabIndex={0}
@@ -1801,17 +1802,17 @@ export default function InverterModels() {
               onKeyDown={(e) => e.key === 'Enter' && setSelectedCategory('inverter')}
               className={cn(
                 "cursor-pointer transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                "flex items-center gap-3 sm:gap-4 p-4 sm:p-5 text-left"
+                "flex items-center gap-4 p-4 sm:p-5 text-left"
               )}
             >
-              <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+              <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
                 <Zap className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold leading-none tracking-tight text-card-foreground">Inverters</p>
-                <p className="text-sm text-muted-foreground mt-0.5">{categorizedModels.inverter.length} models</p>
+                <p className="font-semibold leading-none tracking-tight text-card-foreground text-base sm:text-lg">Inverters</p>
+                <p className="text-sm text-muted-foreground mt-1">{categorizedModels.inverter.length} models</p>
               </div>
-              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-muted-foreground" />
+              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
             </Card>
             <Card
               role="button"
@@ -1820,17 +1821,17 @@ export default function InverterModels() {
               onKeyDown={(e) => e.key === 'Enter' && setSelectedCategory('battery')}
               className={cn(
                 "cursor-pointer transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                "flex items-center gap-3 sm:gap-4 p-4 sm:p-5 text-left"
+                "flex items-center gap-4 p-4 sm:p-5 text-left"
               )}
             >
-              <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
+              <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
                 <Battery className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold leading-none tracking-tight text-card-foreground">Batteries</p>
-                <p className="text-sm text-muted-foreground mt-0.5">{categorizedModels.battery.length} models</p>
+                <p className="font-semibold leading-none tracking-tight text-card-foreground text-base sm:text-lg">Batteries</p>
+                <p className="text-sm text-muted-foreground mt-1">{categorizedModels.battery.length} models</p>
               </div>
-              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-muted-foreground" />
+              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
             </Card>
             <Card
               role="button"
@@ -1839,17 +1840,17 @@ export default function InverterModels() {
               onKeyDown={(e) => e.key === 'Enter' && setSelectedCategory('vfd')}
               className={cn(
                 "cursor-pointer transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                "flex items-center gap-3 sm:gap-4 p-4 sm:p-5 text-left"
+                "flex items-center gap-4 p-4 sm:p-5 text-left"
               )}
             >
-              <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
+              <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
                 <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold leading-none tracking-tight text-card-foreground">VFD</p>
-                <p className="text-sm text-muted-foreground mt-0.5">{categorizedModels.vfd.length} models</p>
+                <p className="font-semibold leading-none tracking-tight text-card-foreground text-base sm:text-lg">VFD</p>
+                <p className="text-sm text-muted-foreground mt-1">{categorizedModels.vfd.length} models</p>
               </div>
-              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-muted-foreground" />
+              <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
             </Card>
           </CardContent>
         </Card>
@@ -1881,7 +1882,7 @@ export default function InverterModels() {
             'bg-orange-100 dark:bg-orange-900/30'
           )}
         </div>
-      )}
+      ))}
 
       {/* Image Update Dialog - Simple, Only Image Upload */}
       <Dialog open={!!imageUpdateModel} onOpenChange={(isOpen) => {

@@ -120,7 +120,7 @@ export default function Transfer() {
   return (
     <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
       {/* Header */}
-      <div className="space-y-2">
+      <div className="space-y-1">
         <h1 className={PAGE_HEADING_CLASS}>Transfer to Sub-Dealer</h1>
         <p className={PAGE_SUBHEADING_CLASS}>Transfer inverters from dealer to sub-dealers</p>
       </div>

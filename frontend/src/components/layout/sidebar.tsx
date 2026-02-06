@@ -17,7 +17,6 @@ import {
   Wrench,
   FilePlus,
   PackageSearch,
-  ChevronDown,
   LayoutDashboard,
   Keyboard,
   UserCog,
@@ -156,15 +155,11 @@ const Sidebar = ({ onClose }: SidebarProps) => {
         </div>
       </nav>
 
-      {/* User Profile Footer */}
-      <div className={cn("p-4 border-t", colors.accentBorder, "dark:border-slate-700")}>
-        <div className={cn(
-          "flex items-center gap-3 p-3 rounded-lg transition-colors cursor-pointer",
-          colors.primaryLight, "dark:bg-slate-800/50",
-          colors.accentLight, "dark:hover:bg-slate-700/50"
-        )}>
+      {/* User – compact, no dropdown */}
+      <div className={cn("p-3 border-t", colors.accentBorder, "dark:border-slate-700")}>
+        <div className="flex items-center gap-2 min-w-0">
           <div className={cn(
-            "h-10 w-10 rounded-full flex items-center justify-center font-semibold text-sm flex-shrink-0 text-white",
+            "h-8 w-8 rounded-full flex items-center justify-center font-semibold text-xs flex-shrink-0 text-white",
             colors.primary
           )}>
             {user.name
@@ -175,14 +170,9 @@ const Sidebar = ({ onClose }: SidebarProps) => {
               .slice(0, 2)}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-              {user.name}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-              {user.email}
-            </p>
+            <p className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate">{user.name}</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
           </div>
-          <ChevronDown className="h-4 w-4 text-slate-400 flex-shrink-0" />
         </div>
       </div>
     </aside>

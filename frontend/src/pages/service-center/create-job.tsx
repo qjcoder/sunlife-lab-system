@@ -80,9 +80,9 @@ export default function CreateJob() {
   };
 
   return (
-    <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 flex items-center gap-4">
         <Button
           variant="ghost"
           size="sm"
@@ -92,12 +92,12 @@ export default function CreateJob() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <div className="space-y-2">
+        <div className="space-y-1">
           <h1 className={PAGE_HEADING_CLASS}>Create Service Job</h1>
           <p className={PAGE_SUBHEADING_CLASS}>Record a new service job and repair request</p>
         </div>
       </div>
-
+      <div className="space-y-4 sm:space-y-5 px-4 sm:px-5 md:px-6 pb-4 pt-0">
       <Card className="border-2 border-blue-200/60 dark:border-blue-800/60 shadow-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 dark:from-blue-600 dark:via-indigo-600 dark:to-purple-600 border-b-0 relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAzNGMwIDMuMzE0LTIuNjg2IDYtNiA2cy02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNiA2IDIuNjg2IDYgNnoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvZz48L3N2Zz4=')] opacity-20"></div>
@@ -312,6 +312,7 @@ export default function CreateJob() {
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

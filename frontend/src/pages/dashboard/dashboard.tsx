@@ -11,7 +11,7 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { getProductImageWithHandler } from '@/lib/image-utils';
-import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
+import { cn, PAGE_HEADING_CLASS } from '@/lib/utils';
 import { toast } from 'sonner';
 
 /** Roles that can see Full Life Cycle View */
@@ -463,21 +463,20 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100/50 to-blue-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
       <header className="border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm">
-        <div className="p-5 sm:p-6 md:p-8 lg:p-10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="space-y-2">
-              <h1 className={PAGE_HEADING_CLASS}>
-                Dashboard
-              </h1>
-              <p className={`${PAGE_SUBHEADING_CLASS} flex items-center gap-2 flex-wrap`}>
-                <span className="text-slate-500 dark:text-slate-500">Welcome back,</span>
-                <span className="inline-flex items-center font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/80 text-base sm:text-lg px-3 py-1 rounded-lg border border-slate-200/80 dark:border-slate-700/80">
+        <div className="px-4 py-2 sm:px-5 sm:py-2.5 md:px-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <h1 className={PAGE_HEADING_CLASS}>
+              Dashboard
+            </h1>
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-2 text-sm sm:text-base text-slate-600 dark:text-slate-400">
+                <span>Welcome back,</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-slate-700/80">
                   {user?.name}
                 </span>
-              </p>
-            </div>
-            {/* Dealer Stock - same style and position as Total Factory Stock */}
-            {(user?.role === 'DEALER' || user?.role === 'SUB_DEALER') && (
+              </div>
+              {/* Dealer Stock - same style and position as Total Factory Stock */}
+              {(user?.role === 'DEALER' || user?.role === 'SUB_DEALER') && (
               <Card className="border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-white dark:from-green-950/20 dark:to-slate-900 shrink-0">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
@@ -496,20 +495,21 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main content */}
-      <main className="p-4 sm:p-5 md:p-6 lg:p-8 space-y-6 sm:space-y-8">
+      <main className="p-3 sm:p-4 md:p-5 space-y-4 sm:space-y-5">
 
         {/* Summary / Stats cards - admin only; other roles see only Product Catalog below */}
         {user?.role === 'FACTORY_ADMIN' && (
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-5">
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
             <>
               <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-900/80">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3 sm:pb-2 sm:pt-5 sm:px-5">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-2 px-3 sm:pt-3 sm:px-4">
                   <CardTitle className="font-heading text-xs sm:text-sm font-semibold tracking-wide text-slate-600 dark:text-slate-400 truncate pr-1">
                     Total Products
                   </CardTitle>
@@ -517,7 +517,7 @@ export default function Dashboard() {
                     <Package className="h-3 w-3 sm:h-4 sm:w-4 text-slate-600 dark:text-slate-400" />
                   </div>
                 </CardHeader>
-                <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
+                <CardContent className="px-3 pb-2 sm:px-4 sm:pb-4">
                   <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-slate-900 dark:text-slate-100">
                     {stats.totalInverters.toLocaleString()}
                   </p>
@@ -525,7 +525,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
               <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-900/80">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3 sm:pb-2 sm:pt-5 sm:px-5">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-2 px-3 sm:pt-3 sm:px-4">
                   <CardTitle className="font-heading text-xs sm:text-sm font-semibold tracking-wide text-slate-600 dark:text-slate-400 truncate pr-1">
                     Available Stock
                   </CardTitle>
@@ -533,7 +533,7 @@ export default function Dashboard() {
                     <Warehouse className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
                   </div>
                 </CardHeader>
-                <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
+                <CardContent className="px-3 pb-2 sm:px-4 sm:pb-4">
                   <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-green-600 dark:text-green-400">
                     {stats.availableInverters.toLocaleString()}
                   </p>
@@ -541,7 +541,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
               <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-900/80">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3 sm:pb-2 sm:pt-5 sm:px-5">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-2 px-3 sm:pt-3 sm:px-4">
                   <CardTitle className="font-heading text-xs sm:text-sm font-semibold tracking-wide text-slate-600 dark:text-slate-400 truncate pr-1">
                     Dispatched
                   </CardTitle>
@@ -549,7 +549,7 @@ export default function Dashboard() {
                     <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
                   </div>
                 </CardHeader>
-                <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
+                <CardContent className="px-3 pb-2 sm:px-4 sm:pb-4">
                   <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-blue-600 dark:text-blue-400">
                     {stats.dispatchedInverters.toLocaleString()}
                   </p>
@@ -557,7 +557,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
               <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-900/80">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-3 px-3 sm:pb-2 sm:pt-5 sm:px-5">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-2 px-3 sm:pt-3 sm:px-4">
                   <CardTitle className="font-heading text-xs sm:text-sm font-semibold tracking-wide text-slate-600 dark:text-slate-400 truncate pr-1">
                     Service Centers
                   </CardTitle>
@@ -565,7 +565,7 @@ export default function Dashboard() {
                     <Building2 className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600 dark:text-orange-400" />
                   </div>
                 </CardHeader>
-                <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
+                <CardContent className="px-3 pb-2 sm:px-4 sm:pb-4">
                   <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-orange-600 dark:text-orange-400">–</p>
                   <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">Active centers</p>
                 </CardContent>
@@ -645,23 +645,23 @@ export default function Dashboard() {
         {/* Product catalog - roles with access */}
         {models && Array.isArray(models) && models.length > 0 && (
           <section>
-            <Card className="rounded-2xl border-slate-200/80 dark:border-slate-700/80 shadow-sm overflow-hidden bg-white dark:bg-slate-900/80">
-              <CardHeader className="bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-800/80 dark:via-slate-900/80 dark:to-indigo-950/20 border-b border-slate-200/80 dark:border-slate-700/80 py-6 px-5 sm:px-6 md:px-8">
-                <div className="flex items-start gap-4">
-                  <div className="rounded-xl bg-white dark:bg-slate-800 p-3 shadow-md border border-slate-200/80 dark:border-slate-700/80 ring-2 ring-indigo-500/10 dark:ring-indigo-400/10">
-                    <Package className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+            <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm overflow-hidden bg-white dark:bg-slate-900/80">
+              <CardHeader className="bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-800/80 dark:via-slate-900/80 dark:to-indigo-950/20 border-b border-slate-200/80 dark:border-slate-700/80 py-3 px-4 sm:px-5">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-white dark:bg-slate-800 p-2 shadow-sm border border-slate-200/80 dark:border-slate-700/80 ring-2 ring-indigo-500/10 dark:ring-indigo-400/10">
+                    <Package className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                   </div>
-                  <div className="space-y-1.5 min-w-0">
-                    <CardTitle className="font-heading text-xl sm:text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-800 to-indigo-700 dark:from-slate-100 dark:to-indigo-300 bg-clip-text text-transparent">
+                  <div className="space-y-0.5 min-w-0">
+                    <CardTitle className="font-heading text-lg sm:text-xl font-bold tracking-tight bg-gradient-to-r from-slate-800 to-indigo-700 dark:from-slate-100 dark:to-indigo-300 bg-clip-text text-transparent">
                       Product Catalog
                     </CardTitle>
-                    <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 tracking-wide">
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                       Browse product lines and variants
                     </p>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-5 sm:p-6 pt-6">
+              <CardContent className="p-3 sm:p-4 pt-3">
             {(() => {
               const categorizeModel = (model: any) => {
                 if (!model) return null;
@@ -786,20 +786,20 @@ export default function Dashboard() {
                         });
                     
                         return (
-                          <section className="relative rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-white dark:bg-slate-900/50 shadow-sm overflow-hidden">
+                          <section className="relative rounded-xl border border-slate-200/90 dark:border-slate-700/90 bg-white dark:bg-slate-900/50 shadow-sm overflow-hidden">
                             <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-400 to-orange-500 dark:from-amber-500 dark:to-orange-600" aria-hidden />
-                            <div className="p-6 md:p-8 pl-7 md:pl-9">
-                              <div className="flex items-center gap-4 mb-6">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/50 shadow-sm">
-                                  <Sun className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                            <div className="p-4 sm:p-5 pl-5 sm:pl-6">
+                              <div className="flex items-center gap-3 mb-4">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/50 shadow-sm">
+                                  <Sun className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                                 </div>
                                 <div>
-                                  <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-0.5">OffGrid & hybrid</p>
-                                  <h3 className="font-heading text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Inverters</h3>
-                                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{inverterModels.length} models across {groupedInverters.size} product lines</p>
+                                  <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-0.5">OffGrid & hybrid</p>
+                                  <h3 className="font-heading text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">Inverters</h3>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{inverterModels.length} models across {groupedInverters.size} product lines</p>
                                 </div>
                               </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                               {sortedGroups.map(([key, modelGroup]) => {
                                 if (!modelGroup || !Array.isArray(modelGroup) || modelGroup.length === 0) return null;
                                 const sortedModels = sortVariants(modelGroup);
@@ -962,20 +962,20 @@ export default function Dashboard() {
                     });
                     
                     return (
-                      <section className="relative mt-10 rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-white dark:bg-slate-900/50 shadow-sm overflow-hidden">
+                      <section className="relative mt-6 rounded-xl border border-slate-200/90 dark:border-slate-700/90 bg-white dark:bg-slate-900/50 shadow-sm overflow-hidden">
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-green-600 dark:from-emerald-500 dark:to-green-600" aria-hidden />
-                        <div className="p-6 md:p-8 pl-7 md:pl-9">
-                          <div className="flex items-center gap-4 mb-6">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/50 shadow-sm">
-                              <Battery className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                        <div className="p-4 sm:p-5 pl-5 sm:pl-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/50 shadow-sm">
+                              <Battery className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                             </div>
                             <div>
-                              <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-0.5">Energy storage</p>
-                              <h3 className="font-heading text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Batteries</h3>
-                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{batteryModels.length} models</p>
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-0.5">Energy storage</p>
+                              <h3 className="font-heading text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">Batteries</h3>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{batteryModels.length} models</p>
                             </div>
                           </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                           {sortedBatteryGroups.map(([key, modelGroup]) => {
                             if (!modelGroup || !Array.isArray(modelGroup) || modelGroup.length === 0) return null;
                             const model = modelGroup[0];
@@ -1118,20 +1118,20 @@ export default function Dashboard() {
                     });
                     
                     return (
-                      <section className="relative mt-10 rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-white dark:bg-slate-900/50 shadow-sm overflow-hidden">
+                      <section className="relative mt-6 rounded-xl border border-slate-200/90 dark:border-slate-700/90 bg-white dark:bg-slate-900/50 shadow-sm overflow-hidden">
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-violet-400 to-indigo-600 dark:from-violet-500 dark:to-indigo-600" aria-hidden />
-                        <div className="p-6 md:p-8 pl-7 md:pl-9">
-                          <div className="flex items-center gap-4 mb-6">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-50 dark:bg-violet-950/50 border border-violet-200/80 dark:border-violet-800/50 shadow-sm">
-                              <Gauge className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+                        <div className="p-4 sm:p-5 pl-5 sm:pl-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-50 dark:bg-violet-950/50 border border-violet-200/80 dark:border-violet-800/50 shadow-sm">
+                              <Gauge className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                             </div>
                             <div>
-                              <p className="text-[11px] font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400 mb-0.5">Variable frequency drives</p>
-                              <h3 className="font-heading text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">VFD</h3>
-                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{vfdModels.length} models across {groupedVFD.size} product lines</p>
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400 mb-0.5">Variable frequency drives</p>
+                              <h3 className="font-heading text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">VFD</h3>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{vfdModels.length} models across {groupedVFD.size} product lines</p>
                             </div>
                           </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                           {sortedVFDGroups.map(([key, modelGroup]) => {
                             if (!modelGroup || !Array.isArray(modelGroup) || modelGroup.length === 0) return null;
                             const sortedModels = sortVariants(modelGroup);

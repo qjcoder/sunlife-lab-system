@@ -121,7 +121,7 @@ export default function DealerHierarchy() {
     <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-red-50/30 to-orange-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="space-y-2">
+        <div className="space-y-1">
           <h1 className={PAGE_HEADING_CLASS}>Dealer Hierarchy</h1>
           <p className={PAGE_SUBHEADING_CLASS}>View dealer and sub-dealer network structure</p>
         </div>

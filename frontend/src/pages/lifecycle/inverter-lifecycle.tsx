@@ -65,12 +65,14 @@ export default function InverterLifecycle() {
       return (
         <div className="space-y-4 sm:space-y-6 min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 sm:p-6">
           {topBar}
-          <h1 className={`${PAGE_HEADING_CLASS} leading-tight`}>
-            Full Life Cycle View — Select Unit
-          </h1>
-          <p className={`${PAGE_SUBHEADING_CLASS} break-words`}>
-            Model: {model.brand} {model.productLine} {model.variant} ({model.modelCode})
-          </p>
+          <div className="space-y-1">
+            <h1 className={`${PAGE_HEADING_CLASS} leading-tight`}>
+              Full Life Cycle View — Select Unit
+            </h1>
+            <p className={`${PAGE_SUBHEADING_CLASS} break-words`}>
+              Model: {model.brand} {model.productLine} {model.variant} ({model.modelCode})
+            </p>
+          </div>
           {unitsLoading ? (
             <div className="flex items-center justify-center p-6 sm:p-8">
               <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin" />
@@ -183,7 +185,7 @@ export default function InverterLifecycle() {
     <div className="space-y-4 sm:space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 sm:p-6">
       {topBar}
       {/* Header */}
-      <div className="space-y-1 sm:space-y-2">
+      <div className="space-y-1">
         <h1 className={PAGE_HEADING_CLASS}>Inverter Lifecycle</h1>
         <p className={`${PAGE_SUBHEADING_CLASS} break-all`}>Serial Number: {serialNumber}</p>
       </div>

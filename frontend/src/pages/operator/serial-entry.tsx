@@ -305,7 +305,7 @@ export default function OperatorSerialEntry() {
       <div className="lg:col-span-2 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
+          <div className="space-y-1">
             <h1 className={PAGE_HEADING_CLASS}>Product Serial Entry</h1>
             <p className={PAGE_SUBHEADING_CLASS}>Enter product serial numbers</p>
           </div>

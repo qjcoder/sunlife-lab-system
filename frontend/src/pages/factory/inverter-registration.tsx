@@ -9,9 +9,10 @@ import { getFactoryStock } from '@/api/stock-api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Package, CheckCircle2, Upload, Scan, Hash, Calendar, Box, Loader2 } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { Package, CheckCircle2, Upload, Scan, Hash, Box, Loader2, Search, X } from 'lucide-react';
 import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 const singleSchema = z.object({
@@ -76,13 +77,23 @@ const categorizeModel = (model: any) => {
   return 'inverter';
 };
 
+function getModelDisplayName(model: { productLine?: string; variant?: string; modelName?: string; brand?: string; modelCode?: string }) {
+  if (model.productLine && model.variant) return `${model.productLine} ${model.variant}`.trim();
+  if (model.modelName && model.brand) return model.modelName.replace(new RegExp(`^${model.brand}\\s+`, 'i'), '').trim();
+  return model.modelCode || 'Unknown Model';
+}
+
 export default function InverterRegistration() {
   const [mode, setMode] = useState<'single' | 'bulk'>('single');
   const [serialCount, setSerialCount] = useState(0);
   const [scannerMode, setScannerMode] = useState(false);
   const [bulkScannerMode, setBulkScannerMode] = useState(false);
-  const [selectedSingleCategory, setSelectedSingleCategory] = useState<string>('inverter');
-  const [selectedBulkCategory, setSelectedBulkCategory] = useState<string>('inverter');
+  const [selectedSingleCategory, setSelectedSingleCategory] = useState<'inverter' | 'battery' | 'vfd'>('inverter');
+  const [selectedBulkCategory, setSelectedBulkCategory] = useState<'inverter' | 'battery' | 'vfd'>('inverter');
+  const [singleModelSearch, setSingleModelSearch] = useState('');
+  const [bulkModelSearch, setBulkModelSearch] = useState('');
+  const [singleModelListOpen, setSingleModelListOpen] = useState(false);
+  const [bulkModelListOpen, setBulkModelListOpen] = useState(false);
   const queryClient = useQueryClient();
   const singleSerialRef = useRef<HTMLInputElement>(null);
   const bulkSerialRef = useRef<HTMLTextAreaElement>(null);
@@ -163,19 +174,42 @@ export default function InverterRegistration() {
   const selectedSingleModel = watchSingle('inverterModel');
   const selectedBulkModel = watchBulk('inverterModel');
 
-  // Filter models by selected category
-  const filteredModels = useMemo(() => {
-    if (!models || !Array.isArray(models)) return [];
-    let filtered = models.filter((model) => model.active !== false);
-    
-    // Filter by category if one is selected
-    const selectedCategory = mode === 'single' ? selectedSingleCategory : selectedBulkCategory;
-    if (selectedCategory) {
-      filtered = filtered.filter((model) => categorizeModel(model) === selectedCategory);
-    }
-    
-    return filtered;
-  }, [models, mode, selectedSingleCategory, selectedBulkCategory]);
+  // Group active models by category
+  const categorizedModels = useMemo(() => {
+    if (!models || !Array.isArray(models)) return { inverter: [], battery: [], vfd: [] };
+    const active = models.filter((m) => m.active !== false);
+    const inverter: typeof active = [];
+    const battery: typeof active = [];
+    const vfd: typeof active = [];
+    active.forEach((m) => {
+      const cat = categorizeModel(m);
+      if (cat === 'battery') battery.push(m);
+      else if (cat === 'vfd') vfd.push(m);
+      else inverter.push(m);
+    });
+    return { inverter, battery, vfd };
+  }, [models]);
+  const filteredSingleModels = useMemo(() => {
+    const list = categorizedModels[selectedSingleCategory];
+    if (!singleModelSearch.trim()) return list;
+    const q = singleModelSearch.toLowerCase().trim();
+    return list.filter(
+      (m) =>
+        getModelDisplayName(m).toLowerCase().includes(q) ||
+        (m.modelCode && m.modelCode.toLowerCase().includes(q))
+    );
+  }, [categorizedModels, selectedSingleCategory, singleModelSearch]);
+
+  const filteredBulkModels = useMemo(() => {
+    const list = categorizedModels[selectedBulkCategory];
+    if (!bulkModelSearch.trim()) return list;
+    const q = bulkModelSearch.toLowerCase().trim();
+    return list.filter(
+      (m) =>
+        getModelDisplayName(m).toLowerCase().includes(q) ||
+        (m.modelCode && m.modelCode.toLowerCase().includes(q))
+    );
+  }, [categorizedModels, selectedBulkCategory, bulkModelSearch]);
 
   // Update manufacturing date to current date on component mount and when mode changes
   useEffect(() => {
@@ -262,57 +296,78 @@ export default function InverterRegistration() {
     }
   };
 
-  // Handle Excel/CSV file upload
+  // Handle Excel or CSV file upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (!text) return;
+    const name = file.name.toLowerCase();
+    const isExcel = name.endsWith('.xlsx') || name.endsWith('.xls');
 
-      // Parse CSV/Excel (simple CSV parser)
-      const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-      const serialNumbers: string[] = [];
-
-      lines.forEach((line, index) => {
-        // Skip header row if it looks like a header
-        if (index === 0 && (line.toLowerCase().includes('serial') || line.toLowerCase().includes('number'))) {
+    if (isExcel) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const ab = event.target?.result as ArrayBuffer;
+          if (!ab) return;
+          const wb = XLSX.read(ab, { type: 'array' });
+          const firstSheetName = wb.SheetNames[0];
+          const sheet = wb.Sheets[firstSheetName];
+          if (!sheet) {
+            toast.error('No sheet found in Excel file');
+            return;
+          }
+          const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' }) as string[][];
+          const serialNumbers: string[] = [];
+          const headerLike = /serial|number/i;
+          rows.forEach((row, index) => {
+            const firstCell = row && row[0] != null ? String(row[0]).trim() : '';
+            if (!firstCell) return;
+            if (index === 0 && headerLike.test(firstCell)) return;
+            serialNumbers.push(firstCell);
+          });
+          if (serialNumbers.length === 0) {
+            toast.error('No serial numbers found in Excel (use first column)');
+            return;
+          }
+          const serialNumbersText = serialNumbers.join('\n');
+          setValueBulk('serialNumbers', serialNumbersText);
+          setSerialCount(serialNumbers.length);
+          toast.success(`Loaded ${serialNumbers.length} serial numbers from Excel`);
+        } catch (err) {
+          toast.error('Failed to parse Excel file');
+        }
+      };
+      reader.onerror = () => toast.error('Failed to read file');
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        if (!text) return;
+        const lines = text.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+        const serialNumbers: string[] = [];
+        const headerLike = /serial|number/i;
+        lines.forEach((line, index) => {
+          if (index === 0 && headerLike.test(line)) return;
+          const parts = line.split(',').map((p) => p.trim());
+          const serial = parts[0] || line;
+          if (serial) serialNumbers.push(serial);
+        });
+        if (serialNumbers.length === 0) {
+          toast.error('No serial numbers found in file');
           return;
         }
-        
-        // Extract serial number (first column or whole line)
-        const parts = line.split(',').map(p => p.trim());
-        const serial = parts[0] || line;
-        if (serial && serial.length > 0) {
-          serialNumbers.push(serial);
-        }
-      });
-
-      if (serialNumbers.length === 0) {
-        toast.error('No serial numbers found in file');
-        return;
-      }
-
-      // Set serial numbers in bulk form
-      const serialNumbersText = serialNumbers.join('\n');
-      setValueBulk('serialNumbers', serialNumbersText);
-      setSerialCount(serialNumbers.length);
-      toast.success(`Loaded ${serialNumbers.length} serial numbers from file`);
-    };
-
-    reader.onerror = () => {
-      toast.error('Failed to read file');
-    };
-
-    // Read as text (CSV)
-    reader.readAsText(file);
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+        const serialNumbersText = serialNumbers.join('\n');
+        setValueBulk('serialNumbers', serialNumbersText);
+        setSerialCount(serialNumbers.length);
+        toast.success(`Loaded ${serialNumbers.length} serial numbers from file`);
+      };
+      reader.onerror = () => toast.error('Failed to read file');
+      reader.readAsText(file);
     }
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const singleMutation = useMutation({
@@ -388,323 +443,252 @@ export default function InverterRegistration() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={PAGE_HEADING_CLASS}>Product Serial Entry</h1>
-          <p className={PAGE_SUBHEADING_CLASS}>Register new product serial numbers</p>
+    <div className="h-full min-h-0 flex flex-col overflow-hidden bg-muted/30">
+      <header className="shrink-0 border-b bg-card">
+        <div className="px-4 py-2 sm:px-5 sm:py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-0.5">
+            <h1 className={PAGE_HEADING_CLASS}>Product Serial Entry</h1>
+            <p className={PAGE_SUBHEADING_CLASS}>Register new product serial numbers</p>
+          </div>
+          <Card className="w-full sm:w-auto">
+            <CardContent className="px-3 py-2 sm:px-4 sm:py-2 flex items-center gap-2">
+              <div className="p-1.5 rounded-md bg-primary/10">
+                <Package className="h-4 w-4 text-primary" />
+              </div>
+              <div className="space-y-0">
+                <p className="text-xs font-medium text-muted-foreground">Total Factory Stock</p>
+                <p className="text-base sm:text-lg font-bold tabular-nums text-foreground leading-tight">{totalStock.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">units available</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        
-        {/* Stock Summary Card */}
-        <Card className="border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-white dark:from-green-950/20 dark:to-slate-900">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total Factory Stock</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {totalStock.toLocaleString()}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {factoryStock?.availableInverters?.length || 0} units available
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      </header>
 
-      <div className="flex gap-2">
-        <Button
-          variant={mode === 'single' ? 'default' : 'outline'}
-          onClick={() => setMode('single')}
-        >
-          Single Registration
-        </Button>
-        <Button
-          variant={mode === 'bulk' ? 'default' : 'outline'}
-          onClick={() => setMode('bulk')}
-        >
-          Bulk Registration
-        </Button>
-      </div>
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden p-3 sm:p-4">
+        <div className="shrink-0 flex gap-3 mb-4">
+          <Button variant={mode === 'single' ? 'default' : 'outline'} size="default" className="font-semibold" onClick={() => setMode('single')}>
+            Single Registration
+          </Button>
+          <Button variant={mode === 'bulk' ? 'default' : 'outline'} size="default" className="font-semibold" onClick={() => setMode('bulk')}>
+            Bulk Registration
+          </Button>
+        </div>
 
-      {mode === 'single' ? (
-        <Card className="border-2 border-blue-200/60 dark:border-blue-800/60 shadow-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 dark:from-blue-600 dark:via-indigo-600 dark:to-purple-600 border-b-0 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAzNGMwIDMuMzE0LTIuNjg2IDYtNiA2cy02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNiA2IDIuNjg2IDYgNnoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvZz48L3N2Zz4=')] opacity-20"></div>
-            <CardTitle className="flex items-center justify-between relative z-10">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white/20 backdrop-blur-md rounded-xl shadow-lg border border-white/30">
-                  <Box className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <span className="text-2xl font-bold text-white block">Single Registration</span>
-                  <span className="text-blue-100 text-sm font-medium">Quick single product entry</span>
-                </div>
+        {mode === 'single' ? (
+          <Card className="max-w-4xl flex-1 min-h-0 flex flex-col overflow-hidden flex-shrink-0">
+            <CardHeader className="shrink-0 flex flex-row items-start justify-between gap-3 space-y-0 pb-4 pt-5 px-4 sm:px-6">
+              <div className="space-y-1">
+                <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
+                  <Box className="h-5 w-5 text-muted-foreground shrink-0" />
+                  Single Registration
+                </CardTitle>
+                <CardDescription className="text-sm sm:text-base">Quick single product entry. Use scanner or type serial.</CardDescription>
               </div>
               <Button
                 type="button"
                 variant={scannerMode ? 'default' : 'outline'}
-                size="sm"
+                size="default"
                 className={cn(
-                  "font-semibold transition-all duration-300",
-                  scannerMode 
-                    ? "bg-white text-green-600 hover:bg-green-50 shadow-xl border-2 border-white" 
-                    : "bg-white/20 backdrop-blur-md text-white border-2 border-white/30 hover:bg-white/30"
+                  !scannerMode &&
+                    'border-emerald-500/60 text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-800'
                 )}
                 onClick={() => {
                   setScannerMode(!scannerMode);
-                  if (!scannerMode) {
-                    setTimeout(() => singleSerialRef.current?.focus(), 100);
-                  }
+                  if (!scannerMode) setTimeout(() => singleSerialRef.current?.focus(), 100);
                 }}
               >
                 <Scan className="h-4 w-4 mr-2" />
                 {scannerMode ? 'Scanner ON' : 'Enable Scanner'}
               </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-8 pb-8 px-8">
-            <form onSubmit={handleSingleSubmit(onSingleSubmit)} className="space-y-7">
-              <div className="space-y-2">
-                <Label htmlFor="serialNumber" className="text-sm font-semibold flex items-center gap-2">
-                  <Hash className="h-4 w-4 text-slate-500" />
-                  Serial Number
-                  {scannerMode && <span className="text-xs font-normal text-muted-foreground">(Press Enter to auto-submit)</span>}
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="serialNumber"
-                    {...((): any => {
-                      const { ref, ...rest } = registerSingle('serialNumber');
-                      return {
-                        ...rest,
-                        ref: (e: HTMLInputElement | null) => {
-                          ref(e);
-                          if (singleSerialRef) {
-                            (singleSerialRef as any).current = e;
-                          }
-                        }
-                      };
-                    })()}
-                    onKeyDown={handleSingleScannerInput}
-                    placeholder={scannerMode ? "Scan serial number and press Enter" : "Enter serial number"}
-                    autoFocus={scannerMode}
-                    className={`pl-10 h-11 ${scannerMode ? 'border-green-500 focus:ring-green-500' : ''}`}
-                  />
-                  <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                </div>
-                {singleErrors.serialNumber && (
-                  <p className="text-sm text-destructive flex items-center gap-1 mt-1">
-                    <span className="text-destructive">⚠</span>
-                    {singleErrors.serialNumber.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Product Model Selection */}
-              <div className="space-y-3">
-                <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                    <Package className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  Product Model
-                </Label>
-                
-                {/* Category Selection Buttons */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSingleCategory('inverter')}
-                    className={cn(
-                      "px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all duration-200",
-                      selectedSingleCategory === 'inverter'
-                        ? "bg-blue-600 text-white border-blue-600 shadow-md"
-                        : "bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40"
-                    )}
-                  >
-                    Inverters
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSingleCategory('battery')}
-                    className={cn(
-                      "px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all duration-200",
-                      selectedSingleCategory === 'battery'
-                        ? "bg-green-600 text-white border-green-600 shadow-md"
-                        : "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40"
-                    )}
-                  >
-                    Batteries
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSingleCategory('vfd')}
-                    className={cn(
-                      "px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all duration-200",
-                      selectedSingleCategory === 'vfd'
-                        ? "bg-orange-600 text-white border-orange-600 shadow-md"
-                        : "bg-orange-50 dark:bg-orange-950/30 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/40"
-                    )}
-                  >
-                    VFD
-                  </button>
-                </div>
-                
-                {filteredModels.length === 0 ? (
-                  <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600">
-                    <Package className="h-12 w-12 text-slate-400 mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground font-medium">
-                      No models found
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-                    {filteredModels.map((model) => {
-                      // Display name without brand - just productLine and variant
-                      let displayName = '';
-                      if (model.productLine && model.variant) {
-                        displayName = `${model.productLine} ${model.variant}`.trim();
-                      } else if (model.modelName) {
-                        // Fallback: remove brand from modelName if it exists
-                        const brand = (model.brand || '').trim();
-                        displayName = model.modelName.replace(new RegExp(`^${brand}\\s+`, 'i'), '').trim();
-                      } else {
-                        displayName = model.modelCode || 'Unknown Model';
-                      }
-                      const isSelected = selectedSingleModel === model._id;
-                      const category = categorizeModel(model);
-                      
-                      // Color schemes based on category
-                      const colorSchemes = {
-                        inverter: {
-                          selected: 'bg-blue-500 text-white shadow-md border-blue-600',
-                          unselected: 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40',
-                        },
-                        battery: {
-                          selected: 'bg-green-500 text-white shadow-md border-green-600',
-                          unselected: 'bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40',
-                        },
-                        vfd: {
-                          selected: 'bg-orange-500 text-white shadow-md border-orange-600',
-                          unselected: 'bg-orange-50 dark:bg-orange-950/30 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/40',
-                        },
-                      };
-                      
-                      const colors = colorSchemes[category as keyof typeof colorSchemes] || colorSchemes.inverter;
-                      
-                      return (
-                        <button
-                          key={model._id}
-                          type="button"
-                          onClick={() => setValueSingle('inverterModel', model._id)}
-                          className={cn(
-                            "px-2 py-1 rounded-md border font-medium text-[10px] sm:text-[11px] transition-all duration-200 text-center leading-tight",
-                            isSelected 
-                              ? colors.selected + " scale-105"
-                              : colors.unselected + " hover:scale-102"
-                          )}
-                        >
-                          {displayName}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-                {selectedSingleModel && (() => {
-                  const selectedModel = models?.find(m => m._id === selectedSingleModel);
-                  const stockCount = selectedModel ? (modelStockCounts[selectedModel._id] || 0) : 0;
-                  
-                  if (!selectedModel) return null;
-                  
-                  return (
-                    <div className="flex items-center gap-2 p-3 rounded-xl text-sm bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/20 border-2 border-green-200 dark:border-green-800 shadow-sm">
-                      <div className="p-1.5 bg-green-500 rounded-lg">
-                        <CheckCircle2 className="h-4 w-4 text-white" />
+            </CardHeader>
+            <CardContent className="shrink-0 pt-0 px-4 pb-5 sm:px-6 sm:pb-6">
+              <form onSubmit={handleSingleSubmit(onSingleSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,360px),1fr] gap-5 lg:gap-7">
+                  {/* Left: Category, Model, Manufacturing Date */}
+                  <div className="space-y-5 lg:pr-6 lg:border-r lg:border-border">
+                    <div className="space-y-2.5">
+                      <Label className="block text-base font-semibold text-foreground">Category</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {(['inverter', 'battery', 'vfd'] as const).map((cat) => (
+                          <Button
+                            key={cat}
+                            type="button"
+                            variant={selectedSingleCategory === cat ? 'default' : 'outline'}
+                            size="default"
+                            className="capitalize text-sm"
+                            onClick={() => {
+                              setSelectedSingleCategory(cat);
+                              setValueSingle('inverterModel', '');
+                            }}
+                          >
+                            {cat === 'inverter' ? 'Inverters' : cat === 'battery' ? 'Batteries' : 'VFD'}
+                          </Button>
+                        ))}
                       </div>
-                      <span className="text-green-700 dark:text-green-400 font-bold">
-                        {stockCount} unit{stockCount !== 1 ? 's' : ''} available in factory
-                      </span>
                     </div>
-                  );
-                })()}
-                {singleErrors.inverterModel && (
-                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-                    <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
-                    <p className="text-sm text-red-700 dark:text-red-300 font-medium">{singleErrors.inverterModel.message}</p>
-                  </div>
-                )}
-              </div>
 
-              <div className="space-y-3">
-                <Label htmlFor="manufacturingDate" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                    <Calendar className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  Manufacturing Date
-                </Label>
-                <Input
-                  id="manufacturingDate"
-                  type="date"
-                  {...registerSingle('manufacturingDate')}
-                  defaultValue={getCurrentDateTime()}
-                  key={`single-date-${new Date().toDateString()}`}
-                  className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
-                />
-                <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <span className="text-blue-600 dark:text-blue-400 text-base">ℹ️</span>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
-                    Automatically set to current date. You can change if needed.
-                  </p>
-                </div>
-              </div>
+                    <div className="space-y-2.5">
+                      <Label className="block text-base font-semibold text-foreground">Model</Label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          placeholder="Search or select model..."
+                          value={
+                            (() => {
+                              const sel = models?.find((m) => m._id === selectedSingleModel);
+                              return sel ? getModelDisplayName(sel) : singleModelSearch;
+                            })()
+                          }
+                          onChange={(e) => setSingleModelSearch(e.target.value)}
+                          onFocus={() => setSingleModelListOpen(true)}
+                          onBlur={() => setTimeout(() => setSingleModelListOpen(false), 150)}
+                          readOnly={!!selectedSingleModel}
+                          className={cn(
+                            'pl-9 pr-10 h-11 text-base bg-background',
+                            selectedSingleModel && 'cursor-default'
+                          )}
+                        />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        {selectedSingleModel && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setValueSingle('inverterModel', '');
+                              setSingleModelSearch('');
+                              setSingleModelListOpen(true);
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                            aria-label="Clear selection"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                      {!selectedSingleModel && singleModelListOpen && (
+                        <div className="max-h-[220px] overflow-y-auto rounded-lg border border-border p-2 space-y-2">
+                          {filteredSingleModels.length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-4 text-center">No models</p>
+                          ) : (
+                            filteredSingleModels.map((model) => (
+                              <button
+                                key={model._id}
+                                type="button"
+                                onClick={() => setValueSingle('inverterModel', model._id)}
+                                className="w-full flex items-center justify-between gap-2 text-left px-4 py-2.5 rounded-lg border-2 border-border bg-card text-foreground hover:border-primary/50 hover:bg-muted/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-sm"
+                              >
+                                <span className="font-medium truncate">{getModelDisplayName(model)}</span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                      {selectedSingleModel && (() => {
+                        const selectedModel = models?.find((m) => m._id === selectedSingleModel);
+                        const stockCount = selectedModel ? (modelStockCounts[selectedModel._id] || 0) : 0;
+                        if (!selectedModel) return null;
+                        return (
+                          <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1.5">
+                            <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                            {stockCount} in stock
+                          </p>
+                        );
+                      })()}
+                      {singleErrors.inverterModel && (
+                        <p className="text-sm text-destructive mt-1">{singleErrors.inverterModel.message}</p>
+                      )}
+                    </div>
 
-              <div className="pt-6 border-t-2 border-slate-200 dark:border-slate-700">
-                <Button 
-                  type="submit" 
-                  disabled={singleMutation.isPending}
-                  className="w-full h-14 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold text-base shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl"
-                >
-                  {singleMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                      Registering Product...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-5 w-5 mr-2" />
-                      Register Product
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="border-2 border-slate-200 dark:border-slate-700 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border-b border-slate-200 dark:border-slate-700">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                  <Box className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    <div className="space-y-2.5">
+                      <Label htmlFor="manufacturingDate" className="block text-base font-semibold text-foreground">
+                        Manufacturing Date
+                      </Label>
+                      <Input
+                        id="manufacturingDate"
+                        type="date"
+                        {...registerSingle('manufacturingDate')}
+                        defaultValue={getCurrentDateTime()}
+                        key={`single-date-${new Date().toDateString()}`}
+                        className="h-11"
+                      />
+                      <CardDescription className="mt-1.5 text-sm text-muted-foreground">Defaults to today. Change if needed.</CardDescription>
+                    </div>
+                  </div>
+
+                  {/* Right: Serial Number */}
+                  <div className="space-y-2.5">
+                    <Label htmlFor="serialNumber" className="block text-base font-semibold text-foreground">
+                      Serial Number
+                      {scannerMode && (
+                        <span className="text-muted-foreground font-normal ml-1.5">(Enter to submit)</span>
+                      )}
+                    </Label>
+                    <div className="relative">
+                      <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="serialNumber"
+                        {...((): any => {
+                          const { ref, ...rest } = registerSingle('serialNumber');
+                          return {
+                            ...rest,
+                            ref: (e: HTMLInputElement | null) => {
+                              ref(e);
+                              if (singleSerialRef) (singleSerialRef as any).current = e;
+                            },
+                          };
+                        })()}
+                        onKeyDown={handleSingleScannerInput}
+                        placeholder={scannerMode ? 'Scan then Enter' : 'Enter serial number'}
+                        autoFocus={scannerMode}
+                        className={cn('pl-9 h-11 text-base', scannerMode && 'border-primary ring-primary/20')}
+                      />
+                    </div>
+                    {singleErrors.serialNumber && (
+                      <p className="text-sm text-destructive mt-1">{singleErrors.serialNumber.message}</p>
+                    )}
+                  </div>
                 </div>
-                <span className="text-xl font-bold">Bulk Registration</span>
+
+                <div className="shrink-0 pt-4">
+                  <Button type="submit" disabled={singleMutation.isPending} className="w-full h-11 text-base">
+                    {singleMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Registering...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Register Product
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="max-w-4xl flex-1 min-h-0 flex flex-col overflow-hidden flex-shrink-0">
+            <CardHeader className="shrink-0 flex flex-row items-start justify-between gap-4 space-y-0 pb-4 pt-6 px-6 sm:px-8">
+              <div className="space-y-2">
+                <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
+                  <Box className="h-5 w-5 text-muted-foreground shrink-0" />
+                  Bulk Registration
+                </CardTitle>
+                <CardDescription className="text-base">Enter or upload serial numbers, one per line.</CardDescription>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <Button
                   type="button"
                   variant={bulkScannerMode ? 'default' : 'outline'}
                   size="sm"
-                  className={bulkScannerMode ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                  className={cn(
+                    !bulkScannerMode &&
+                      'border-emerald-500/60 text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500 hover:text-emerald-800'
+                  )}
                   onClick={() => {
                     setBulkScannerMode(!bulkScannerMode);
-                    if (!bulkScannerMode) {
-                      setTimeout(() => bulkSerialRef.current?.focus(), 100);
-                    }
+                    if (!bulkScannerMode) setTimeout(() => bulkSerialRef.current?.focus(), 100);
                   }}
                 >
                   <Scan className="h-4 w-4 mr-2" />
@@ -714,261 +698,193 @@ export default function InverterRegistration() {
                   type="button"
                   variant="outline"
                   size="sm"
+                  className="border-blue-500/60 text-blue-700 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-500 hover:text-blue-800"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  Upload Excel/CSV
+                  Upload Excel
                 </Button>
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv,.xlsx,.xls,.txt"
+                  accept=".xlsx,.xls,.csv,.txt"
                   onChange={handleFileUpload}
                   className="hidden"
                 />
               </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <form onSubmit={handleBulkSubmit(onBulkSubmit)} className="space-y-6">
-              {/* Product Model Selection */}
-              <div className="space-y-3">
-                <Label className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                    <Package className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  Product Model
-                </Label>
-                
-                {/* Category Selection Buttons */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedBulkCategory('inverter')}
-                    className={cn(
-                      "px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all duration-200",
-                      selectedBulkCategory === 'inverter'
-                        ? "bg-blue-600 text-white border-blue-600 shadow-md"
-                        : "bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40"
-                    )}
-                  >
-                    Inverters
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedBulkCategory('battery')}
-                    className={cn(
-                      "px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all duration-200",
-                      selectedBulkCategory === 'battery'
-                        ? "bg-green-600 text-white border-green-600 shadow-md"
-                        : "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40"
-                    )}
-                  >
-                    Batteries
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedBulkCategory('vfd')}
-                    className={cn(
-                      "px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all duration-200",
-                      selectedBulkCategory === 'vfd'
-                        ? "bg-orange-600 text-white border-orange-600 shadow-md"
-                        : "bg-orange-50 dark:bg-orange-950/30 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/40"
-                    )}
-                  >
-                    VFD
-                  </button>
-                </div>
-                
-                {filteredModels.length === 0 ? (
-                  <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600">
-                    <Package className="h-12 w-12 text-slate-400 mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground font-medium">
-                      {selectedBulkCategory ? `No ${selectedBulkCategory} models found` : 'No models found'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-                    {filteredModels.map((model) => {
-                      // Display name without brand - just productLine and variant
-                      let displayName = '';
-                      if (model.productLine && model.variant) {
-                        displayName = `${model.productLine} ${model.variant}`.trim();
-                      } else if (model.modelName) {
-                        // Fallback: remove brand from modelName if it exists
-                        const brand = (model.brand || '').trim();
-                        displayName = model.modelName.replace(new RegExp(`^${brand}\\s+`, 'i'), '').trim();
-                      } else {
-                        displayName = model.modelCode || 'Unknown Model';
-                      }
-                      const isSelected = selectedBulkModel === model._id;
-                      const category = categorizeModel(model);
-                      
-                      // Color schemes based on category
-                      const colorSchemes = {
-                        inverter: {
-                          selected: 'bg-blue-500 text-white shadow-md border-blue-600',
-                          unselected: 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40',
-                        },
-                        battery: {
-                          selected: 'bg-green-500 text-white shadow-md border-green-600',
-                          unselected: 'bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40',
-                        },
-                        vfd: {
-                          selected: 'bg-orange-500 text-white shadow-md border-orange-600',
-                          unselected: 'bg-orange-50 dark:bg-orange-950/30 border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/40',
-                        },
-                      };
-                      
-                      const colors = colorSchemes[category as keyof typeof colorSchemes] || colorSchemes.inverter;
-                      
-                      return (
-                        <button
-                          key={model._id}
-                          type="button"
-                          onClick={() => setValueBulk('inverterModel', model._id)}
-                          className={cn(
-                            "px-2 py-1 rounded-md border font-medium text-[10px] sm:text-[11px] transition-all duration-200 text-center leading-tight",
-                            isSelected 
-                              ? colors.selected + " scale-105"
-                              : colors.unselected + " hover:scale-102"
-                          )}
-                        >
-                          {displayName}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-                {selectedBulkModel && (() => {
-                  const selectedModel = models?.find(m => m._id === selectedBulkModel);
-                  const stockCount = selectedModel ? (modelStockCounts[selectedModel._id] || 0) : 0;
-                  
-                  if (!selectedModel) return null;
-                  
-                  return (
-                    <div className="flex items-center gap-3 p-3 rounded-xl text-sm bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/20 border-2 border-green-200 dark:border-green-800 shadow-sm">
-                      <div className="p-1.5 bg-green-500 rounded-lg">
-                        <CheckCircle2 className="h-4 w-4 text-white" />
+            </CardHeader>
+            <CardContent className="flex-1 min-h-0 overflow-hidden pt-0 px-6 pb-6 sm:px-8 sm:pb-8 flex flex-col">
+              <form onSubmit={handleBulkSubmit(onBulkSubmit)} className="flex-1 min-h-0 flex flex-col">
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(300px,380px),1fr] grid-rows-[1fr] gap-6 lg:gap-8 flex-1 min-h-0">
+                  {/* Left: Category, Model, Manufacturing Date */}
+                  <div className="flex flex-col min-h-0 space-y-4 lg:space-y-5 lg:pr-8 lg:border-r lg:border-border">
+                    <div className="space-y-3 shrink-0">
+                      <Label className="block text-base font-semibold text-foreground">Category</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {(['inverter', 'battery', 'vfd'] as const).map((cat) => (
+                          <Button
+                            key={cat}
+                            type="button"
+                            variant={selectedBulkCategory === cat ? 'default' : 'outline'}
+                            size="sm"
+                            className="capitalize"
+                            onClick={() => {
+                              setSelectedBulkCategory(cat);
+                              setValueBulk('inverterModel', '');
+                            }}
+                          >
+                            {cat === 'inverter' ? 'Inverters' : cat === 'battery' ? 'Batteries' : 'VFD'}
+                          </Button>
+                        ))}
                       </div>
-                      <span className="text-green-700 dark:text-green-400 font-bold">
-                        {stockCount} unit{stockCount !== 1 ? 's' : ''} available in factory
+                    </div>
+
+                    <div className="space-y-3 shrink-0">
+                      <Label className="block text-base font-semibold text-foreground">Model</Label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          placeholder="Search or select model..."
+                          value={
+                            (() => {
+                              const sel = models?.find((m) => m._id === selectedBulkModel);
+                              return sel ? getModelDisplayName(sel) : bulkModelSearch;
+                            })()
+                          }
+                          onChange={(e) => setBulkModelSearch(e.target.value)}
+                          onFocus={() => setBulkModelListOpen(true)}
+                          onBlur={() => setTimeout(() => setBulkModelListOpen(false), 150)}
+                          readOnly={!!selectedBulkModel}
+                          className={cn(
+                            'pl-9 pr-10 h-11 text-base bg-background',
+                            selectedBulkModel && 'cursor-default'
+                          )}
+                        />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        {selectedBulkModel && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setValueBulk('inverterModel', '');
+                              setBulkModelSearch('');
+                              setBulkModelListOpen(true);
+                            }}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                            aria-label="Clear selection"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                      {!selectedBulkModel && bulkModelListOpen && (
+                        <div className="max-h-[220px] overflow-y-auto rounded-xl p-2 space-y-2.5 border border-border bg-card">
+                          {filteredBulkModels.length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-6 text-center">No models</p>
+                          ) : (
+                            filteredBulkModels.map((model) => (
+                              <button
+                                key={model._id}
+                                type="button"
+                                onClick={() => setValueBulk('inverterModel', model._id)}
+                                className="w-full flex items-center justify-between gap-2 text-left px-4 py-3 rounded-xl border-2 border-border bg-card text-foreground hover:border-primary/50 hover:bg-muted/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              >
+                                <span className="text-sm font-medium truncate">{getModelDisplayName(model)}</span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                      {selectedBulkModel && (() => {
+                        const selectedModel = models?.find((m) => m._id === selectedBulkModel);
+                        const stockCount = selectedModel ? (modelStockCounts[selectedModel._id] || 0) : 0;
+                        if (!selectedModel) return null;
+                        return (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1 shrink-0">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                            {stockCount} in stock
+                          </p>
+                        );
+                      })()}
+                      {bulkErrors.inverterModel && (
+                        <p className="text-sm text-destructive mt-1 shrink-0">{bulkErrors.inverterModel.message}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-3 shrink-0">
+                      <Label htmlFor="bulkManufacturingDate" className="block text-base font-semibold text-foreground">
+                        Manufacturing Date
+                      </Label>
+                      <Input
+                        id="bulkManufacturingDate"
+                        type="date"
+                        {...registerBulk('manufacturingDate')}
+                        defaultValue={getCurrentDateTime()}
+                        key={`bulk-date-${getCurrentDateTime()}`}
+                        className="h-11"
+                      />
+                      <CardDescription className="mt-1.5 text-muted-foreground">Defaults to today.</CardDescription>
+                    </div>
+                  </div>
+
+                  {/* Right: Serial Numbers */}
+                  <div className="flex flex-col min-h-0 space-y-3">
+                    <div className="flex items-center justify-between gap-2 shrink-0">
+                      <Label htmlFor="bulkSerialNumbers" className="block text-base font-semibold text-foreground">
+                        Serial Numbers
+                      </Label>
+                      <span className="text-sm text-muted-foreground tabular-nums shrink-0">
+                        {serialCount} line{serialCount !== 1 ? 's' : ''}
                       </span>
                     </div>
-                  );
-                })()}
-                {bulkErrors.inverterModel && (
-                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-                    <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
-                    <p className="text-sm text-red-700 dark:text-red-300 font-medium">{bulkErrors.inverterModel.message}</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="bulkSerialNumbers" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                      <Hash className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    Serial Numbers
-                    {bulkScannerMode && (
-                      <span className="ml-2 text-xs font-normal text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 px-2 py-0.5 rounded-full">
-                        Scanner Active
-                      </span>
+                    <textarea
+                      id="bulkSerialNumbers"
+                      {...registerBulk('serialNumbers', {
+                        onChange: (e) => {
+                          const serials = e.target.value.split('\n').filter((s: string) => s.trim().length > 0);
+                          setSerialCount(serials.length);
+                        },
+                      })}
+                      onKeyDown={handleBulkScannerInput}
+                      className={cn(
+                        'flex-1 min-h-[120px] w-full rounded-lg border border-input bg-background px-4 py-3 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none overflow-auto',
+                        bulkScannerMode && 'border-primary ring-primary/20'
+                      )}
+                      placeholder="One serial per line, or upload Excel/CSV"
+                      autoFocus={bulkScannerMode}
+                    />
+                    {bulkErrors.serialNumbers && (
+                      <p className="text-sm text-destructive mt-1 shrink-0">{bulkErrors.serialNumbers.message}</p>
                     )}
-                  </Label>
-                  <div className="px-3 py-1.5 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg border border-purple-200 dark:border-purple-800">
-                    <span className="text-sm font-bold text-purple-700 dark:text-purple-300">
-                      {serialCount} serial number{serialCount !== 1 ? 's' : ''}
-                    </span>
+                    <CardDescription className="mt-1.5 text-muted-foreground shrink-0">
+                      Upload Excel or CSV with serials in the first column, or use scanner.
+                    </CardDescription>
                   </div>
                 </div>
-                <div className="relative group">
-                  <textarea
-                    id="bulkSerialNumbers"
-                    {...registerBulk('serialNumbers', {
-                      onChange: (e) => {
-                        const value = e.target.value;
-                        const serials = value.split('\n').filter((s: string) => s.trim().length > 0);
-                        setSerialCount(serials.length);
-                      },
-                    })}
-                    onKeyDown={handleBulkScannerInput}
-                    className={cn(
-                      "flex min-h-[400px] w-full rounded-xl border-2 bg-background px-4 py-3 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-300",
-                      bulkScannerMode
-                        ? 'border-green-500 focus:ring-green-500 focus:border-green-600 bg-green-50/50 dark:bg-green-950/20'
-                        : 'border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500'
+
+                <div className="shrink-0 pt-4">
+                  <Button
+                    type="submit"
+                    disabled={bulkMutation.isPending || serialCount === 0}
+                    className="w-full h-12 text-base"
+                  >
+                    {bulkMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Registering...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Register {serialCount || 0} product{serialCount !== 1 ? 's' : ''}
+                      </>
                     )}
-                    placeholder={bulkScannerMode 
-                      ? "Scan serial number and press Enter to add to list...\n(Each scan will automatically move to next line)"
-                      : "SLI6K-0001\nSLI6K-0002\nSLI6K-0003\n...\n(Enter serial numbers, one per line - unlimited)\n\nOr upload Excel/CSV file with serial numbers in first column"
-                    }
-                    rows={20}
-                    autoFocus={bulkScannerMode}
-                  />
+                  </Button>
                 </div>
-                {bulkErrors.serialNumbers && (
-                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-                    <span className="text-red-600 dark:text-red-400 text-lg">⚠</span>
-                    <p className="text-sm text-red-700 dark:text-red-300 font-medium">{bulkErrors.serialNumbers.message}</p>
-                  </div>
-                )}
-                <div className="flex items-start gap-2 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                  <span className="text-blue-600 dark:text-blue-400 text-lg">💡</span>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
-                    <strong>Tip:</strong> Upload Excel/CSV file with serial numbers in the first column, or use scanner mode for quick entry
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="bulkManufacturingDate" className="text-sm font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                    <Calendar className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  Manufacturing Date
-                </Label>
-                <Input
-                  id="bulkManufacturingDate"
-                  type="date"
-                  {...registerBulk('manufacturingDate')}
-                  defaultValue={getCurrentDateTime()}
-                  key={`bulk-date-${getCurrentDateTime()}`}
-                  className="h-12 text-base border-2 border-slate-300 dark:border-slate-600 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 hover:border-slate-400 dark:hover:border-slate-500 transition-all duration-300"
-                />
-                <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <span className="text-blue-600 dark:text-blue-400 text-base">ℹ️</span>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
-                    Automatically set to current date. You can change if needed.
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-6 border-t-2 border-slate-200 dark:border-slate-700">
-                <Button 
-                  type="submit" 
-                  disabled={bulkMutation.isPending || serialCount === 0}
-                  className="w-full h-14 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 hover:from-purple-700 hover:via-pink-700 hover:to-rose-700 text-white font-bold text-base shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {bulkMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                      Registering {serialCount || 0} Product{serialCount !== 1 ? 's' : ''}...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-5 w-5 mr-2" />
-                      Register {serialCount || 0} Product{serialCount !== 1 ? 's' : ''}
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+              </form>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

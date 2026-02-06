@@ -9,10 +9,10 @@ export default {
   ],
   // Ensure page heading gradient is never purged (used via PAGE_HEADING_CLASS constant)
   safelist: [
-    'font-heading', 'text-3xl', 'sm:text-4xl', 'md:text-5xl', 'font-bold', 'tracking-tight',
+    'font-heading', 'text-2xl', 'sm:text-3xl', 'font-bold', 'tracking-tight',
     'bg-gradient-to-r', 'from-slate-800', 'via-slate-700', 'to-indigo-600',
     'dark:from-slate-100', 'dark:via-slate-200', 'dark:to-indigo-400', 'bg-clip-text', 'text-transparent',
-    'text-base', 'sm:text-lg', 'text-slate-600', 'dark:text-slate-400', 'tracking-wide',
+    'text-sm', 'sm:text-base', 'text-slate-600', 'dark:text-slate-400',
   ],
   prefix: "",
   theme: {

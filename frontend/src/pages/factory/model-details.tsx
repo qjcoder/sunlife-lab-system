@@ -139,7 +139,7 @@ export default function ModelDetails() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Models
         </Button>
-        <div className="space-y-2">
+        <div className="space-y-1">
           <h1 className={PAGE_HEADING_CLASS}>{model.brand} {model.productLine} {model.variant}</h1>
           <p className={PAGE_SUBHEADING_CLASS}>Model Code: {model.modelCode}</p>
         </div>

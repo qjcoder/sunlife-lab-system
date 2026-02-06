@@ -51,10 +51,10 @@ export default function DealerStock() {
   }
 
   return (
-    <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-50 via-green-50/30 to-emerald-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50/30 to-emerald-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
+      <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 flex items-center justify-between">
+        <div className="space-y-1">
           <h1 className={PAGE_HEADING_CLASS}>Dealer Stock</h1>
           <p className={PAGE_SUBHEADING_CLASS}>
             {data?.dealer} - Total: {data?.count || 0} inverters
@@ -69,7 +69,7 @@ export default function DealerStock() {
           />
         </div>
       </div>
-
+      <div className="space-y-4 sm:space-y-5 px-4 sm:px-5 md:px-6 pb-4 pt-0">
       <Card>
         <CardHeader>
           <CardTitle>Available Inverters</CardTitle>
@@ -110,6 +110,7 @@ export default function DealerStock() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
