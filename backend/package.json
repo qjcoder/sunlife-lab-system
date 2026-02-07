@@ -7,7 +7,8 @@
     "start": "node src/server.js",
     "create-admin": "node scripts/resetUsersAndCreateSuperAdmin.js",
     "reset-super-admin-password": "node scripts/resetSuperAdminPassword.js",
-    "seed-models": "node scripts/seedModels.js"
+    "seed-models": "node scripts/seedModels.js",
+    "seed-parts": "node scripts/seedParts.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

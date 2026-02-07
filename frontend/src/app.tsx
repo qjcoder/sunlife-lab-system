@@ -20,6 +20,7 @@ import InverterRegistration from "@/pages/factory/inverter-registration";
 import FactoryDispatch from "@/pages/factory/factory-dispatch";
 import FactoryStock from "@/pages/factory/factory-stock";
 import PartDispatch from "@/pages/factory/part-dispatch";
+import CreateParts from "@/pages/factory/parts";
 import AccountCreation from "@/pages/factory/account-creation";
 
 // Dealer
@@ -88,6 +89,7 @@ const App = () => {
                     <Route path="installer-program-managers" element={<RequireSuperAdmin><AccountCreation /></RequireSuperAdmin>} />
                     <Route path="inverter-models" element={<InverterModels />} />
                     <Route path="inverter-models/:modelId" element={<ModelDetails />} />
+                    <Route path="parts" element={<CreateParts />} />
                     <Route path="inverter-registration" element={<InverterRegistration />} />
                     <Route path="dispatch" element={<FactoryDispatch />} />
                     <Route path="part-dispatch" element={<PartDispatch />} />

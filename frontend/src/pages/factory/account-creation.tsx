@@ -351,17 +351,17 @@ export default function AccountCreation() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="name" className="text-sm font-medium text-foreground">Name</Label>
-        <Input id="name" placeholder="Display name" className="h-10 rounded-lg border-border bg-background" {...register('name')} />
+        <Input id="name" placeholder="Display name" className="h-10 rounded-lg border-border bg-background max-w-sm" {...register('name')} />
         {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
       </div>
       <div className="space-y-2">
         <Label htmlFor="username" className="text-sm font-medium text-foreground">Username</Label>
-        <Input id="username" placeholder="Login username" className="h-10 rounded-lg border-border bg-background" {...register('username')} />
+        <Input id="username" placeholder="Login username" className="h-10 rounded-lg border-border bg-background max-w-sm" {...register('username')} />
         {errors.username && <p className="text-xs text-destructive mt-1">{errors.username?.message}</p>}
       </div>
       <div className="space-y-2">
         <Label htmlFor="password" className="text-sm font-medium text-foreground">Password</Label>
-        <Input id="password" type="password" placeholder="Min. 6 characters" className="h-10 rounded-lg border-border bg-background" {...register('password')} />
+        <Input id="password" type="password" placeholder="Min. 6 characters" className="h-10 rounded-lg border-border bg-background max-w-sm" {...register('password')} />
         {errors.password && <p className="text-xs text-destructive mt-1">{errors.password.message}</p>}
       </div>
       <Button type="submit" disabled={isPending} className="h-10 rounded-lg px-6 font-medium">
@@ -537,17 +537,17 @@ export default function AccountCreation() {
                 <form onSubmit={handleSubmitAdmin((data) => adminMutation.mutate(data))} className="space-y-5">
                   <div className="space-y-2">
                     <Label htmlFor="admin-name" className="text-sm font-medium text-foreground">Name</Label>
-                    <Input id="admin-name" placeholder="Display name" className="h-10 rounded-lg border-border bg-background" {...registerAdmin('name')} />
+                    <Input id="admin-name" placeholder="Display name" className="h-10 rounded-lg border-border bg-background max-w-sm" {...registerAdmin('name')} />
                     {adminErrors.name && <p className="text-xs text-destructive mt-1">{adminErrors.name.message}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="admin-username" className="text-sm font-medium text-foreground">Username</Label>
-                    <Input id="admin-username" placeholder="Login username" className="h-10 rounded-lg border-border bg-background" {...registerAdmin('username')} />
+                    <Input id="admin-username" placeholder="Login username" className="h-10 rounded-lg border-border bg-background max-w-sm" {...registerAdmin('username')} />
                     {adminErrors.username && <p className="text-xs text-destructive mt-1">{adminErrors.username.message}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="admin-password" className="text-sm font-medium text-foreground">Password</Label>
-                    <Input id="admin-password" type="password" placeholder="Min. 6 characters" className="h-10 rounded-lg border-border bg-background" {...registerAdmin('password')} />
+                    <Input id="admin-password" type="password" placeholder="Min. 6 characters" className="h-10 rounded-lg border-border bg-background max-w-sm" {...registerAdmin('password')} />
                     {adminErrors.password && <p className="text-xs text-destructive mt-1">{adminErrors.password.message}</p>}
                   </div>
                   <Button type="submit" disabled={adminMutation.isPending} className="h-10 rounded-lg px-6 font-medium">
@@ -933,6 +933,7 @@ export default function AccountCreation() {
                   onChange={(e) => setResetPasswordValue(e.target.value)}
                   placeholder="Min 6 characters"
                   autoComplete="new-password"
+                  className="max-w-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -944,6 +945,7 @@ export default function AccountCreation() {
                   onChange={(e) => setResetPasswordConfirm(e.target.value)}
                   placeholder="Confirm new password"
                   autoComplete="new-password"
+                  className="max-w-sm"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">

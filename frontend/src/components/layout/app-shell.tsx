@@ -12,6 +12,7 @@ const AppShell = () => {
   // Pages that use full-height card layout (scroll inside page, not main)
   const isFullHeightPage =
     isInverterModels ||
+    location.pathname.includes("factory/parts") ||
     location.pathname.includes("factory/stock") ||
     location.pathname.includes("part-dispatch") ||
     location.pathname.includes("factory/dispatch") ||

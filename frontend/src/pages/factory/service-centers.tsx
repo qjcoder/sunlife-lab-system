@@ -113,7 +113,7 @@ export default function ServiceCenters() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Service Center Name</Label>
-                <Input id="name" {...register('name')} placeholder="e.g., Lahore Service Center" />
+                <Input id="name" {...register('name')} placeholder="e.g., Lahore Service Center" className="max-w-sm" />
                 {errors.name && (
                   <p className="text-sm text-destructive">{errors.name.message}</p>
                 )}
@@ -121,7 +121,7 @@ export default function ServiceCenters() {
 
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
-                <Input id="username" {...register('username')} placeholder="Service center username" />
+                <Input id="username" {...register('username')} placeholder="Service center username" className="max-w-sm" />
                 {errors.username && (
                   <p className="text-sm text-destructive">{errors.username.message}</p>
                 )}
@@ -129,7 +129,7 @@ export default function ServiceCenters() {
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" {...register('password')} />
+                <Input id="password" type="password" {...register('password')} className="max-w-sm" />
                 {errors.password && (
                   <p className="text-sm text-destructive">{errors.password.message}</p>
                 )}
@@ -245,11 +245,11 @@ export default function ServiceCenters() {
               <p className="text-sm text-muted-foreground">Set a new password for <strong>{resetPasswordTarget.name}</strong>.</p>
               <div className="space-y-2">
                 <Label htmlFor="reset-new-password">New password</Label>
-                <Input id="reset-new-password" type="password" value={resetPasswordValue} onChange={(e) => setResetPasswordValue(e.target.value)} placeholder="Min 6 characters" autoComplete="new-password" />
+                <Input id="reset-new-password" type="password" value={resetPasswordValue} onChange={(e) => setResetPasswordValue(e.target.value)} placeholder="Min 6 characters" autoComplete="new-password" className="max-w-sm" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="reset-confirm-password">Confirm password</Label>
-                <Input id="reset-confirm-password" type="password" value={resetPasswordConfirm} onChange={(e) => setResetPasswordConfirm(e.target.value)} placeholder="Confirm new password" autoComplete="new-password" />
+                <Input id="reset-confirm-password" type="password" value={resetPasswordConfirm} onChange={(e) => setResetPasswordConfirm(e.target.value)} placeholder="Confirm new password" autoComplete="new-password" className="max-w-sm" />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => { setResetPasswordTarget(null); setResetPasswordValue(''); setResetPasswordConfirm(''); }}>Cancel</Button>

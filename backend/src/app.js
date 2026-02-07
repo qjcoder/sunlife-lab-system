@@ -56,6 +56,7 @@ import dealerInverterStockRoutes from "./routes/dealerInverterStockRoutes.js";
 import inverterSaleRoutes from "./routes/inverterSaleRoutes.js";
 
 // 📦 Spare Parts Flow
+import partRoutes from "./routes/partRoutes.js";
 import partDispatchRoutes from "./routes/partDispatchRoutes.js";
 import serviceCenterStockRoutes from "./routes/serviceCenterStockRoutes.js";
 
@@ -100,6 +101,7 @@ app.use("/api/dealer-inverter-stock", dealerInverterStockRoutes);
 app.use("/api/inverter-sales", inverterSaleRoutes);
 
 // 📦 Spare Parts
+app.use("/api/parts", partRoutes);
 app.use("/api/part-dispatches", partDispatchRoutes);
 app.use("/api/service-center-stock", serviceCenterStockRoutes);
 

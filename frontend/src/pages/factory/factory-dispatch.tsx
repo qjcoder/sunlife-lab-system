@@ -550,12 +550,12 @@ export default function FactoryDispatch() {
               </datalist>
               {dispatchMode === 'bulk' ? (
                 <>
-                  <div className="grid grid-cols-1 lg:grid-cols-[minmax(300px,380px),1fr] grid-rows-[1fr] gap-6 lg:gap-8 flex-1 min-h-0 overflow-hidden">
-                    {/* Left: Category, Model, Dealer, Dispatch Date */}
-                    <div className="flex flex-col min-h-0 overflow-y-auto space-y-4 lg:space-y-5 px-4 sm:px-6 lg:pl-0 lg:pr-8 lg:border-r lg:border-border">
-                      <div className="space-y-3 shrink-0">
-                        <Label className="block text-base font-semibold text-foreground">Product category</Label>
-                        <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-1 lg:grid-cols-[minmax(260px,320px),1fr] grid-rows-[1fr] gap-4 lg:gap-6 flex-1 min-h-0 overflow-hidden">
+                    {/* Left: Category, Model, Available serials */}
+                    <div className="flex flex-col min-h-0 overflow-y-auto space-y-3 lg:space-y-4 px-4 sm:px-6 lg:pl-0 lg:pr-6 lg:border-r lg:border-border">
+                      <div className="space-y-2 shrink-0">
+                        <Label className="block text-sm font-semibold text-foreground">Product category</Label>
+                        <div className="flex flex-wrap gap-1.5">
                           {CATEGORY_OPTIONS.map(({ key, label, icon: Icon, activeClass }) => (
                             <Button
                               key={key}
@@ -575,9 +575,9 @@ export default function FactoryDispatch() {
                           ))}
                         </div>
                       </div>
-                      <div className="space-y-3 shrink-0">
-                        <Label className="block text-base font-semibold text-foreground">Model</Label>
-                        <div className="relative">
+                      <div className="space-y-2 shrink-0">
+                        <Label className="block text-sm font-semibold text-foreground">Model</Label>
+                        <div className="relative max-w-sm">
                           <Input
                             type="text"
                             placeholder="Search or select model..."
@@ -595,11 +595,11 @@ export default function FactoryDispatch() {
                             onBlur={() => setTimeout(() => setDispatchModelListOpen(false), 150)}
                             readOnly={!!selectedDispatchModel}
                             className={cn(
-                              'pl-9 pr-9 h-11 text-base bg-background',
+                              'pl-8 pr-8 h-10 text-sm bg-background',
                               selectedDispatchModel && 'cursor-default'
                             )}
                           />
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
                           {selectedDispatchModel && (
                             <button
                               type="button"
@@ -608,17 +608,17 @@ export default function FactoryDispatch() {
                                 setDispatchModelSearch('');
                                 setDispatchModelListOpen(true);
                               }}
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
                               aria-label="Clear selection"
                             >
-                              <X className="h-3.5 w-3.5" />
+                              <X className="h-3 w-3" />
                             </button>
                           )}
                         </div>
                         {!selectedDispatchModel && dispatchModelListOpen && (
-                          <div className="max-h-[6rem] overflow-y-auto rounded-xl p-2 space-y-2.5 border border-border bg-card shadow-lg z-10">
+                          <div className="max-h-[5rem] overflow-y-auto rounded-lg p-1.5 space-y-1 border border-border bg-card shadow-lg z-10">
                             {filteredDispatchModels.length === 0 ? (
-                              <p className="text-sm text-muted-foreground py-6 text-center">No models</p>
+                              <p className="text-xs text-muted-foreground py-4 text-center">No models</p>
                             ) : (
                               filteredDispatchModels.map((model) => (
                                 <button
@@ -629,7 +629,7 @@ export default function FactoryDispatch() {
                                     setDispatchModelSearch('');
                                     setDispatchModelListOpen(false);
                                   }}
-                                  className="w-full flex items-center justify-between gap-2 text-left px-4 py-3 rounded-xl border-2 border-border bg-card text-foreground hover:border-primary/50 hover:bg-muted/50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                  className="w-full flex items-center justify-between gap-2 text-left px-3 py-2 rounded-md border border-border bg-card text-foreground hover:border-primary/50 hover:bg-muted/50 transition-all text-sm truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                                 >
                                   <span className="text-sm font-medium truncate">
                                   {[getModelDisplayName(model), getVariantDisplay(model)].filter(Boolean).join(' ')}
@@ -652,9 +652,9 @@ export default function FactoryDispatch() {
                       </div>
                       {/* Available serials dropdown with search (Bulk dispatch) */}
                       {selectedDispatchModel && (
-                        <div className="space-y-2 shrink-0">
-                          <Label className="block text-base font-semibold text-foreground">Available serials</Label>
-                          <div className="relative">
+                        <div className="space-y-1.5 shrink-0">
+                          <Label className="block text-sm font-semibold text-foreground">Available serials</Label>
+                          <div className="relative max-w-sm">
                             <Input
                               type="text"
                               placeholder="Search and add serials..."
@@ -662,12 +662,12 @@ export default function FactoryDispatch() {
                               onChange={(e) => setAvailableSerialSearch(e.target.value)}
                               onFocus={() => setAvailableSerialListOpen(true)}
                               onBlur={() => setTimeout(() => setAvailableSerialListOpen(false), 180)}
-                              className="pl-9 h-10 text-sm border border-border bg-background"
+                              className="pl-8 h-9 text-sm border border-border bg-background"
                             />
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
                           </div>
                           {availableSerialListOpen && (
-                            <div className="max-h-[6rem] overflow-y-auto rounded-lg border border-border p-2 space-y-1 shadow-lg z-10 bg-card mt-1">
+                            <div className="max-h-[5rem] overflow-y-auto rounded-lg border border-border p-1.5 space-y-0.5 shadow-lg z-10 bg-card mt-1">
                               {(() => {
                                 const alreadyInBulk = new Set(bulkSerialsFromText);
                                 const list = filteredAvailableItems
@@ -696,9 +696,9 @@ export default function FactoryDispatch() {
                                       setAvailableSerialListOpen(false);
                                       toast.success(`Added ${serial} to list`);
                                     }}
-                                    className="w-full flex items-center gap-2 text-left px-3 py-2 rounded-md border border-border bg-card text-foreground hover:border-primary/50 hover:bg-muted/50 transition-all text-sm font-mono"
+                                    className="w-full flex items-center gap-2 text-left px-2.5 py-1.5 rounded-md border border-border bg-card text-foreground hover:border-primary/50 hover:bg-muted/50 transition-all text-xs font-mono"
                                   >
-                                    <Hash className="h-3 w-3 text-muted-foreground shrink-0" />
+                                    <Hash className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
                                     <span className="truncate">{serial}</span>
                                   </button>
                                 ));
@@ -710,9 +710,9 @@ export default function FactoryDispatch() {
                       )}
                     </div>
                     {/* Right: Serial Numbers, then Dealer Name & Dispatch Date */}
-                    <div className="flex flex-col min-h-0 overflow-hidden space-y-3 px-4 sm:px-6 lg:pl-6 lg:pr-4">
+                    <div className="flex flex-col min-h-0 overflow-hidden space-y-2 px-4 sm:px-6 lg:pl-4 lg:pr-4">
                       <div className="flex items-center justify-between gap-2 shrink-0">
-                        <Label htmlFor="bulkSerialNumbers" className="block text-base font-semibold text-foreground">Serial Numbers</Label>
+                        <Label htmlFor="bulkSerialNumbers" className="block text-sm font-semibold text-foreground">Serial Numbers</Label>
                         <span className="text-sm text-muted-foreground tabular-nums shrink-0">
                           {bulkSerialsFromText.length} line{bulkSerialsFromText.length !== 1 ? 's' : ''}
                         </span>
@@ -723,7 +723,7 @@ export default function FactoryDispatch() {
                         value={bulkSerialText}
                         onChange={(e) => setBulkSerialText(e.target.value)}
                         className={cn(
-                          'min-h-[80px] max-h-[180px] w-full rounded-lg border border-input bg-background px-4 py-3 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-y overflow-auto',
+                          'flex-1 min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-y overflow-auto',
                           bulkScannerMode && 'border-primary ring-primary/20'
                         )}
                         placeholder="One serial per line, or upload Excel/CSV"
@@ -732,26 +732,26 @@ export default function FactoryDispatch() {
                       <p className="text-xs text-muted-foreground shrink-0">
                         Upload Excel or CSV with serials in the first column, or use scanner.
                       </p>
-                      <div className="grid grid-cols-1 gap-3 shrink-0 pt-1 border-t border-border">
-                        <div className="space-y-2">
+                      <div className="grid grid-cols-1 gap-2 shrink-0 pt-1 border-t border-border">
+                        <div className="space-y-1.5">
                           <Label htmlFor="bulk-dealer" className="block text-sm font-semibold text-foreground">Dealer Name</Label>
                           <Input
                             id="bulk-dealer"
                             {...register('dealer')}
                             list="dispatch-dealer-list"
-                            className="h-10 text-sm bg-background"
+                            className="h-9 text-sm bg-background max-w-sm"
                             placeholder="Enter or select dealer name"
                           />
                           {errors.dealer && <p className="text-xs text-destructive mt-0.5">{errors.dealer.message}</p>}
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           <Label htmlFor="bulk-dispatchDate" className="block text-sm font-semibold text-foreground">Dispatch Date</Label>
                           <Input
                             id="bulk-dispatchDate"
                             type="date"
                             {...register('dispatchDate')}
                             defaultValue={getCurrentDateTime()}
-                            className="h-10 text-sm bg-background"
+                            className="h-9 text-sm bg-background max-w-sm"
                           />
                           {errors.dispatchDate && <p className="text-xs text-destructive mt-0.5">{errors.dispatchDate.message}</p>}
                           <p className="text-xs text-muted-foreground">Defaults to today.</p>
@@ -759,11 +759,11 @@ export default function FactoryDispatch() {
                       </div>
                     </div>
                   </div>
-                  <div className="shrink-0 pt-4">
+                  <div className="shrink-0 pt-3">
                     <Button
                       type="submit"
                       disabled={mutation.isPending || bulkSerialsFromText.length === 0}
-                      className="w-full h-12 text-base"
+                      className="w-full h-11 text-sm"
                     >
                       {mutation.isPending ? (
                         <>
@@ -818,7 +818,7 @@ export default function FactoryDispatch() {
                       id="dealer"
                       {...register('dealer')}
                       list="dispatch-dealer-list"
-                      className="h-11 text-base border border-border bg-background focus-visible:ring-2 focus-visible:ring-ring"
+                      className="h-11 text-base border border-border bg-background focus-visible:ring-2 focus-visible:ring-ring max-w-sm"
                       placeholder="Enter or select dealer name"
                     />
                     {errors.dealer && (
@@ -835,7 +835,7 @@ export default function FactoryDispatch() {
                       type="date"
                       {...register('dispatchDate')}
                       defaultValue={getCurrentDateTime()}
-                      className="h-11 text-base border border-border bg-background"
+                      className="h-11 text-base border border-border bg-background max-w-sm"
                     />
                     {errors.dispatchDate && (
                       <p className="text-xs text-destructive mt-0.5">{errors.dispatchDate.message}</p>

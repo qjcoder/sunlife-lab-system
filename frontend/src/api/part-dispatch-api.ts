@@ -19,6 +19,8 @@ export interface DispatchedItem {
   partCode: string;
   partName: string;
   quantity: number;
+  modelName?: string;
+  variant?: string;
 }
 
 export interface CreatePartDispatchRequest {

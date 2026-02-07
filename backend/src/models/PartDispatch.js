@@ -29,6 +29,10 @@ const dispatchedItemSchema = new mongoose.Schema(
       required: true,
       min: 1, // Prevent zero or negative stock
     },
+
+    // Model & variant (from Part catalog) for display/audit
+    modelName: { type: String, trim: true },
+    variant: { type: String, trim: true },
   },
   {
     _id: false, // No separate ID needed for embedded items

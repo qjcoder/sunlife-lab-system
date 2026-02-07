@@ -268,7 +268,7 @@ export default function Dealers() {
                     <Input
                       id="name"
                       placeholder="Dealer name"
-                      className="h-10 rounded-lg border-border bg-background"
+                      className="h-10 rounded-lg border-border bg-background max-w-sm"
                       {...register('name')}
                     />
                     {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
@@ -279,7 +279,7 @@ export default function Dealers() {
                     <Input
                       id="username"
                       placeholder="Dealer username"
-                      className="h-10 rounded-lg border-border bg-background"
+                      className="h-10 rounded-lg border-border bg-background max-w-sm"
                       {...register('username')}
                     />
                     {errors.username && <p className="text-xs text-destructive mt-1">{errors.username.message}</p>}
@@ -291,7 +291,7 @@ export default function Dealers() {
                       id="password"
                       type="password"
                       placeholder="Min. 6 characters"
-                      className="h-10 rounded-lg border-border bg-background"
+                      className="h-10 rounded-lg border-border bg-background max-w-sm"
                       {...register('password')}
                     />
                     {errors.password && (
@@ -487,6 +487,7 @@ export default function Dealers() {
                   onChange={(e) => setResetPasswordValue(e.target.value)}
                   placeholder="Min 6 characters"
                   autoComplete="new-password"
+                  className="max-w-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -498,6 +499,7 @@ export default function Dealers() {
                   onChange={(e) => setResetPasswordConfirm(e.target.value)}
                   placeholder="Confirm new password"
                   autoComplete="new-password"
+                  className="max-w-sm"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
