@@ -18,12 +18,10 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
-    /** Login: Admin uses email (Gmail, Outlook); other roles use username */
+    /** Login: Admin uses email (Gmail, Outlook); other roles use username. Index: sparse unique so multiple users can omit email. */
     email: {
       type: String,
       required: false,
-      unique: true,
-      sparse: true,
       lowercase: true,
       trim: true,
     },
@@ -43,7 +41,7 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["FACTORY_ADMIN", "DEALER", "SUB_DEALER", "SERVICE_CENTER", "DATA_ENTRY_OPERATOR", "INSTALLER_PROGRAM_MANAGER"],
+      enum: ["FACTORY_ADMIN", "DEALER", "SUB_DEALER", "SERVICE_CENTER", "DATA_ENTRY_OPERATOR", "INSTALLER_PROGRAM_MANAGER", "INSTALLER"],
       required: true,
     },
 
@@ -65,6 +63,18 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+/* --------------------------------------------------
+ * Sparse unique index: allow multiple docs without email.
+ * (MongoDB unique index treats null as a value; omit field instead.)
+ * -------------------------------------------------- */
+userSchema.index({ email: 1 }, { unique: true, sparse: true });
+
+userSchema.pre("save", async function () {
+  if (this.email === null || this.email === "") {
+    this.$unset("email"); // omit from document so sparse unique index allows multiple users without email
+  }
+});
 
 /* --------------------------------------------------
  * Password helpers

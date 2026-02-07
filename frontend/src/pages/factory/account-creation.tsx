@@ -122,7 +122,7 @@ export default function AccountCreation() {
   });
   const { register, handleSubmit, formState: { errors }, reset } = form;
 
-  // Admins – fetch as soon as Account Creation page is visible (Super Admin only)
+  // Admins – Super Admin only (page is behind RequireSuperAdmin)
   const { data: admins = [], isLoading: loadingAdmins, isError: adminsError, error: adminsQueryError, refetch: refetchAdmins } = useQuery({
     queryKey: ['admins'],
     queryFn: listAdmins,
@@ -508,7 +508,7 @@ export default function AccountCreation() {
         })}
       </div>
 
-      {/* Admins tab – Factory Admins log in with email (Gmail, Outlook, etc.) */}
+      {/* Admins tab – Factory Admins log in with email (Super Admin only can access this page) */}
       {activeTab === 'admins' && (
         <>
           <div className="flex flex-wrap items-center gap-2">

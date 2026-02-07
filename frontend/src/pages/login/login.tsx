@@ -16,7 +16,7 @@ type FormData = {
   rememberMe?: boolean;
 };
 
-type RoleType = "FACTORY_ADMIN" | "DEALER" | "SUB_DEALER" | "SERVICE_CENTER" | "INSTALLER_PROGRAM_MANAGER" | "DATA_ENTRY_OPERATOR" | "";
+type RoleType = "FACTORY_ADMIN" | "DEALER" | "SUB_DEALER" | "SERVICE_CENTER" | "INSTALLER_PROGRAM_MANAGER" | "DATA_ENTRY_OPERATOR" | "INSTALLER" | "";
 
 const getRoleConfig = (role: RoleType) => {
   switch (role) {
@@ -89,6 +89,20 @@ const getRoleConfig = (role: RoleType) => {
         title: "Installer Program Manager",
         description: "Manage installer program and product lifecycle",
         rightBg: "bg-gradient-to-br from-violet-900 via-violet-800 to-violet-900",
+      };
+    case "INSTALLER":
+      return {
+        accentColor: "bg-teal-600",
+        accentHover: "hover:bg-teal-700",
+        accentLight: "bg-teal-50",
+        accentBorder: "border-teal-200",
+        accentText: "text-teal-600",
+        bgGradient: "from-teal-900 via-teal-800 to-teal-900",
+        bgPattern: "bg-teal-600",
+        icon: User,
+        title: "Installer",
+        description: "Submit installations and earn rewards",
+        rightBg: "bg-gradient-to-br from-teal-900 via-teal-800 to-teal-900",
       };
     case "DATA_ENTRY_OPERATOR":
       return {
@@ -222,8 +236,10 @@ const Login = () => {
           detectedRole = "SUB_DEALER";
         } else if (errorText.includes("Service Center") || errorText.includes("SERVICE_CENTER")) {
           detectedRole = "SERVICE_CENTER";
-        } else if (errorText.includes("Installer Program") || errorText.includes("INSTALLER_PROGRAM_MANAGER")) {
+        } else if (errorText.includes("Installer Program Manager") || errorText.includes("INSTALLER_PROGRAM_MANAGER")) {
           detectedRole = "INSTALLER_PROGRAM_MANAGER";
+        } else if (errorText.includes("Installer") || errorText.includes("INSTALLER")) {
+          detectedRole = "INSTALLER";
         } else if (errorText.includes("Data Entry") || errorText.includes("DATA_ENTRY_OPERATOR")) {
           detectedRole = "DATA_ENTRY_OPERATOR";
         }
@@ -305,7 +321,8 @@ const Login = () => {
     { type: "DEALER", label: "Dealer", icon: Users },
     { type: "SUB_DEALER", label: "Sub-Dealer", icon: User },
     { type: "SERVICE_CENTER", label: "Service Center", icon: Wrench },
-    { type: "INSTALLER_PROGRAM_MANAGER", label: "Installer Program", icon: ClipboardList },
+    { type: "INSTALLER_PROGRAM_MANAGER", label: "Installer Program Manager", icon: ClipboardList },
+    { type: "INSTALLER", label: "Installer", icon: User },
     { type: "DATA_ENTRY_OPERATOR", label: "Data Entry Operator", icon: FileEdit },
   ];
 
@@ -330,6 +347,7 @@ const Login = () => {
         selectedRole === "SUB_DEALER" ? "bg-gradient-to-br from-green-50 via-white to-green-100" :
         selectedRole === "SERVICE_CENTER" ? "bg-gradient-to-br from-orange-50 via-white to-orange-100" :
         selectedRole === "INSTALLER_PROGRAM_MANAGER" ? "bg-gradient-to-br from-violet-50 via-white to-violet-100" :
+        selectedRole === "INSTALLER" ? "bg-gradient-to-br from-teal-50 via-white to-teal-100" :
         selectedRole === "DATA_ENTRY_OPERATOR" ? "bg-gradient-to-br from-teal-50 via-white to-teal-100" :
         "bg-gradient-to-br from-gray-50 via-white to-gray-100"
       }`}>
@@ -341,6 +359,7 @@ const Login = () => {
             selectedRole === "SUB_DEALER" ? "bg-green-200" :
             selectedRole === "SERVICE_CENTER" ? "bg-orange-200" :
             selectedRole === "INSTALLER_PROGRAM_MANAGER" ? "bg-violet-200" :
+            selectedRole === "INSTALLER" ? "bg-teal-200" :
             selectedRole === "DATA_ENTRY_OPERATOR" ? "bg-teal-200" :
             "bg-gray-200"
           } animate-pulse`}></div>
@@ -350,6 +369,7 @@ const Login = () => {
             selectedRole === "SUB_DEALER" ? "bg-green-300" :
             selectedRole === "SERVICE_CENTER" ? "bg-orange-300" :
             selectedRole === "INSTALLER_PROGRAM_MANAGER" ? "bg-violet-300" :
+            selectedRole === "INSTALLER" ? "bg-teal-300" :
             selectedRole === "DATA_ENTRY_OPERATOR" ? "bg-teal-300" :
             "bg-gray-300"
           } animate-pulse delay-1000`}></div>
@@ -436,6 +456,7 @@ const Login = () => {
                     selectedRole === "SUB_DEALER" ? "focus:border-green-500 focus:ring-green-500" :
                     selectedRole === "SERVICE_CENTER" ? "focus:border-orange-500 focus:ring-orange-500" :
                     selectedRole === "INSTALLER_PROGRAM_MANAGER" ? "focus:border-violet-500 focus:ring-violet-500" :
+                    selectedRole === "INSTALLER" ? "focus:border-teal-500 focus:ring-teal-500" :
                     selectedRole === "DATA_ENTRY_OPERATOR" ? "focus:border-teal-500 focus:ring-teal-500" :
                     "focus:border-red-500 focus:ring-red-500"
                   }`}
@@ -475,6 +496,7 @@ const Login = () => {
                     selectedRole === "SUB_DEALER" ? "focus:border-green-500 focus:ring-green-500" :
                     selectedRole === "SERVICE_CENTER" ? "focus:border-orange-500 focus:ring-orange-500" :
                     selectedRole === "INSTALLER_PROGRAM_MANAGER" ? "focus:border-violet-500 focus:ring-violet-500" :
+                    selectedRole === "INSTALLER" ? "focus:border-teal-500 focus:ring-teal-500" :
                     selectedRole === "DATA_ENTRY_OPERATOR" ? "focus:border-teal-500 focus:ring-teal-500" :
                     "focus:border-red-500 focus:ring-red-500"
                   }`}
@@ -498,6 +520,7 @@ const Login = () => {
                     selectedRole === "SUB_DEALER" ? "text-green-600 focus:ring-green-500" :
                     selectedRole === "SERVICE_CENTER" ? "text-orange-600 focus:ring-orange-500" :
                     selectedRole === "INSTALLER_PROGRAM_MANAGER" ? "text-violet-600 focus:ring-violet-500" :
+                    selectedRole === "INSTALLER" ? "text-teal-600 focus:ring-teal-500" :
                     selectedRole === "DATA_ENTRY_OPERATOR" ? "text-teal-600 focus:ring-teal-500" :
                     "text-red-600 focus:ring-red-500"
                   }`}
@@ -557,6 +580,8 @@ const Login = () => {
                 ? "Professional Service Hub"
                 : selectedRole === "INSTALLER_PROGRAM_MANAGER"
                 ? "Installer Program Management"
+                : selectedRole === "INSTALLER"
+                ? "Submit Installations, Earn Rewards"
                 : selectedRole === "DATA_ENTRY_OPERATOR"
                 ? "Efficient Data Entry"
                 : "Welcome to Sunlife Solar"}
@@ -572,6 +597,8 @@ const Login = () => {
                 ? "Streamline service jobs, parts inventory, and warranty tracking with professional-grade tools."
                 : selectedRole === "INSTALLER_PROGRAM_MANAGER"
                 ? "Manage installer program, product lifecycle, and full history view in one place."
+                : selectedRole === "INSTALLER"
+                ? "Submit installation details, upload video, and earn cash and points for verified installations."
                 : selectedRole === "DATA_ENTRY_OPERATOR"
                 ? "Enter and manage product data, warranty information, and records with ease."
                 : "Comprehensive solar warranty and inventory management system trusted by industry leaders."}
@@ -612,6 +639,13 @@ const Login = () => {
                   <span className="px-4 py-2 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">Installer Program</span>
                 </>
               )}
+              {selectedRole === "INSTALLER" && (
+                <>
+                  <span className="px-4 py-2 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">Submit Installation</span>
+                  <span className="px-4 py-2 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">Cash & Points</span>
+                  <span className="px-4 py-2 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">Video Verification</span>
+                </>
+              )}
               {selectedRole === "DATA_ENTRY_OPERATOR" && (
                 <>
                   <span className="px-4 py-2 bg-white/20 rounded-full text-sm font-medium backdrop-blur-sm">Data Entry</span>
@@ -637,6 +671,8 @@ const Login = () => {
                     ? "Professional Tools"
                     : selectedRole === "INSTALLER_PROGRAM_MANAGER"
                     ? "Lifecycle & History"
+                    : selectedRole === "INSTALLER"
+                    ? "Earn Rewards"
                     : selectedRole === "DATA_ENTRY_OPERATOR"
                     ? "Accurate Data"
                     : "Get Started Today"}
@@ -652,6 +688,8 @@ const Login = () => {
                     ? "Trusted by service professionals"
                     : selectedRole === "INSTALLER_PROGRAM_MANAGER"
                     ? "Full product lifecycle at your fingertips"
+                    : selectedRole === "INSTALLER"
+                    ? "Get verified and claim your cash and milestone prizes"
                     : selectedRole === "DATA_ENTRY_OPERATOR"
                     ? "Keep records accurate and up to date"
                     : "Join thousands of satisfied users"}

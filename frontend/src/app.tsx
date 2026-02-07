@@ -48,6 +48,11 @@ import Dashboard from "@/pages/dashboard/dashboard";
 // Operator
 import OperatorSerialEntry from "@/pages/operator/serial-entry";
 
+// Installer Program (manager) & Installer portal
+import InstallerProgramManager from "@/pages/installer-program/index";
+import SubmitInstallation from "@/pages/installer/submit-installation";
+import MySubmissions from "@/pages/installer/my-submissions";
+
 const App = () => {
   return (
     <BrowserRouter
@@ -142,6 +147,27 @@ const App = () => {
               >
                 <Route path="serial-entry" element={<OperatorSerialEntry />} />
                 <Route path="product-serial-entry" element={<InverterRegistration />} />
+              </Route>
+
+              {/* ----------------------------------
+               * INSTALLER PROGRAM (manager)
+               * ---------------------------------- */}
+              <Route
+                path="installer-program"
+                element={<RoleRoute allowedRoles={["INSTALLER_PROGRAM_MANAGER"]} />}
+              >
+                <Route index element={<InstallerProgramManager />} />
+              </Route>
+
+              {/* ----------------------------------
+               * INSTALLER PORTAL (submit, my submissions)
+               * ---------------------------------- */}
+              <Route
+                path="installer"
+                element={<RoleRoute allowedRoles={["INSTALLER", "INSTALLER_PROGRAM_MANAGER"]} />}
+              >
+                <Route path="submit" element={<SubmitInstallation />} />
+                <Route path="submissions" element={<MySubmissions />} />
               </Route>
 
               {/* ----------------------------------

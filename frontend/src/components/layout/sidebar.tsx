@@ -22,6 +22,9 @@ import {
   UserCog,
   History,
   Layers,
+  Trophy,
+  Upload,
+  FileCheck,
 } from "lucide-react";
 
 type NavItem = {
@@ -44,12 +47,14 @@ const SECTION_ORDER = [
   "SERVICE",
   "ADMINISTRATION",
   "OPERATIONS",
+  "INSTALLER PROGRAM",
+  "INSTALLER PORTAL",
   "MAIN MENU",
 ] as const;
 
 const NAV_ITEMS: NavItem[] = [
   /* -------- OVERVIEW (all roles) -------- */
-  { label: "Dashboard", path: "/dashboard", roles: ["FACTORY_ADMIN", "DEALER", "SUB_DEALER", "SERVICE_CENTER", "DATA_ENTRY_OPERATOR"], icon: LayoutDashboard, section: "OVERVIEW" },
+  { label: "Dashboard", path: "/dashboard", roles: ["FACTORY_ADMIN", "DEALER", "SUB_DEALER", "SERVICE_CENTER", "DATA_ENTRY_OPERATOR", "INSTALLER_PROGRAM_MANAGER", "INSTALLER"], icon: LayoutDashboard, section: "OVERVIEW" },
 
   /* -------- FACTORY: Setup → Production → Inventory → Dispatch → Admin -------- */
   { label: "Create Product Model", path: "/factory/inverter-models", roles: ["FACTORY_ADMIN"], icon: Boxes, section: "SETUP" },
@@ -80,6 +85,13 @@ const NAV_ITEMS: NavItem[] = [
   /* -------- DATA ENTRY OPERATOR -------- */
   { label: "Product Serial Entry", path: "/operator/product-serial-entry", roles: ["DATA_ENTRY_OPERATOR"], icon: PackagePlus, section: "OPERATIONS" },
   { label: "Serial Entry", path: "/operator/serial-entry", roles: ["DATA_ENTRY_OPERATOR"], icon: Keyboard, section: "OPERATIONS" },
+
+  /* -------- INSTALLER PROGRAM (manager) -------- */
+  { label: "Installer Program", path: "/installer-program", roles: ["INSTALLER_PROGRAM_MANAGER"], icon: Trophy, section: "INSTALLER PROGRAM" },
+
+  /* -------- INSTALLER PORTAL -------- */
+  { label: "Submit Installation", path: "/installer/submit", roles: ["INSTALLER", "INSTALLER_PROGRAM_MANAGER"], icon: Upload, section: "INSTALLER PORTAL" },
+  { label: "My Submissions", path: "/installer/submissions", roles: ["INSTALLER", "INSTALLER_PROGRAM_MANAGER"], icon: FileCheck, section: "INSTALLER PORTAL" },
 ];
 
 
@@ -111,6 +123,8 @@ const Sidebar = ({ onClose }: SidebarProps) => {
     SERVICE: "Service",
     ADMINISTRATION: "Administration",
     OPERATIONS: "Operations",
+    "INSTALLER PROGRAM": "Installer program",
+    "INSTALLER PORTAL": "Installer portal",
     "MAIN MENU": "Main menu",
   };
   const colors = getRoleColorScheme(user.role);

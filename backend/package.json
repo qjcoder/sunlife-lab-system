@@ -8,7 +8,9 @@
     "create-admin": "node scripts/resetUsersAndCreateSuperAdmin.js",
     "reset-super-admin-password": "node scripts/resetSuperAdminPassword.js",
     "seed-models": "node scripts/seedModels.js",
-    "seed-parts": "node scripts/seedParts.js"
+    "seed-parts": "node scripts/seedParts.js",
+    "seed-installer-rewards": "node scripts/seedInstallerProgramRewards.js",
+    "fix-email-index": "node scripts/fixEmailIndexSparse.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

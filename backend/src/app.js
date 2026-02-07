@@ -66,6 +66,9 @@ import serviceJobRoutes from "./routes/serviceJobRoutes.js";
 // 📝 Operator Serial Entry
 import operatorSerialEntryRoutes from "./routes/operatorSerialEntryRoutes.js";
 
+// 🏆 Installer Program (rewards, submissions, leaderboard)
+import installerProgramRoutes from "./routes/installerProgramRoutes.js";
+
 /**
  * ====================================================
  * API Route Registration
@@ -110,6 +113,9 @@ app.use("/api/service-jobs", serviceJobRoutes);
 
 // 📝 Operator Serial Entry
 app.use("/api/operator/serial-entry", operatorSerialEntryRoutes);
+
+// 🏆 Installer Program
+app.use("/api/installer-program", installerProgramRoutes);
 
 /**
  * ====================================================

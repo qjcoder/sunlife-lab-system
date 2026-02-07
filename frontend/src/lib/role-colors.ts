@@ -13,7 +13,7 @@
  * - SERVICE_CENTER: Orange theme
  */
 
-export type UserRole = "FACTORY_ADMIN" | "DEALER" | "SUB_DEALER" | "SERVICE_CENTER" | "DATA_ENTRY_OPERATOR" | "INSTALLER_PROGRAM_MANAGER";
+export type UserRole = "FACTORY_ADMIN" | "DEALER" | "SUB_DEALER" | "SERVICE_CENTER" | "DATA_ENTRY_OPERATOR" | "INSTALLER_PROGRAM_MANAGER" | "INSTALLER";
 
 export interface RoleColorScheme {
   // Primary colors
@@ -204,6 +204,31 @@ export const getRoleColorScheme = (role: UserRole): RoleColorScheme => {
         badgeBg: "bg-violet-100 dark:bg-violet-900/30",
         badgeText: "text-violet-700 dark:text-violet-400",
         badgeBorder: "border-violet-200 dark:border-violet-800",
+      };
+    case "INSTALLER":
+      return {
+        primary: "bg-teal-600",
+        primaryHover: "hover:bg-teal-700",
+        primaryLight: "bg-teal-50",
+        primaryDark: "bg-teal-900",
+        accent: "bg-teal-600",
+        accentHover: "hover:bg-teal-700",
+        accentLight: "bg-teal-50",
+        accentBorder: "border-teal-200",
+        accentText: "text-teal-600",
+        bgGradient: "from-teal-50 via-white to-teal-100",
+        bgGradientLight: "from-teal-50/30 via-white/50 to-teal-100/30",
+        bgGradientDark: "from-teal-900 via-teal-800 to-teal-900",
+        cardHeader: "from-teal-500 via-teal-600 to-teal-700",
+        cardBorder: "border-teal-200/60",
+        buttonPrimary: "from-teal-600 to-teal-700",
+        buttonPrimaryHover: "from-teal-700 to-teal-800",
+        buttonOutline: "border-teal-500 text-teal-600 hover:bg-teal-50",
+        textPrimary: "text-teal-600",
+        textSecondary: "text-teal-700",
+        badgeBg: "bg-teal-100 dark:bg-teal-900/30",
+        badgeText: "text-teal-700 dark:text-teal-400",
+        badgeBorder: "border-teal-200 dark:border-teal-800",
       };
     default:
       return {

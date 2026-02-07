@@ -41,6 +41,9 @@ const pathToSection: Record<string, string> = {
   "/service-center/stock": "Parts Stock",
   "/operator/product-serial-entry": "Product Serial Entry",
   "/operator/serial-entry": "Serial Entry",
+  "/installer-program": "Installer Program",
+  "/installer/submit": "Submit Installation",
+  "/installer/submissions": "My Submissions",
 };
 
 function getSectionTitle(pathname: string): string {

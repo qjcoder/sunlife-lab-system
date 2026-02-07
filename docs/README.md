@@ -3,6 +3,7 @@
 | Document | Description |
 |----------|-------------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | High-level architecture, data flow, product lifecycle, security, and conventions |
+| [INSTALLER_PROGRAM.md](INSTALLER_PROGRAM.md) | Installer Program Portal: setup, rewards, points, milestones, submissions, and API summary |
 
 See also:
 

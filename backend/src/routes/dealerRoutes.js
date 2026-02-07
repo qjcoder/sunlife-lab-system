@@ -58,8 +58,8 @@ router.post(
  * DEALER HIERARCHY
  * ====================================================
  * GET /api/dealers/hierarchy
- * - SUPER ADMIN: full hierarchy
- * - DEALER: own sub-dealers only (for Sub-Dealers page)
+ * - SUPER ADMIN (FACTORY_ADMIN with email): full hierarchy
+ * - DEALER: own sub-dealers only
  */
 router.get(
   "/hierarchy",
@@ -67,7 +67,7 @@ router.get(
   requireRole("FACTORY_ADMIN", "DEALER"),
   (req, res, next) => {
     if (req.user.role === "DEALER") return next();
-    requireSuperAdmin(req, res, next).catch(next);
+    return requireSuperAdmin(req, res, next).catch(next);
   },
   getDealerHierarchy
 );
@@ -76,7 +76,6 @@ router.get(
  * ====================================================
  * SUPER ADMIN ONLY → LIST ALL DEALERS
  * ====================================================
- *
  * GET /api/dealers
  */
 router.get(
@@ -91,7 +90,6 @@ router.get(
  * ====================================================
  * SUPER ADMIN ONLY → DELETE DEALER
  * ====================================================
- *
  * DELETE /api/dealers/:id
  */
 router.delete(

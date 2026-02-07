@@ -9,6 +9,10 @@ import './models/InverterUnit.js';
 import './models/ServiceJob.js';
 import './models/ReplacedPart.js';
 import "./models/User.js";
+import './models/InstallerProgram.js';
+import './models/RewardRule.js';
+import './models/PointsMilestone.js';
+import './models/InstallationSubmission.js';
 
 dotenv.config();
 
