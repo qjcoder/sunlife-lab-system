@@ -13,7 +13,7 @@
  * - SERVICE_CENTER: Orange theme
  */
 
-export type UserRole = "FACTORY_ADMIN" | "DEALER" | "SUB_DEALER" | "SERVICE_CENTER" | "DATA_ENTRY_OPERATOR";
+export type UserRole = "FACTORY_ADMIN" | "DEALER" | "SUB_DEALER" | "SERVICE_CENTER" | "DATA_ENTRY_OPERATOR" | "INSTALLER_PROGRAM_MANAGER";
 
 export interface RoleColorScheme {
   // Primary colors
@@ -179,6 +179,31 @@ export const getRoleColorScheme = (role: UserRole): RoleColorScheme => {
         badgeBg: "bg-purple-100 dark:bg-purple-900/30",
         badgeText: "text-purple-700 dark:text-purple-400",
         badgeBorder: "border-purple-200 dark:border-purple-800",
+      };
+    case "INSTALLER_PROGRAM_MANAGER":
+      return {
+        primary: "bg-violet-600",
+        primaryHover: "hover:bg-violet-700",
+        primaryLight: "bg-violet-50",
+        primaryDark: "bg-violet-900",
+        accent: "bg-violet-600",
+        accentHover: "hover:bg-violet-700",
+        accentLight: "bg-violet-50",
+        accentBorder: "border-violet-200",
+        accentText: "text-violet-600",
+        bgGradient: "from-violet-50 via-white to-violet-100",
+        bgGradientLight: "from-violet-50/30 via-white/50 to-violet-100/30",
+        bgGradientDark: "from-violet-900 via-violet-800 to-violet-900",
+        cardHeader: "from-violet-500 via-violet-600 to-violet-700",
+        cardBorder: "border-violet-200/60",
+        buttonPrimary: "from-violet-600 to-violet-700",
+        buttonPrimaryHover: "from-violet-700 to-violet-800",
+        buttonOutline: "border-violet-500 text-violet-600 hover:bg-violet-50",
+        textPrimary: "text-violet-600",
+        textSecondary: "text-violet-700",
+        badgeBg: "bg-violet-100 dark:bg-violet-900/30",
+        badgeText: "text-violet-700 dark:text-violet-400",
+        badgeBorder: "border-violet-200 dark:border-violet-800",
       };
     default:
       return {
