@@ -26,7 +26,7 @@ const AppShell = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex h-screen max-h-screen overflow-hidden w-full bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-screen max-h-screen overflow-hidden w-full bg-slate-50 dark:bg-[#0c0e12]">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -52,7 +52,7 @@ const AppShell = () => {
         <main
           ref={mainRef}
           className={cn(
-            "flex-1 min-h-0 flex flex-col p-3 sm:p-4 md:p-6 bg-white dark:bg-slate-900",
+            "flex-1 min-h-0 flex flex-col p-3 sm:p-4 md:p-6 bg-white dark:bg-slate-900/95 dark:border-l dark:border-slate-800/80",
             isFullHeightPage ? "overflow-hidden" : "overflow-auto"
           )}
         >

@@ -102,6 +102,12 @@ export default function Dashboard() {
     enabled: !!user && rolesWithProductCatalog.includes(user.role),
   });
 
+  // Sync catalog search from URL (e.g. from topbar search: ?search=query)
+  const searchFromUrl = searchParams.get('search');
+  useEffect(() => {
+    if (searchFromUrl != null) setCatalogSearchTerm(searchFromUrl);
+  }, [searchFromUrl]);
+
   // Open variant details dialog when URL has ?model=id (e.g. from "View Full Details" - stay on dashboard)
   const modelIdFromUrl = searchParams.get('model');
   useEffect(() => {
@@ -402,9 +408,9 @@ export default function Dashboard() {
    * - Brand: "Sunlife", ProductLine: "IP65", Variant: "6kW" → "IP65"
    */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100/50 to-blue-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100/50 to-blue-50/40 dark:bg-transparent">
       {/* Header */}
-      <header className="border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm">
+      <header className="border-b border-slate-200/80 dark:border-slate-700/80 bg-white/80 dark:bg-slate-800/60 backdrop-blur-sm">
         <div className="px-4 py-2 sm:px-5 sm:py-2.5 md:px-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <h1 className={PAGE_HEADING_CLASS}>
@@ -413,7 +419,7 @@ export default function Dashboard() {
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-2 text-sm sm:text-base text-slate-600 dark:text-slate-400">
                 <span>Welcome back,</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-slate-700/80">
+                <span className="font-semibold text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-700/80 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-slate-600/80">
                   {user?.name}
                 </span>
               </div>
@@ -450,66 +456,66 @@ export default function Dashboard() {
         {user?.role === 'FACTORY_ADMIN' && (
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
             <>
-              <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-900/80">
+              <Card className="rounded-xl border-slate-200/80 dark:border-slate-700 dark:bg-slate-800/90 shadow-sm hover:shadow-md dark:hover:shadow-none transition-all bg-white">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-2 px-3 sm:pt-3 sm:px-4">
                   <CardTitle className="font-heading text-xs sm:text-sm font-semibold tracking-wide text-slate-600 dark:text-slate-400 truncate pr-1">
                     Total Products
                   </CardTitle>
-                  <div className="rounded-lg bg-slate-100 dark:bg-slate-800 p-1.5 sm:p-2 shrink-0">
-                    <Package className="h-3 w-3 sm:h-4 sm:w-4 text-slate-600 dark:text-slate-400" />
+                  <div className="rounded-lg bg-slate-100 dark:bg-slate-700/80 p-1.5 sm:p-2 shrink-0">
+                    <Package className="h-3 w-3 sm:h-4 sm:w-4 text-slate-600 dark:text-slate-300" />
                   </div>
                 </CardHeader>
                 <CardContent className="px-3 pb-2 sm:px-4 sm:pb-4">
                   <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-slate-900 dark:text-slate-100">
                     {stats.totalInverters.toLocaleString()}
                   </p>
-                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">Registered in system</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-500 mt-0.5 sm:mt-1">Registered in system</p>
                 </CardContent>
               </Card>
-              <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-900/80">
+              <Card className="rounded-xl border-slate-200/80 dark:border-slate-700 dark:bg-slate-800/90 shadow-sm hover:shadow-md dark:hover:shadow-none transition-all bg-white">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-2 px-3 sm:pt-3 sm:px-4">
                   <CardTitle className="font-heading text-xs sm:text-sm font-semibold tracking-wide text-slate-600 dark:text-slate-400 truncate pr-1">
                     Available Stock
                   </CardTitle>
-                  <div className="rounded-lg bg-green-100 dark:bg-green-900/30 p-1.5 sm:p-2 shrink-0">
-                    <Warehouse className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
+                  <div className="rounded-lg bg-green-100 dark:bg-emerald-500/20 p-1.5 sm:p-2 shrink-0">
+                    <Warehouse className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-emerald-400" />
                   </div>
                 </CardHeader>
                 <CardContent className="px-3 pb-2 sm:px-4 sm:pb-4">
-                  <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-green-600 dark:text-green-400">
+                  <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-green-600 dark:text-emerald-400">
                     {stats.availableInverters.toLocaleString()}
                   </p>
-                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">In factory warehouse</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-500 mt-0.5 sm:mt-1">In factory warehouse</p>
                 </CardContent>
               </Card>
-              <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-900/80">
+              <Card className="rounded-xl border-slate-200/80 dark:border-slate-700 dark:bg-slate-800/90 shadow-sm hover:shadow-md dark:hover:shadow-none transition-all bg-white">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-2 px-3 sm:pt-3 sm:px-4">
                   <CardTitle className="font-heading text-xs sm:text-sm font-semibold tracking-wide text-slate-600 dark:text-slate-400 truncate pr-1">
                     Dispatched
                   </CardTitle>
-                  <div className="rounded-lg bg-blue-100 dark:bg-blue-900/30 p-1.5 sm:p-2 shrink-0">
-                    <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
+                  <div className="rounded-lg bg-blue-100 dark:bg-sky-500/20 p-1.5 sm:p-2 shrink-0">
+                    <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-sky-400" />
                   </div>
                 </CardHeader>
                 <CardContent className="px-3 pb-2 sm:px-4 sm:pb-4">
-                  <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-blue-600 dark:text-blue-400">
+                  <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-blue-600 dark:text-sky-400">
                     {stats.dispatchedInverters.toLocaleString()}
                   </p>
-                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">Sent to dealers</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-500 mt-0.5 sm:mt-1">Sent to dealers</p>
                 </CardContent>
               </Card>
-              <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-slate-900/80">
+              <Card className="rounded-xl border-slate-200/80 dark:border-slate-700 dark:bg-slate-800/90 shadow-sm hover:shadow-md dark:hover:shadow-none transition-all bg-white">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-2 px-3 sm:pt-3 sm:px-4">
                   <CardTitle className="font-heading text-xs sm:text-sm font-semibold tracking-wide text-slate-600 dark:text-slate-400 truncate pr-1">
                     Service Centers
                   </CardTitle>
-                  <div className="rounded-lg bg-orange-100 dark:bg-orange-900/30 p-1.5 sm:p-2 shrink-0">
-                    <Building2 className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600 dark:text-orange-400" />
+                  <div className="rounded-lg bg-orange-100 dark:bg-amber-500/20 p-1.5 sm:p-2 shrink-0">
+                    <Building2 className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600 dark:text-amber-400" />
                   </div>
                 </CardHeader>
                 <CardContent className="px-3 pb-2 sm:px-4 sm:pb-4">
-                  <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-orange-600 dark:text-orange-400">–</p>
-                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">Active centers</p>
+                  <p className="text-lg sm:text-2xl lg:text-3xl font-bold tabular-nums text-orange-600 dark:text-amber-400">–</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-500 mt-0.5 sm:mt-1">Active centers</p>
                 </CardContent>
               </Card>
             </>
@@ -519,7 +525,7 @@ export default function Dashboard() {
         {/* Dealer dashboard - quick links (Dealer Stock shown in header top-right) */}
         {user?.role === 'DEALER' && (
           <section className="space-y-6">
-            <Card className="rounded-xl border-2 border-blue-200/80 dark:border-blue-800/50 shadow-md bg-white dark:bg-slate-900/80">
+            <Card className="rounded-xl border-2 border-blue-200/80 dark:border-slate-700 dark:bg-slate-800/90 shadow-md bg-white">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100">Quick actions</CardTitle>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Go to your main areas</p>
@@ -557,7 +563,7 @@ export default function Dashboard() {
         {/* Sub-dealer dashboard - quick links (Dealer Stock shown in header top-right) */}
         {user?.role === 'SUB_DEALER' && (
           <section className="space-y-6">
-            <Card className="rounded-xl border-2 border-green-200/80 dark:border-green-800/50 shadow-md bg-white dark:bg-slate-900/80">
+            <Card className="rounded-xl border-2 border-green-200/80 dark:border-slate-700 dark:bg-slate-800/90 shadow-md bg-white">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100">Quick actions</CardTitle>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Go to your main areas</p>
@@ -587,8 +593,8 @@ export default function Dashboard() {
         {/* Product catalog - roles with access */}
         {models && Array.isArray(models) && models.length > 0 && (
           <section>
-            <Card className="rounded-xl border-slate-200/80 dark:border-slate-700/80 shadow-sm overflow-hidden bg-white dark:bg-slate-900/80">
-              <CardHeader className="shrink-0 flex flex-col sm:flex-row sm:items-start justify-between gap-3 space-y-0 py-4 px-4 sm:px-6 bg-gradient-to-r from-slate-100 via-primary/10 to-slate-100 dark:from-slate-800/80 dark:via-primary/15 dark:to-slate-800/80 border-b border-border rounded-t-xl">
+            <Card className="rounded-xl border-slate-200/80 dark:border-slate-700 shadow-sm overflow-hidden bg-white dark:bg-slate-800/90">
+              <CardHeader className="shrink-0 flex flex-col sm:flex-row sm:items-start justify-between gap-3 space-y-0 py-4 px-4 sm:px-6 bg-gradient-to-r from-slate-100 via-primary/10 to-slate-100 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 dark:border-slate-700 border-b border-border rounded-t-xl">
                 <div className="space-y-0.5 min-w-0">
                   <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
                     <div className="p-1.5 rounded-lg bg-primary/20">
@@ -618,7 +624,7 @@ export default function Dashboard() {
                       placeholder="Search products..."
                       value={catalogSearchTerm}
                       onChange={(e) => setCatalogSearchTerm(e.target.value)}
-                      className="w-full h-9 pl-8 border-2 border-primary/50 bg-gradient-to-r from-primary/5 via-blue-50/50 to-indigo-50/50 dark:from-primary/10 dark:via-blue-950/20 dark:to-indigo-950/20 text-sm placeholder:text-foreground/50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary shadow-sm"
+                      className="w-full h-9 pl-8 border-2 border-primary/50 bg-gradient-to-r from-primary/5 via-blue-50/50 to-indigo-50/50 dark:bg-slate-700/80 dark:border-slate-600 dark:placeholder:text-slate-400 dark:text-slate-100 text-sm placeholder:text-foreground/50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary dark:focus-visible:ring-slate-500 dark:focus-visible:border-slate-500 shadow-sm"
                     />
                   </div>
                 </div>
@@ -779,10 +785,10 @@ export default function Dashboard() {
                                 return (
                                   <div
                                     key={key}
-                                    className="group relative bg-white dark:bg-slate-900 rounded-lg sm:rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200"
+                                    className="group relative bg-white dark:bg-slate-800/80 rounded-lg sm:rounded-xl border border-slate-200/80 dark:border-slate-700 shadow-sm hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800 transition-all duration-200"
                                   >
                                     {/* Image Section */}
-                                    <div className="relative h-28 sm:h-40 md:h-48 bg-slate-50 dark:bg-slate-800/50 overflow-hidden rounded-t-lg sm:rounded-t-xl">
+                                    <div className="relative h-28 sm:h-40 md:h-48 bg-slate-50 dark:bg-slate-700/50 overflow-hidden rounded-t-lg sm:rounded-t-xl">
                                       <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-4">
                                         <img
                                           src={getModelImage(primaryModel)}

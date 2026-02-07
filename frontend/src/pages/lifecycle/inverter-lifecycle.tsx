@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getInverterLifecycle } from '@/api/inverter-api';
@@ -6,8 +6,9 @@ import { getUnitsByModel } from '@/api/model-api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Package, ArrowRight, ArrowLeft, Search } from 'lucide-react';
-import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS, getModelDisplayName } from '@/lib/utils';
+import { Loader2, Package, ArrowRight, ArrowLeft, Search, Scan, History } from 'lucide-react';
+import { PAGE_HEADING_FIRST, PAGE_HEADING_SECOND, PAGE_SUBHEADING_CLASS, getModelDisplayName } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 export default function InverterLifecycle() {
   const { serialNumber } = useParams<{ serialNumber?: string }>();
@@ -15,6 +16,12 @@ export default function InverterLifecycle() {
   const navigate = useNavigate();
   const modelId = searchParams.get('modelId');
   const [serialSearch, setSerialSearch] = useState('');
+  const [scannerMode, setScannerMode] = useState(false);
+  const serialSearchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (scannerMode && serialSearchRef.current) serialSearchRef.current.focus();
+  }, [scannerMode]);
 
   const { data: lifecycleData, isLoading, error } = useQuery({
     queryKey: ['inverter-lifecycle', serialNumber],
@@ -42,7 +49,7 @@ export default function InverterLifecycle() {
       <header className="shrink-0 border-b bg-card">
         <div className="px-4 py-2 sm:px-5 sm:py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-0.5">
-            <h1 className={PAGE_HEADING_CLASS}>Product History</h1>
+            <h1 className="inline"><span className={PAGE_HEADING_FIRST}>Product </span><span className={PAGE_HEADING_SECOND}>History</span></h1>
             <p className={PAGE_SUBHEADING_CLASS}>View full lifecycle of a product by serial number</p>
           </div>
         </div>
@@ -54,25 +61,74 @@ export default function InverterLifecycle() {
   );
 
   const topBar = (
-    <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-      <Button type="button" variant="outline" size="sm" onClick={() => navigate(-1)} className="w-full sm:w-auto shrink-0">
-        <ArrowLeft className="h-3.5 w-3.5 mr-2" />
-        Back
-      </Button>
-      <form onSubmit={handleSerialSearch} className="flex gap-2 w-full sm:flex-1 sm:min-w-0 max-w-full sm:max-w-md">
-        <Input
-          type="text"
-          placeholder="Search by serial..."
-          value={serialSearch}
-          onChange={(e) => setSerialSearch(e.target.value)}
-          className="font-mono flex-1 min-w-0"
-        />
-        <Button type="submit" size="sm" disabled={!serialSearch.trim()} className="shrink-0">
-          <Search className="h-3.5 w-3.5 mr-1" />
-          Go
-        </Button>
-      </form>
-    </div>
+    <Card className="mb-6 border-border/80 shadow-sm overflow-hidden">
+      <CardHeader className="pb-3 pt-4 px-4 sm:px-6 bg-gradient-to-r from-slate-50 to-indigo-50/50 dark:from-slate-800/50 dark:to-indigo-950/30 border-b border-border/60">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/40">
+              <History className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div>
+              <CardTitle className="text-base font-semibold text-foreground">Look up by serial number</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">Scan or type a serial number to view full lifecycle</p>
+            </div>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => navigate(-1)} className="w-full sm:w-auto shrink-0 order-first sm:order-none">
+            <ArrowLeft className="h-3.5 w-3.5 mr-2" />
+            Back
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-4 px-4 sm:px-6 pb-4">
+        <form onSubmit={handleSerialSearch} className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 flex-1 min-w-0">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                ref={serialSearchRef}
+                type="text"
+                placeholder={scannerMode ? 'Scan serial then Enter' : 'Search by serial...'}
+                value={serialSearch}
+                onChange={(e) => setSerialSearch(e.target.value)}
+                className={cn(
+                  'font-mono flex-1 min-w-0 pl-9 h-11 text-base border-2',
+                  scannerMode && 'border-indigo-500 focus-visible:ring-indigo-500/20'
+                )}
+                autoFocus={scannerMode}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={scannerMode ? 'default' : 'outline'}
+                size="sm"
+                className={cn(
+                  'h-11 shrink-0 gap-1.5',
+                  scannerMode && 'bg-indigo-600 hover:bg-indigo-700'
+                )}
+                onClick={() => {
+                  setScannerMode(!scannerMode);
+                  if (!scannerMode) setTimeout(() => serialSearchRef.current?.focus(), 100);
+                }}
+              >
+                <Scan className="h-4 w-4" />
+                {scannerMode ? 'Scanner ON' : 'Enable Scanner'}
+              </Button>
+              <Button type="submit" size="sm" disabled={!serialSearch.trim()} className="h-11 shrink-0 gap-1.5">
+                <Search className="h-4 w-4" />
+                Go
+              </Button>
+            </div>
+          </div>
+        </form>
+        {scannerMode && (
+          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+            <Scan className="h-3.5 w-3.5" />
+            Scanner mode — scan barcode or type serial and press Enter to view lifecycle
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 
   if (!serialNumber) {
@@ -81,14 +137,14 @@ export default function InverterLifecycle() {
       return pageShell(
         <>
           {topBar}
-          <Card className="max-w-2xl">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Full Life Cycle View — Select Unit</CardTitle>
-              <p className="text-sm text-muted-foreground">
+          <Card className="max-w-2xl border-border/80 shadow-sm">
+            <CardHeader className="pb-2 border-b border-border/60">
+              <CardTitle className="text-lg font-semibold">Full life cycle view — select unit</CardTitle>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Model: {getModelDisplayName(model) || `${model.brand} ${model.productLine} ${model.variant}`.trim()} ({model.modelCode})
               </p>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent className="pt-4">
           {unitsLoading ? (
             <div className="flex items-center justify-center p-6 sm:p-8">
               <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin" />
@@ -128,14 +184,25 @@ export default function InverterLifecycle() {
     return pageShell(
       <>
         {topBar}
-        <Card className="max-w-2xl">
-          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
-            <p className="text-sm sm:text-base text-muted-foreground">
-              Enter a serial number above to view its lifecycle, or go back to the previous page.
+        <Card className="max-w-2xl border-border/80 shadow-sm overflow-hidden">
+          <CardContent className="pt-8 pb-8 px-6 sm:px-8 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted/80">
+                <Package className="h-7 w-7 text-muted-foreground" />
+              </div>
+            </div>
+            <p className="text-sm sm:text-base text-foreground font-medium">
+              Enter a serial number above to view its full lifecycle
             </p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-2">
-              Example: SL-TRIAL-001, SLI6K-0001
+            <p className="text-sm text-muted-foreground mt-1">
+              or go back to the previous page
             </p>
+            <div className="mt-6 pt-6 border-t border-border/60">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Example serials</p>
+              <p className="font-mono text-sm text-foreground/90 bg-muted/50 rounded-lg px-4 py-2.5 inline-block">
+                SL-TRIAL-001, SLI6K-0001
+              </p>
+            </div>
           </CardContent>
         </Card>
       </>
@@ -157,10 +224,10 @@ export default function InverterLifecycle() {
     return pageShell(
       <>
         {topBar}
-        <Card className="max-w-2xl">
-          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
-            <p className="text-sm sm:text-base text-destructive break-words">
-              Failed to load inverter lifecycle: {error instanceof Error ? error.message : 'Unknown error'}
+        <Card className="max-w-2xl border-destructive/30 shadow-sm">
+          <CardContent className="pt-6 pb-6 px-6 sm:px-8">
+            <p className="text-sm sm:text-base text-destructive break-words font-medium">
+              Failed to load lifecycle: {error instanceof Error ? error.message : 'Unknown error'}
             </p>
           </CardContent>
         </Card>
@@ -173,9 +240,9 @@ export default function InverterLifecycle() {
     return pageShell(
       <>
         {topBar}
-        <Card className="max-w-2xl">
-          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
-            <p className="text-sm sm:text-base text-muted-foreground">No data available</p>
+        <Card className="max-w-2xl border-border/80 shadow-sm">
+          <CardContent className="pt-6 pb-6 px-6 sm:px-8">
+            <p className="text-sm sm:text-base text-muted-foreground">No lifecycle data available for this serial.</p>
           </CardContent>
         </Card>
       </>

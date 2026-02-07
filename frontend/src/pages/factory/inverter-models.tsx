@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Boxes, Shield, Calendar, Upload, Zap, Battery, Settings, Tag, Hash, Loader2, CheckCircle2, Trash2, Image as ImageIcon, FileText, X, BookOpen, Video, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Boxes, Shield, Calendar, Upload, Zap, Battery, Settings, Tag, Hash, Loader2, CheckCircle2, Trash2, Image as ImageIcon, FileText, X, BookOpen, Video, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS, getModelDisplayName } from '@/lib/utils';
 import { getProductImageWithHandler } from '@/lib/image-utils';
@@ -145,11 +145,13 @@ export default function InverterModels() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ modelId: string; modelName: string } | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<'inverter' | 'battery' | 'vfd' | null>(null);
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const queryClient = useQueryClient();
   const createImageInputRef = useRef<HTMLInputElement>(null);
   const createDatasheetInputRef = useRef<HTMLInputElement>(null);
   const editImageInputRef = useRef<HTMLInputElement>(null);
   const editDatasheetInputRef = useRef<HTMLInputElement>(null);
+  const categorySearchInputRef = useRef<HTMLInputElement>(null);
 
   // Lock page scroll so only the form card scrolls (zero page scrolling)
   useEffect(() => {
@@ -293,6 +295,27 @@ export default function InverterModels() {
       vfd: sortCategoryModels(vfd),
     };
   }, [models]);
+
+  // Filter category models by search when viewing a category
+  const filteredCategoryModels = useMemo(() => {
+    const q = categorySearchQuery.trim().toLowerCase();
+    if (!q) return categorizedModels;
+    const match = (m: InverterModel) => {
+      const text = [
+        getModelDisplayName(m),
+        m.modelCode,
+        m.brand,
+        m.variant,
+        m.productLine,
+      ].filter(Boolean).join(' ').toLowerCase();
+      return text.includes(q);
+    };
+    return {
+      inverter: categorizedModels.inverter.filter(match),
+      battery: categorizedModels.battery.filter(match),
+      vfd: categorizedModels.vfd.filter(match),
+    };
+  }, [categorizedModels, categorySearchQuery]);
 
   const createMutation = useMutation({
     mutationFn: createModel,
@@ -1827,31 +1850,61 @@ export default function InverterModels() {
         </Card>
       ) : (
         <div className="space-y-6">
-          <Button type="button" variant="outline" onClick={() => setSelectedCategory(null)} className="gap-2">
-            <ChevronLeft className="h-3.5 w-3.5" />
-            Back to categories
-          </Button>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { setSelectedCategory(null); setCategorySearchQuery(''); }}
+              className="gap-2 w-full sm:w-auto shrink-0"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Back to categories
+            </Button>
+            <div className="flex gap-2 flex-1 min-w-0 max-w-md sm:ml-auto">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  ref={categorySearchInputRef}
+                  type="search"
+                  placeholder="Search models..."
+                  value={categorySearchQuery}
+                  onChange={(e) => setCategorySearchQuery(e.target.value)}
+                  className="pl-9 h-9 bg-background"
+                />
+              </div>
+              <Button type="button" variant="secondary" size="sm" className="h-9 shrink-0 gap-1.5" onClick={() => categorySearchInputRef.current?.focus()}>
+                <Search className="h-4 w-4" />
+                Search
+              </Button>
+            </div>
+          </div>
           {selectedCategory === 'inverter' && renderCategorySection(
             'inverter',
-            categorizedModels.inverter,
+            filteredCategoryModels.inverter,
             <Zap className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />,
             'Inverters',
             'bg-blue-100 dark:bg-blue-900/30'
           )}
           {selectedCategory === 'battery' && renderCategorySection(
             'battery',
-            categorizedModels.battery,
+            filteredCategoryModels.battery,
             <Battery className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />,
             'Batteries',
             'bg-green-100 dark:bg-green-900/30'
           )}
           {selectedCategory === 'vfd' && renderCategorySection(
             'vfd',
-            categorizedModels.vfd,
+            filteredCategoryModels.vfd,
             <Settings className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />,
             'VFD (Variable Frequency Drives)',
             'bg-orange-100 dark:bg-orange-900/30'
           )}
+          {categorySearchQuery.trim() && selectedCategory && (() => {
+            const list = selectedCategory === 'inverter' ? filteredCategoryModels.inverter : selectedCategory === 'battery' ? filteredCategoryModels.battery : filteredCategoryModels.vfd;
+            return list.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No models match your search. Try a different term.</p>
+            ) : null;
+          })()}
         </div>
       ))}
 

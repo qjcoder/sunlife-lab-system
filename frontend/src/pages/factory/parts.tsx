@@ -591,13 +591,13 @@ export default function CreateParts() {
                     </CardTitle>
                     <CardDescription className="text-sm mt-0.5">Click a model to see all parts, or filter with search above.</CardDescription>
                   </CardHeader>
-                  <CardContent className="p-0">
+                  <CardContent className="p-0 flex flex-col min-h-0">
                     {filteredDrillModels.length === 0 ? (
                       <p className="text-sm text-muted-foreground py-6 px-4 text-center">
                         {q ? 'No models match your search.' : 'No models in this category.'}
                       </p>
                     ) : (
-                    <div className="rounded-lg border border-border/70 overflow-hidden bg-card/90">
+                    <div className="rounded-lg border border-border/70 overflow-hidden bg-card/90 max-h-[min(60vh,28rem)] overflow-y-auto">
                       <Table>
                         <TableHeader>
                           <TableRow className="hover:bg-transparent border-b border-border bg-muted/50">
