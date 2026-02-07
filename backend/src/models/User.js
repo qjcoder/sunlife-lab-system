@@ -18,11 +18,21 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
+    /** Login: Admin uses email (Gmail, Outlook); other roles use username */
     email: {
       type: String,
-      required: true,
+      required: false,
       unique: true,
+      sparse: true,
       lowercase: true,
+      trim: true,
+    },
+
+    username: {
+      type: String,
+      required: false,
+      unique: true,
+      sparse: true,
       trim: true,
     },
 

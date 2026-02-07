@@ -127,7 +127,7 @@ export default function SubDealers() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Registered Sub-Dealers ({subDealers.length})</CardTitle>
+            <CardTitle>Registered Sub-Dealers</CardTitle>
           </CardHeader>
           <CardContent>
             {subDealers.length === 0 ? (

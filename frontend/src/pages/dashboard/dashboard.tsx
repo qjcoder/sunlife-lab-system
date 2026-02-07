@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getFactoryStock, getDealerStock } from '@/api/stock-api';
 import { listServiceJobs } from '@/api/service-api';
 import { listModels } from '@/api/model-api';
-import { Warehouse, Package, Wrench, TrendingUp, Building2, Sun, Battery, Gauge, Settings, Shield, Calendar, Hash, Tag, Eye, ArrowRight, ArrowLeft, X, FileText, BookOpen, Video, Users, ArrowRightLeft, ShoppingCart, FileDown, Printer, Search } from 'lucide-react';
+import { Warehouse, Package, Wrench, TrendingUp, Building2, Sun, Battery, Gauge, Settings, Shield, Calendar, Hash, Tag, Eye, ArrowRight, ArrowLeft, X, FileText, BookOpen, Video, Users, ArrowRightLeft, ShoppingCart, FileDown, Search } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -605,25 +605,12 @@ export default function Dashboard() {
                     size="sm"
                     className="gap-1.5 h-9 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white border-0 shadow-md hover:shadow-lg font-semibold transition-all shrink-0"
                     onClick={() => {
-                      downloadCatalogPdf(models);
-                      toast.success('Product catalog downloaded as PDF');
+                      downloadCatalogPdf(models, false, true);
+                      toast.success('Product catalog downloaded and opened for print');
                     }}
                   >
                     <FileDown className="h-3.5 w-3.5" />
                     Download PDF
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 h-9 border-slate-300 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700 font-semibold transition-all shrink-0"
-                    onClick={() => {
-                      downloadCatalogPdf(models, true);
-                      toast.success('Opening product catalog for print');
-                    }}
-                  >
-                    <Printer className="h-3.5 w-3.5" />
-                    Print
                   </Button>
                   <div className="relative w-full min-w-0 sm:w-40 md:w-56 basis-full sm:basis-auto">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />

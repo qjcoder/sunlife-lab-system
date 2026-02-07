@@ -11,24 +11,24 @@ import User from "../models/User.js";
 
 export const createInstallerProgramManager = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, username, password } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !username || !password) {
       return res.status(400).json({
-        message: "name, email, and password are required",
+        message: "name, username, and password are required",
       });
     }
 
-    const existing = await User.findOne({ email });
+    const existing = await User.findOne({ username });
     if (existing) {
       return res.status(409).json({
-        message: "User with this email already exists",
+        message: "User with this username already exists",
       });
     }
 
     const user = new User({
       name,
-      email,
+      username,
       role: "INSTALLER_PROGRAM_MANAGER",
       active: true,
     });
@@ -41,7 +41,7 @@ export const createInstallerProgramManager = async (req, res) => {
       installerProgramManager: {
         id: user._id,
         name: user.name,
-        email: user.email,
+        username: user.username,
         role: user.role,
       },
     });
@@ -56,7 +56,7 @@ export const createInstallerProgramManager = async (req, res) => {
 export const listInstallerProgramManagers = async (req, res) => {
   try {
     const users = await User.find({ role: "INSTALLER_PROGRAM_MANAGER" })
-      .select("name email role active createdAt")
+      .select("name email username role active createdAt")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -64,6 +64,7 @@ export const listInstallerProgramManagers = async (req, res) => {
       installerProgramManagers: users.map((u) => ({
         id: u._id,
         name: u.name,
+        username: u.username,
         email: u.email,
         role: u.role,
         active: u.active,

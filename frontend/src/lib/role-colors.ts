@@ -209,6 +209,23 @@ export const getRoleColorScheme = (role: UserRole): RoleColorScheme => {
 };
 
 /**
+ * Display name for role in UI. Script-created admin (FACTORY_ADMIN with email) shows as "Super Admin".
+ */
+export const getRoleDisplayName = (
+  role: string,
+  email?: string | null,
+  isSuperAdmin?: boolean
+): string => {
+  if (role === "FACTORY_ADMIN" && (isSuperAdmin || (email && email.includes("@")))) {
+    return "Super Admin";
+  }
+  return role
+    .split("_")
+    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
+/**
  * Get Tailwind classes for role-based styling
  */
 export const getRoleClasses = {

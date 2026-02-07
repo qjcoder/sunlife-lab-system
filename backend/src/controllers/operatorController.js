@@ -34,27 +34,27 @@ import User from "../models/User.js";
  */
 export const createOperator = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, username, password } = req.body;
 
     // 1️⃣ Validate input
-    if (!name || !email || !password) {
+    if (!name || !username || !password) {
       return res.status(400).json({
-        message: "name, email, and password are required",
+        message: "name, username, and password are required",
       });
     }
 
-    // 2️⃣ Prevent duplicate email
-    const existing = await User.findOne({ email });
+    // 2️⃣ Prevent duplicate username
+    const existing = await User.findOne({ username });
     if (existing) {
       return res.status(409).json({
-        message: "User with this email already exists",
+        message: "User with this username already exists",
       });
     }
 
     // 3️⃣ Create operator user
     const user = new User({
       name,
-      email,
+      username,
       role: "DATA_ENTRY_OPERATOR",
       active: true,
     });
@@ -67,7 +67,7 @@ export const createOperator = async (req, res) => {
       operator: {
         id: user._id,
         name: user.name,
-        email: user.email,
+        username: user.username,
         role: user.role,
       },
     });
@@ -92,7 +92,7 @@ export const listOperators = async (req, res) => {
     const operators = await User.find({
       role: "DATA_ENTRY_OPERATOR",
     })
-      .select("name email role active createdAt")
+      .select("name email username role active createdAt")
       .sort({ createdAt: -1 }); // Newest first
 
     return res.status(200).json({
@@ -100,6 +100,7 @@ export const listOperators = async (req, res) => {
       operators: operators.map((op) => ({
         id: op._id,
         name: op.name,
+        username: op.username,
         email: op.email,
         role: op.role,
         active: op.active,

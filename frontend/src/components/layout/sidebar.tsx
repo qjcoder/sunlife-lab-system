@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "@/store/auth-store";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
-import { getRoleColorScheme } from "@/lib/role-colors";
+import { getRoleColorScheme, getRoleDisplayName } from "@/lib/role-colors";
 import {
   Users,
   Building2,
@@ -29,6 +29,8 @@ type NavItem = {
   roles: string[];
   icon: React.ComponentType<{ className?: string }>;
   section?: string;
+  /** If true, only Super Admin (script-created) sees this item */
+  superAdminOnly?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -40,7 +42,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Product Serial Entry", path: "/factory/inverter-registration", roles: ["FACTORY_ADMIN"], icon: PackagePlus, section: "MAIN MENU" },
   { label: "Factory Stock", path: "/factory/stock", roles: ["FACTORY_ADMIN"], icon: Warehouse, section: "MAIN MENU" },
   { label: "Product Dispatch", path: "/factory/dispatch", roles: ["FACTORY_ADMIN"], icon: Truck, section: "MAIN MENU" },
-  { label: "Account Creation", path: "/factory/account-creation", roles: ["FACTORY_ADMIN"], icon: UserCog, section: "MAIN MENU" },
+  { label: "Account Creation", path: "/factory/admins", roles: ["FACTORY_ADMIN"], icon: UserCog, section: "MAIN MENU", superAdminOnly: true },
   { label: "Service Center Parts Dispatch", path: "/factory/part-dispatch", roles: ["FACTORY_ADMIN"], icon: Package, section: "MAIN MENU" },
 
   /* -------- DEALER (workflow: stock → sales → sub-dealers → transfer) -------- */
@@ -65,13 +67,6 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 
-const formatRoleName = (role: string) => {
-  return role
-    .split("_")
-    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(" ");
-};
-
 interface SidebarProps {
   onClose?: () => void;
 }
@@ -81,7 +76,10 @@ const Sidebar = ({ onClose }: SidebarProps) => {
 
   if (!user) return null;
 
-  const filteredItems = NAV_ITEMS.filter((item) => item.roles.includes(user.role));
+  const isSuperAdmin = user.isSuperAdmin ?? !!(user.email && user.email.includes("@"));
+  const filteredItems = NAV_ITEMS.filter(
+    (item) => item.roles.includes(user.role) && (!item.superAdminOnly || isSuperAdmin)
+  );
   const colors = getRoleColorScheme(user.role);
 
   return (
@@ -102,7 +100,7 @@ const Sidebar = ({ onClose }: SidebarProps) => {
               colors.badgeBorder
             )}
           >
-            {formatRoleName(user.role)}
+            {getRoleDisplayName(user.role, user.email, user.isSuperAdmin)}
           </span>
         </div>
       </div>

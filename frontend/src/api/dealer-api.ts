@@ -18,7 +18,7 @@ import api from './axios';
 
 export interface CreateDealerRequest {
   name: string;
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -27,14 +27,14 @@ export interface CreateDealerResponse {
   dealer: {
     id: string;
     name: string;
-    email: string;
+    username: string;
     role: string;
   };
 }
 
 export interface CreateSubDealerRequest {
   name: string;
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -43,7 +43,7 @@ export interface CreateSubDealerResponse {
   subDealer: {
     id: string;
     name: string;
-    email: string;
+    username: string;
     role: string;
     parentDealer: string;
   };
@@ -53,7 +53,8 @@ export interface DealerHierarchyNode {
   dealer: {
     id: string;
     name: string;
-    email: string;
+    email?: string;
+    username?: string;
   };
   subDealers: DealerHierarchyNode[];
 }
@@ -76,7 +77,8 @@ export const getDealerHierarchy = async (): Promise<DealerHierarchyNode[]> => {
 export interface Dealer {
   id: string;
   name: string;
-  email: string;
+  username?: string;
+  email?: string;
   role: string;
   active: boolean;
   createdAt: string;

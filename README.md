@@ -133,7 +133,8 @@ sunlife-lab-software/
 │   │       ├── upload.js          # Image upload config
 │   │       └── upload-pdf.js     # PDF upload config
 │   ├── scripts/                   # Utility scripts
-│   │   ├── createAdmin.js
+│   │   ├── resetUsersAndCreateSuperAdmin.js
+│   │   ├── resetSuperAdminPassword.js
 │   │   ├── seedModels.js
 │   │   └── ...
 │   └── package.json
@@ -215,13 +216,25 @@ sunlife-lab-software/
    VITE_API_URL=http://localhost:5000
    ```
 
-4. **Database Setup**
+4. **Create Super Admin (removes all users, creates only Super Admin)**  
+   From the backend folder, run:
    ```bash
-   # Make sure MongoDB is running
-   # Create admin user (optional)
    cd backend
-   node scripts/createAdmin.js
+   # Default: admin@sunlife.com / password
+   npm run create-admin
+
+   # With your email (e.g. Gmail, Outlook)
+   ADMIN_NAME="Your Name" ADMIN_EMAIL=yourname@gmail.com ADMIN_PASSWORD=YourSecurePassword npm run create-admin
    ```
+   This deletes all users in MongoDB and creates a single Super Admin. Log in with that email and password.
+
+   **Recover Super Admin (forgot password)**  
+   If the Super Admin forgets their password, run this from the backend folder (no users are deleted):
+   ```bash
+   cd backend
+   ADMIN_EMAIL=yourname@gmail.com ADMIN_PASSWORD=YourNewPassword npm run reset-super-admin-password
+   ```
+   You must know the Super Admin’s email. Then log in with that email and the new password.
 
 5. **Seed Initial Data (Optional)**
    ```bash
@@ -615,8 +628,9 @@ Currently, manual testing is used. Future plans include:
 
 - `npm run dev` - Start development server with hot reload
 - `npm start` - Start production server
-- `node scripts/createAdmin.js` - Create admin user
-- `node scripts/seedModels.js` - Seed initial product models
+- `npm run create-admin` - Remove all users and create only Super Admin
+- `npm run reset-super-admin-password` - Recover Super Admin: set new password by email (no user deletion)
+- `npm run seed-models` - Seed initial product models
 
 ### Frontend Scripts
 

@@ -16,7 +16,7 @@ import api from './axios';
 
 export interface CreateServiceCenterRequest {
   name: string;
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -25,7 +25,7 @@ export interface CreateServiceCenterResponse {
   serviceCenter: {
     id: string;
     name: string;
-    email: string;
+    username: string;
     role: string;
   };
 }
@@ -38,7 +38,8 @@ export const createServiceCenter = async (data: CreateServiceCenterRequest): Pro
 export interface ServiceCenter {
   id: string;
   name: string;
-  email: string;
+  username?: string;
+  email?: string;
   role: string;
   active: boolean;
   createdAt: string;

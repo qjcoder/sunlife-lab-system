@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
-import { Loader2, Scan, Upload, X, Truck, Hash, Building2, Box, CheckCircle2, Sun, Battery, Gauge, FileDown, Search, Printer } from 'lucide-react';
+import { Loader2, Scan, Upload, X, Truck, Hash, Building2, Box, CheckCircle2, Sun, Battery, Gauge, FileDown, Search } from 'lucide-react';
 import { cn, PAGE_HEADING_FIRST, PAGE_HEADING_SECOND, PAGE_SUBHEADING_CLASS, categorizeModel, getModelDisplayName, getVariantDisplay, sortModelsByPowerAndActive, extractPowerRating } from '@/lib/utils';
 import { downloadDispatchPdf } from '@/lib/dispatch-pdf';
 
@@ -411,6 +411,8 @@ export default function FactoryDispatch() {
     downloadDispatchPdf(details, openForPrint, alsoOpenForPrint);
     if (openForPrint) {
       toast.success('Opening dispatch details for print');
+    } else if (alsoOpenForPrint) {
+      toast.success('Dispatch PDF downloaded and opened for print');
     } else {
       toast.success('Dispatch details PDF downloaded');
     }
@@ -525,22 +527,11 @@ export default function FactoryDispatch() {
                 variant="outline"
                 size="sm"
                 className="border-amber-500/60 text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 dark:border-amber-400/50 dark:text-amber-300 dark:bg-amber-500/20 dark:hover:bg-amber-500/30"
-                onClick={() => handleDispatchPdf(false)}
+                onClick={() => handleDispatchPdf(false, true)}
                 disabled={!watch('dealer')?.trim() || (dispatchMode === 'bulk' ? bulkSerialsFromText.length === 0 : selectedSerials.length === 0)}
               >
                 <FileDown className="h-3.5 w-3.5 mr-1.5" />
                 Download PDF
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="border-slate-300 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700 font-semibold"
-                onClick={() => handleDispatchPdf(true)}
-                disabled={!watch('dealer')?.trim() || (dispatchMode === 'bulk' ? bulkSerialsFromText.length === 0 : selectedSerials.length === 0)}
-              >
-                <Printer className="h-3.5 w-3.5 mr-1.5" />
-                Print
               </Button>
             </div>
           </CardHeader>

@@ -1,5 +1,5 @@
 import express from "express";
-import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
+import { requireAuth, requireRole, requireSuperAdmin } from "../middleware/authMiddleware.js";
 import { createOperator, listOperators, deleteOperator } from "../controllers/operatorController.js";
 
 const router = express.Router();
@@ -12,13 +12,13 @@ const router = express.Router();
  * All routes require FACTORY_ADMIN role
  */
 
-// POST /api/operators - Create a new data entry operator
-router.post("/", requireAuth, requireRole("FACTORY_ADMIN"), createOperator);
+// POST /api/operators - Super Admin only
+router.post("/", requireAuth, requireRole("FACTORY_ADMIN"), requireSuperAdmin, createOperator);
 
-// GET /api/operators - List all data entry operators
-router.get("/", requireAuth, requireRole("FACTORY_ADMIN"), listOperators);
+// GET /api/operators - Super Admin only
+router.get("/", requireAuth, requireRole("FACTORY_ADMIN"), requireSuperAdmin, listOperators);
 
-// DELETE /api/operators/:id - Delete a data entry operator
-router.delete("/:id", requireAuth, requireRole("FACTORY_ADMIN"), deleteOperator);
+// DELETE /api/operators/:id - Super Admin only
+router.delete("/:id", requireAuth, requireRole("FACTORY_ADMIN"), requireSuperAdmin, deleteOperator);
 
 export default router;

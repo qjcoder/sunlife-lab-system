@@ -11,7 +11,7 @@ import { Mail, Lock, Building2, Users, Wrench, User, ClipboardList, FileEdit } f
 import { useState, useEffect, useRef } from "react";
 
 type FormData = {
-  email: string;
+  emailOrUsername: string;
   password: string;
   rememberMe?: boolean;
 };
@@ -132,7 +132,7 @@ const Login = () => {
   const [isCheckingRole, setIsCheckingRole] = useState(false);
   const checkRoleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  const emailValue = watch("email");
+  const emailOrUsernameValue = watch("emailOrUsername");
 
   // Redirect if already logged in
   useEffect(() => {
@@ -148,8 +148,8 @@ const Login = () => {
       clearTimeout(checkRoleTimeoutRef.current);
     }
 
-    // Only check if email is valid and not empty
-    if (!emailValue || !emailValue.includes('@')) {
+    // Only check role when input looks like email (Admin uses Gmail/Outlook etc.)
+    if (!emailOrUsernameValue || !emailOrUsernameValue.includes('@')) {
       return;
     }
 
@@ -157,7 +157,7 @@ const Login = () => {
     checkRoleTimeoutRef.current = setTimeout(async () => {
       try {
         setIsCheckingRole(true);
-        const result = await checkRoleApi({ email: emailValue });
+        const result = await checkRoleApi({ email: emailOrUsernameValue });
         if (result.role && result.active) {
           setSelectedRole(result.role as RoleType);
         }
@@ -174,11 +174,14 @@ const Login = () => {
         clearTimeout(checkRoleTimeoutRef.current);
       }
     };
-  }, [emailValue]);
+  }, [emailOrUsernameValue]);
 
   const onSubmit = async (data: FormData) => {
     try {
-      const res = await loginApi(data);
+      const loginPayload = data.emailOrUsername.includes('@')
+        ? { email: data.emailOrUsername, password: data.password }
+        : { username: data.emailOrUsername, password: data.password };
+      const res = await loginApi(loginPayload);
       const role = res.user.role as RoleType;
       
       // Auto-select the correct role if it doesn't match (silently)
@@ -227,11 +230,11 @@ const Login = () => {
         
         if (status === 400) {
           errorTitle = "Missing Information";
-          errorMessage = backendMessage || "Email and password are required. Please fill in all fields and try again.";
+          errorMessage = backendMessage || "Email/username and password are required. Please fill in all fields and try again.";
         } else if (status === 401) {
           // Generic message for all auth failures (security: don't reveal email vs password)
           errorTitle = "Invalid Credentials";
-          errorMessage = "The email or password you entered is incorrect. Please try again.";
+          errorMessage = "The email/username or password you entered is incorrect. Please try again.";
           
           // If we detected a role, auto-select it silently
           if (detectedRole) {
@@ -242,7 +245,7 @@ const Login = () => {
           errorMessage = backendMessage || "Your account may be inactive or you don't have permission to access this system. Please contact your administrator.";
         } else if (status === 404) {
           errorTitle = "Account Not Found";
-          errorMessage = backendMessage || "No account found with this email address. Please check your email and try again.";
+          errorMessage = backendMessage || "No account found with this email or username. Please check and try again.";
         } else if (status === 500) {
           errorTitle = "Server Error";
           errorMessage = backendMessage || "We're sorry! Something went wrong, and we were unable to complete your request. Please try again later.";
@@ -410,26 +413,23 @@ const Login = () => {
             }} 
             className="space-y-6"
           >
-            {/* Email */}
+            {/* Email or Username (Admin: Gmail/Outlook etc.; others: username) */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                Email Address
+              <Label htmlFor="emailOrUsername" className="text-sm font-medium text-gray-700">
+                Email or username
               </Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  {...register("email", { 
-                    required: "Email is required",
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: "Invalid email address"
-                    }
+                  id="emailOrUsername"
+                  type="text"
+                  autoComplete="username"
+                  placeholder="Admin: your@email.com / Others: username"
+                  {...register("emailOrUsername", { 
+                    required: "Email or username is required",
                   })}
                   className={`pl-10 h-12 border-gray-300 bg-white text-gray-900 ${
-                    errors.email ? "border-red-500" : ""
+                    errors.emailOrUsername ? "border-red-500" : ""
                   } ${
                     selectedRole === "FACTORY_ADMIN" ? "focus:border-red-500 focus:ring-red-500" :
                     selectedRole === "DEALER" ? "focus:border-blue-500 focus:ring-blue-500" :
@@ -443,8 +443,8 @@ const Login = () => {
                 {isCheckingRole && (
                   <p className="text-xs text-muted-foreground mt-1">Checking role...</p>
                 )}
-                {errors.email && (
-                  <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
+                {errors.emailOrUsername && (
+                  <p className="text-sm text-red-600 mt-1">{errors.emailOrUsername.message}</p>
                 )}
               </div>
             </div>
@@ -520,13 +520,6 @@ const Login = () => {
               {isSubmitting ? "Signing in..." : "Sign in"}
             </Button>
 
-            {/* Sign Up Link */}
-            <p className="text-center text-sm text-gray-700">
-              Don't have an account?{" "}
-              <a href="#" className={`${config.accentText} hover:opacity-80 font-medium`}>
-                Sign up
-              </a>
-            </p>
           </form>
         </div>
       </div>

@@ -17,20 +17,29 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Users, Calendar, Mail, Scan, Trash2 } from 'lucide-react';
+import { Users, Calendar, Mail, Scan, Trash2, KeyRound, Loader2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { resetPassword as apiResetPassword } from '@/api/auth-api';
+import { useAuth } from '@/store/auth-store';
 import { PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 
 const operatorSchema = z.object({
   name: z.string().min(1, 'Operator name is required'),
-  email: z.string().email('Invalid email address'),
+  username: z.string().min(1, 'Username is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 type OperatorFormData = z.infer<typeof operatorSchema>;
 
 export default function Operators() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.isSuperAdmin ?? !!(user?.email && user.email.includes('@'));
   const [deletingOperatorId, setDeletingOperatorId] = useState<string | null>(null);
+  const [resetPasswordTarget, setResetPasswordTarget] = useState<{ id: string; name: string } | null>(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState('');
+  const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
+  const [resetPasswordSubmitting, setResetPasswordSubmitting] = useState(false);
   const queryClient = useQueryClient();
   const {
     register,
@@ -123,10 +132,10 @@ export default function Operators() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" {...register('email')} placeholder="operator@sunlife.com" />
-                {errors.email && (
-                  <p className="text-sm text-destructive">{errors.email.message}</p>
+                <Label htmlFor="username">Username</Label>
+                <Input id="username" {...register('username')} placeholder="Operator username" />
+                {errors.username && (
+                  <p className="text-sm text-destructive">{errors.username.message}</p>
                 )}
               </div>
 
@@ -149,7 +158,7 @@ export default function Operators() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-              Registered Operators ({operators.length})
+              Registered Operators
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -163,7 +172,7 @@ export default function Operators() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead>Username (Email)</TableHead>
+                      <TableHead>Username</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -175,7 +184,7 @@ export default function Operators() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Mail className="h-3 w-3 text-slate-400" />
-                            <span className="text-sm">{op.email}</span>
+                            <span className="text-sm">{op.username || op.email || '—'}</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -191,6 +200,17 @@ export default function Operators() {
                           </div>
                         </TableCell>
                         <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setResetPasswordTarget({ id: op.id, name: op.name })}
+                              className="text-slate-600 hover:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                              aria-label="Reset password"
+                            >
+                              <KeyRound className="h-3.5 w-3.5" />
+                            </Button>
+{isSuperAdmin && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -199,6 +219,8 @@ export default function Operators() {
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
+                          )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -223,6 +245,53 @@ export default function Operators() {
           variant="danger"
         />
       )}
+
+      {/* Reset password dialog */}
+      <Dialog open={!!resetPasswordTarget} onOpenChange={(open) => { if (!open) { setResetPasswordTarget(null); setResetPasswordValue(''); setResetPasswordConfirm(''); } }}>
+        <DialogContent onClose={() => { setResetPasswordTarget(null); setResetPasswordValue(''); setResetPasswordConfirm(''); }}>
+          <DialogHeader>
+            <DialogTitle>Reset password</DialogTitle>
+          </DialogHeader>
+          {resetPasswordTarget && (
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">Set a new password for <strong>{resetPasswordTarget.name}</strong>.</p>
+              <div className="space-y-2">
+                <Label htmlFor="reset-new-password">New password</Label>
+                <Input id="reset-new-password" type="password" value={resetPasswordValue} onChange={(e) => setResetPasswordValue(e.target.value)} placeholder="Min 6 characters" autoComplete="new-password" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reset-confirm-password">Confirm password</Label>
+                <Input id="reset-confirm-password" type="password" value={resetPasswordConfirm} onChange={(e) => setResetPasswordConfirm(e.target.value)} placeholder="Confirm new password" autoComplete="new-password" />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => { setResetPasswordTarget(null); setResetPasswordValue(''); setResetPasswordConfirm(''); }}>Cancel</Button>
+                <Button
+                  onClick={async () => {
+                    if (!resetPasswordTarget) return;
+                    if (resetPasswordValue.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+                    if (resetPasswordValue !== resetPasswordConfirm) { toast.error('Passwords do not match'); return; }
+                    setResetPasswordSubmitting(true);
+                    try {
+                      await apiResetPassword(resetPasswordTarget.id, resetPasswordValue);
+                      toast.success('Password reset successfully');
+                      setResetPasswordTarget(null);
+                      setResetPasswordValue('');
+                      setResetPasswordConfirm('');
+                    } catch (e: any) {
+                      toast.error(e.response?.data?.message || 'Failed to reset password');
+                    } finally {
+                      setResetPasswordSubmitting(false);
+                    }
+                  }}
+                  disabled={resetPasswordSubmitting}
+                >
+                  {resetPasswordSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reset password'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

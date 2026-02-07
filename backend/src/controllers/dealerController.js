@@ -24,18 +24,18 @@ import User from "../models/User.js";
  */
 export const createDealer = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, username, password } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !username || !password) {
       return res.status(400).json({
-        message: "name, email, and password are required",
+        message: "name, username, and password are required",
       });
     }
 
-    const existing = await User.findOne({ email });
+    const existing = await User.findOne({ username });
     if (existing) {
       return res.status(409).json({
-        message: "User with this email already exists",
+        message: "User with this username already exists",
       });
     }
 
@@ -43,7 +43,7 @@ export const createDealer = async (req, res) => {
 
     const dealer = await User.create({
       name,
-      email,
+      username,
       passwordHash,
       role: "DEALER",
       parentDealer: null, // ✅ main dealer
@@ -55,7 +55,7 @@ export const createDealer = async (req, res) => {
       dealer: {
         id: dealer._id,
         name: dealer.name,
-        email: dealer.email,
+        username: dealer.username,
         role: dealer.role,
       },
     });
@@ -81,7 +81,7 @@ export const createDealer = async (req, res) => {
  */
 export const createSubDealer = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, username, password } = req.body;
 
     // Must be dealer
     if (req.user.role !== "DEALER") {
@@ -97,16 +97,16 @@ export const createSubDealer = async (req, res) => {
       });
     }
 
-    if (!name || !email || !password) {
+    if (!name || !username || !password) {
       return res.status(400).json({
-        message: "name, email, and password are required",
+        message: "name, username, and password are required",
       });
     }
 
-    const existing = await User.findOne({ email });
+    const existing = await User.findOne({ username });
     if (existing) {
       return res.status(409).json({
-        message: "User with this email already exists",
+        message: "User with this username already exists",
       });
     }
 
@@ -114,7 +114,7 @@ export const createSubDealer = async (req, res) => {
 
     const subDealer = await User.create({
       name,
-      email,
+      username,
       passwordHash,
       role: "SUB_DEALER",
       parentDealer: req.user.userId, // ✅ ObjectId link
@@ -126,7 +126,7 @@ export const createSubDealer = async (req, res) => {
       subDealer: {
         id: subDealer._id,
         name: subDealer.name,
-        email: subDealer.email,
+        username: subDealer.username,
         role: subDealer.role,
         parentDealer: subDealer.parentDealer,
       },
@@ -153,7 +153,7 @@ export const listDealers = async (req, res) => {
       role: "DEALER",
       parentDealer: null, // Only main dealers
     })
-      .select("name email role active createdAt")
+      .select("name email username role active createdAt")
       .sort({ createdAt: -1 }); // Newest first
 
     return res.status(200).json({
@@ -161,6 +161,7 @@ export const listDealers = async (req, res) => {
       dealers: dealers.map((dealer) => ({
         id: dealer._id,
         name: dealer.name,
+        username: dealer.username,
         email: dealer.email,
         role: dealer.role,
         active: dealer.active,

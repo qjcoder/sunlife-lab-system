@@ -7,7 +7,7 @@ import { createDealer, listDealers, getDealerHierarchy, deleteDealer } from '@/a
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -17,21 +17,31 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Users, Calendar, Mail, Network, Building2, Loader2, Trash2 } from 'lucide-react';
-import { cn, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
+import { Users, Calendar, Mail, Network, Building2, Loader2, Trash2, Plus, X, KeyRound } from 'lucide-react';
+import { cn, PAGE_HEADING_FIRST, PAGE_HEADING_SECOND, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { resetPassword as apiResetPassword } from '@/api/auth-api';
+import { useAuth } from '@/store/auth-store';
 
 const dealerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email address'),
+  username: z.string().min(1, 'Username is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 type DealerFormData = z.infer<typeof dealerSchema>;
 
 export default function Dealers() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.isSuperAdmin ?? !!(user?.email && user.email.includes('@'));
   const [activeTab, setActiveTab] = useState<'dealers' | 'hierarchy'>('dealers');
+  const [showCreateDealerForm, setShowCreateDealerForm] = useState(false);
   const [deletingDealerId, setDeletingDealerId] = useState<string | null>(null);
+  const [resetPasswordTarget, setResetPasswordTarget] = useState<{ id: string; name: string } | null>(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState('');
+  const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
+  const [resetPasswordSubmitting, setResetPasswordSubmitting] = useState(false);
   const queryClient = useQueryClient();
   const {
     register,
@@ -57,6 +67,7 @@ export default function Dealers() {
     onSuccess: () => {
       toast.success('Dealer created successfully');
       reset();
+      setShowCreateDealerForm(false);
       queryClient.invalidateQueries({ queryKey: ['dealers'] });
       queryClient.invalidateQueries({ queryKey: ['dealer-hierarchy'] });
     },
@@ -149,7 +160,7 @@ export default function Dealers() {
                   <div className="space-y-2 mt-4">
                     <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                       <Mail className="h-3.5 w-3.5" />
-                      <span>{node.dealer.email}</span>
+                      <span>{node.dealer.username || node.dealer.email || '—'}</span>
                     </div>
                   </div>
                 </div>
@@ -181,139 +192,224 @@ export default function Dealers() {
   const totalSubDealers = hierarchyData?.reduce((acc: number, node: any) => acc + (node.subDealers?.length || 0), 0) || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-red-50/30 to-orange-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      {/* Header */}
-      <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 space-y-1">
-        <h1 className={PAGE_HEADING_CLASS}>Dealers Network</h1>
-        <p className={PAGE_SUBHEADING_CLASS}>Manage dealer accounts and view network hierarchy</p>
-      </div>
-      <div className="space-y-4 sm:space-y-5 px-4 sm:px-5 md:px-6 pb-4 pt-0">
-
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700">
-        <button
-          onClick={() => setActiveTab('dealers')}
-          className={cn(
-            "px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2",
-            activeTab === 'dealers'
-              ? "border-red-600 text-red-600 dark:text-red-400 dark:border-red-400"
-              : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-          )}
-        >
-          <div className="flex items-center gap-2">
-            <Users className="h-3.5 w-3.5" />
-            Create & Manage Dealers
+    <div className={cn("h-full min-h-0 max-h-full flex flex-col overflow-hidden bg-muted/30", activeTab === 'hierarchy' && "min-h-screen")}>
+      {/* Header - card-style bar (same as Create Product Model) */}
+      <header className="shrink-0 border-b bg-card">
+        <div className="px-4 py-2 sm:px-5 sm:py-2.5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-0.5">
+              <h1 className="inline text-xl sm:text-2xl">
+                <span className={PAGE_HEADING_FIRST}>Create </span>
+                <span className={PAGE_HEADING_SECOND}>Dealer</span>
+              </h1>
+              <p className={PAGE_SUBHEADING_CLASS}>Create and manage dealer accounts and view network hierarchy</p>
+            </div>
           </div>
-        </button>
-        <button
-          onClick={() => setActiveTab('hierarchy')}
-          className={cn(
-            "px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2",
-            activeTab === 'hierarchy'
-              ? "border-red-600 text-red-600 dark:text-red-400 dark:border-red-400"
-              : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-          )}
+        </div>
+      </header>
+
+      {/* Create Dealer button + Network Hierarchy tab */}
+      <div className="shrink-0 px-3 sm:px-4 pt-3 pb-2 flex flex-wrap items-center gap-2">
+        <Button
+          onClick={() => {
+            if (activeTab === 'hierarchy') {
+              setActiveTab('dealers');
+              return;
+            }
+            setShowCreateDealerForm(!showCreateDealerForm);
+            if (showCreateDealerForm) reset();
+          }}
+          size="default"
+          className="shrink-0"
         >
-          <div className="flex items-center gap-2">
+          {showCreateDealerForm && activeTab === 'dealers' ? (
+            <>
+              <X className="h-3.5 w-3.5 mr-2" />
+              Hide Form
+            </>
+          ) : (
+            <>
+              <Plus className="h-3.5 w-3.5 mr-2" />
+              Create New
+            </>
+          )}
+        </Button>
+        <div className="flex gap-1 p-1 rounded-lg bg-muted/50 dark:bg-slate-800/50 w-fit border border-border/50">
+          <button
+            type="button"
+            onClick={() => setActiveTab('hierarchy')}
+            className={cn(
+              "px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2",
+              activeTab === 'hierarchy'
+                ? "bg-background text-foreground shadow-sm border border-border"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+            )}
+          >
             <Network className="h-3.5 w-3.5" />
             Network Hierarchy
-          </div>
-        </button>
+          </button>
+        </div>
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Content - Create Dealer */}
       {activeTab === 'dealers' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dealer Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" {...register('name')} />
-                  {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-                </div>
+        <div
+          className={cn(
+            'flex-1 min-h-0 min-w-0 flex flex-col p-3 sm:p-4',
+            showCreateDealerForm ? 'overflow-hidden' : 'overflow-auto space-y-4 sm:space-y-5'
+          )}
+        >
+          {showCreateDealerForm ? (
+            <Card className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden max-w-xl">
+              <CardContent className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:p-6">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-medium text-foreground">Name</Label>
+                    <Input
+                      id="name"
+                      placeholder="Dealer name"
+                      className="h-10 rounded-lg border-border bg-background"
+                      {...register('name')}
+                    />
+                    {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" {...register('email')} />
-                  {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="username" className="text-sm font-medium text-foreground">Username</Label>
+                    <Input
+                      id="username"
+                      placeholder="Dealer username"
+                      className="h-10 rounded-lg border-border bg-background"
+                      {...register('username')}
+                    />
+                    {errors.username && <p className="text-xs text-destructive mt-1">{errors.username.message}</p>}
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" {...register('password')} />
-                  {errors.password && (
-                    <p className="text-sm text-destructive">{errors.password.message}</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-sm font-medium text-foreground">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Min. 6 characters"
+                      className="h-10 rounded-lg border-border bg-background"
+                      {...register('password')}
+                    />
+                    {errors.password && (
+                      <p className="text-xs text-destructive mt-1">{errors.password.message}</p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={mutation.isPending}
+                    className="h-10 rounded-lg px-6 font-medium bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    {mutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      'Create Dealer'
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          ) : (
+            /* Browse view - central card like "Browse by category" */
+            isLoadingDealers ? (
+              <Card className="max-w-5xl mx-auto w-full">
+                <CardContent className="py-16">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="p-4 rounded-lg bg-muted mb-4">
+                      <Loader2 className="h-10 w-10 text-muted-foreground animate-spin" />
+                    </div>
+                    <p className="font-medium text-foreground">Loading dealers...</p>
+                    <CardDescription className="mt-1">Fetching dealer accounts</CardDescription>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="max-w-5xl mx-auto w-full">
+                <CardHeader className="text-center space-y-1.5 pb-4 sm:pb-5 pt-5 sm:pt-6 px-5 sm:px-8">
+                  <CardTitle className="text-xl sm:text-2xl">Dealer accounts</CardTitle>
+                  <CardDescription className="text-sm sm:text-base">
+                    View and manage registered dealer accounts.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="px-5 sm:px-8 pb-5 sm:pb-6">
+                  {dealers.length === 0 ? (
+                    <div className="py-12 text-center rounded-lg border border-dashed border-border bg-muted/30">
+                      <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                      <p className="font-medium text-foreground">No dealers registered yet</p>
+                      <CardDescription className="mt-1">Click Create New above to add one</CardDescription>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto rounded-lg border border-border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="hover:bg-transparent border-b border-border">
+                            <TableHead className="h-11 bg-muted/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Name</TableHead>
+                            <TableHead className="h-11 bg-muted/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Username</TableHead>
+                            <TableHead className="h-11 bg-muted/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Created</TableHead>
+                            <TableHead className="h-11 bg-muted/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {dealers.map((dealer) => (
+                            <TableRow key={dealer.id} className="border-b border-border/50 last:border-0">
+                              <TableCell className="py-3.5 font-medium text-foreground">{dealer.name}</TableCell>
+                              <TableCell className="py-3.5 text-sm text-foreground">{dealer.username || dealer.email || '—'}</TableCell>
+                              <TableCell className="py-3.5 whitespace-nowrap">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                                  {new Date(dealer.createdAt).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                  })}
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-3.5">
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setResetPasswordTarget({ id: dealer.id, name: dealer.name })}
+                                    className="text-muted-foreground hover:text-foreground hover:bg-muted h-8 w-8 p-0"
+                                    aria-label="Reset password"
+                                  >
+                                    <KeyRound className="h-3.5 w-3.5" />
+                                  </Button>
+                                  {isSuperAdmin && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setDeletingDealerId(dealer.id)}
+                                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                                    aria-label="Delete"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
-                </div>
-
-                <Button type="submit" disabled={mutation.isPending}>
-                  {mutation.isPending ? 'Creating...' : 'Create Dealer'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-3.5 w-3.5" />
-                Registered Dealers ({dealers.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingDealers ? (
-                <p className="text-muted-foreground">Loading...</p>
-              ) : dealers.length === 0 ? (
-                <p className="text-muted-foreground">No dealers registered yet</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Username (Email)</TableHead>
-                        <TableHead>Created</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {dealers.map((dealer) => (
-                        <TableRow key={dealer.id}>
-                          <TableCell className="font-medium">{dealer.name}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-3 w-3 text-slate-400" />
-                              <span className="text-sm">{dealer.email}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-3 w-3 text-slate-400" />
-                              <span className="text-sm text-slate-600 dark:text-slate-400">
-                                {new Date(dealer.createdAt).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                })}
-                              </span>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            )
+          )}
         </div>
       )}
 
       {activeTab === 'hierarchy' && (
-        <div className="space-y-6">
+        <div className="flex-1 min-h-0 overflow-auto p-3 sm:p-4 space-y-6">
           {/* Statistics */}
           <div className="flex gap-4">
             <Card className="border-red-200 dark:border-red-900 bg-gradient-to-br from-red-50 to-white dark:from-red-950/20 dark:to-slate-900">
@@ -359,7 +455,6 @@ export default function Dealers() {
           </Card>
         </div>
       )}
-      </div>
 
       {/* Delete Confirmation Dialog */}
       {deletingDealerId && (
@@ -373,6 +468,67 @@ export default function Dealers() {
           variant="danger"
         />
       )}
+
+      {/* Reset password dialog */}
+      <Dialog open={!!resetPasswordTarget} onOpenChange={(open) => { if (!open) { setResetPasswordTarget(null); setResetPasswordValue(''); setResetPasswordConfirm(''); } }}>
+        <DialogContent onClose={() => { setResetPasswordTarget(null); setResetPasswordValue(''); setResetPasswordConfirm(''); }}>
+          <DialogHeader>
+            <DialogTitle>Reset password</DialogTitle>
+          </DialogHeader>
+          {resetPasswordTarget && (
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">Set a new password for <strong>{resetPasswordTarget.name}</strong>.</p>
+              <div className="space-y-2">
+                <Label htmlFor="reset-new-password">New password</Label>
+                <Input
+                  id="reset-new-password"
+                  type="password"
+                  value={resetPasswordValue}
+                  onChange={(e) => setResetPasswordValue(e.target.value)}
+                  placeholder="Min 6 characters"
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reset-confirm-password">Confirm password</Label>
+                <Input
+                  id="reset-confirm-password"
+                  type="password"
+                  value={resetPasswordConfirm}
+                  onChange={(e) => setResetPasswordConfirm(e.target.value)}
+                  placeholder="Confirm new password"
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => { setResetPasswordTarget(null); setResetPasswordValue(''); setResetPasswordConfirm(''); }}>Cancel</Button>
+                <Button
+                  onClick={async () => {
+                    if (!resetPasswordTarget) return;
+                    if (resetPasswordValue.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+                    if (resetPasswordValue !== resetPasswordConfirm) { toast.error('Passwords do not match'); return; }
+                    setResetPasswordSubmitting(true);
+                    try {
+                      await apiResetPassword(resetPasswordTarget.id, resetPasswordValue);
+                      toast.success('Password reset successfully');
+                      setResetPasswordTarget(null);
+                      setResetPasswordValue('');
+                      setResetPasswordConfirm('');
+                    } catch (e: any) {
+                      toast.error(e.response?.data?.message || 'Failed to reset password');
+                    } finally {
+                      setResetPasswordSubmitting(false);
+                    }
+                  }}
+                  disabled={resetPasswordSubmitting}
+                >
+                  {resetPasswordSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reset password'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

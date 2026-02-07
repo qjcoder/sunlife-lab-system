@@ -2,14 +2,15 @@ import api from './axios';
 
 export interface CreateInstallerProgramManagerRequest {
   name: string;
-  email: string;
+  username: string;
   password: string;
 }
 
 export interface InstallerProgramManager {
   id: string;
   name: string;
-  email: string;
+  username?: string;
+  email?: string;
   role: string;
   active: boolean;
   createdAt: string;

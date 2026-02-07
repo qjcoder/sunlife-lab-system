@@ -1,5 +1,5 @@
 import express from "express";
-import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
+import { requireAuth, requireRole, requireSuperAdmin } from "../middleware/authMiddleware.js";
 import {
   createInstallerProgramManager,
   listInstallerProgramManagers,
@@ -8,8 +8,8 @@ import {
 
 const router = express.Router();
 
-router.post("/", requireAuth, requireRole("FACTORY_ADMIN"), createInstallerProgramManager);
-router.get("/", requireAuth, requireRole("FACTORY_ADMIN"), listInstallerProgramManagers);
-router.delete("/:id", requireAuth, requireRole("FACTORY_ADMIN"), deleteInstallerProgramManager);
+router.post("/", requireAuth, requireRole("FACTORY_ADMIN"), requireSuperAdmin, createInstallerProgramManager);
+router.get("/", requireAuth, requireRole("FACTORY_ADMIN"), requireSuperAdmin, listInstallerProgramManagers);
+router.delete("/:id", requireAuth, requireRole("FACTORY_ADMIN"), requireSuperAdmin, deleteInstallerProgramManager);
 
 export default router;

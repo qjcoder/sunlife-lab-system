@@ -1,5 +1,5 @@
 import express from "express";
-import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
+import { requireAuth, requireRole, requireSuperAdmin } from "../middleware/authMiddleware.js";
 import { getDealerHierarchy } from "../controllers/dealerHierarchyController.js";
 import {
   createDealer,
@@ -28,7 +28,7 @@ const router = express.Router();
 
 /**
  * ====================================================
- * FACTORY_ADMIN → CREATE MAIN DEALER
+ * SUPER ADMIN ONLY → CREATE MAIN DEALER
  * ====================================================
  * POST /api/dealers
  */
@@ -36,6 +36,7 @@ router.post(
   "/",
   requireAuth,
   requireRole("FACTORY_ADMIN"),
+  requireSuperAdmin,
   createDealer
 );
 
@@ -57,19 +58,23 @@ router.post(
  * DEALER HIERARCHY
  * ====================================================
  * GET /api/dealers/hierarchy
- * - FACTORY_ADMIN: full hierarchy
+ * - SUPER ADMIN: full hierarchy
  * - DEALER: own sub-dealers only (for Sub-Dealers page)
  */
 router.get(
   "/hierarchy",
   requireAuth,
   requireRole("FACTORY_ADMIN", "DEALER"),
+  (req, res, next) => {
+    if (req.user.role === "DEALER") return next();
+    requireSuperAdmin(req, res, next).catch(next);
+  },
   getDealerHierarchy
 );
 
 /**
  * ====================================================
- * FACTORY_ADMIN → LIST ALL DEALERS
+ * SUPER ADMIN ONLY → LIST ALL DEALERS
  * ====================================================
  *
  * GET /api/dealers
@@ -78,12 +83,13 @@ router.get(
   "/",
   requireAuth,
   requireRole("FACTORY_ADMIN"),
+  requireSuperAdmin,
   listDealers
 );
 
 /**
  * ====================================================
- * FACTORY_ADMIN → DELETE DEALER
+ * SUPER ADMIN ONLY → DELETE DEALER
  * ====================================================
  *
  * DELETE /api/dealers/:id
@@ -92,6 +98,7 @@ router.delete(
   "/:id",
   requireAuth,
   requireRole("FACTORY_ADMIN"),
+  requireSuperAdmin,
   deleteDealer
 );
 

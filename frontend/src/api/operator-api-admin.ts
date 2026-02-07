@@ -11,7 +11,7 @@ import api from './axios';
 
 export interface CreateOperatorRequest {
   name: string;
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -20,7 +20,7 @@ export interface CreateOperatorResponse {
   operator: {
     id: string;
     name: string;
-    email: string;
+    username: string;
     role: string;
   };
 }
@@ -28,7 +28,8 @@ export interface CreateOperatorResponse {
 export interface Operator {
   id: string;
   name: string;
-  email: string;
+  username?: string;
+  email?: string;
   role: string;
   active: boolean;
   createdAt: string;

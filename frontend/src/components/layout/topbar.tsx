@@ -4,19 +4,12 @@ import { Input } from "@/components/ui/input";
 import { LogOut, Search, Bell, MessageSquare, Menu } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
-import { getRoleColorScheme } from "@/lib/role-colors";
+import { getRoleColorScheme, getRoleDisplayName } from "@/lib/role-colors";
 import { useState } from "react";
 
 interface TopbarProps {
   onMenuClick?: () => void;
 }
-
-const formatRoleName = (role: string) => {
-  return role
-    .split("_")
-    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(" ");
-};
 
 const getInitials = (name: string) => {
   return name
@@ -142,7 +135,7 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
               {user.name}
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400">
-              {formatRoleName(user.role)}
+              {getRoleDisplayName(user.role, user.email, user.isSuperAdmin)}
             </span>
           </div>
           <Button

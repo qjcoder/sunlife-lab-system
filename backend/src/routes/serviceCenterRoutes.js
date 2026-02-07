@@ -1,5 +1,5 @@
 import express from "express";
-import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
+import { requireAuth, requireRole, requireSuperAdmin } from "../middleware/authMiddleware.js";
 import { createServiceCenter, listServiceCenters, deleteServiceCenter } from "../controllers/serviceCenterController.js";
 
 /**
@@ -20,7 +20,7 @@ const router = express.Router();
 
 /**
  * ====================================================
- * FACTORY_ADMIN → CREATE SERVICE CENTER
+ * SUPER ADMIN ONLY → CREATE SERVICE CENTER
  * ====================================================
  * POST /api/service-centers
  */
@@ -28,12 +28,13 @@ router.post(
   "/",
   requireAuth,
   requireRole("FACTORY_ADMIN"),
+  requireSuperAdmin,
   createServiceCenter
 );
 
 /**
  * ====================================================
- * FACTORY_ADMIN → LIST ALL SERVICE CENTERS
+ * SUPER ADMIN ONLY → LIST ALL SERVICE CENTERS
  * ====================================================
  * GET /api/service-centers
  */
@@ -41,12 +42,13 @@ router.get(
   "/",
   requireAuth,
   requireRole("FACTORY_ADMIN"),
+  requireSuperAdmin,
   listServiceCenters
 );
 
 /**
  * ====================================================
- * FACTORY_ADMIN → DELETE SERVICE CENTER
+ * SUPER ADMIN ONLY → DELETE SERVICE CENTER
  * ====================================================
  * DELETE /api/service-centers/:id
  */
@@ -54,6 +56,7 @@ router.delete(
   "/:id",
   requireAuth,
   requireRole("FACTORY_ADMIN"),
+  requireSuperAdmin,
   deleteServiceCenter
 );
 

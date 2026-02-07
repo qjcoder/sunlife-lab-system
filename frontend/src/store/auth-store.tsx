@@ -11,8 +11,10 @@ export type UserRole =
 export interface AuthUser {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   role: UserRole;
+  /** True when script-created admin (has email); only they can delete other admins */
+  isSuperAdmin?: boolean;
 }
 
 interface AuthContextType {

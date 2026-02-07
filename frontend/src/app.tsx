@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import ProtectedRoute from "@/routes/protected-route";
 import RoleRoute from "@/routes/role-route";
+import RequireSuperAdmin from "@/routes/require-super-admin";
 
 import AppShell from "@/components/layout/app-shell";
 
@@ -79,11 +80,12 @@ const App = () => {
                     path="factory"
                     element={<RoleRoute allowedRoles={["FACTORY_ADMIN"]} />}
                   >
-                    <Route path="account-creation" element={<AccountCreation />} />
-                    <Route path="dealers" element={<AccountCreation />} />
-                    <Route path="service-centers" element={<AccountCreation />} />
-                    <Route path="operators" element={<AccountCreation />} />
-                    <Route path="installer-program-managers" element={<AccountCreation />} />
+                    <Route path="account-creation" element={<RequireSuperAdmin><AccountCreation /></RequireSuperAdmin>} />
+                    <Route path="admins" element={<RequireSuperAdmin><AccountCreation /></RequireSuperAdmin>} />
+                    <Route path="dealers" element={<RequireSuperAdmin><AccountCreation /></RequireSuperAdmin>} />
+                    <Route path="service-centers" element={<RequireSuperAdmin><AccountCreation /></RequireSuperAdmin>} />
+                    <Route path="operators" element={<RequireSuperAdmin><AccountCreation /></RequireSuperAdmin>} />
+                    <Route path="installer-program-managers" element={<RequireSuperAdmin><AccountCreation /></RequireSuperAdmin>} />
                     <Route path="inverter-models" element={<InverterModels />} />
                     <Route path="inverter-models/:modelId" element={<ModelDetails />} />
                     <Route path="inverter-registration" element={<InverterRegistration />} />

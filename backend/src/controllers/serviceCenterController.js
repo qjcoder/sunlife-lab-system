@@ -19,27 +19,27 @@ import User from "../models/User.js";
  */
 export const createServiceCenter = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, username, password } = req.body;
 
     // 1️⃣ Validate input
-    if (!name || !email || !password) {
+    if (!name || !username || !password) {
       return res.status(400).json({
-        message: "name, email, and password are required",
+        message: "name, username, and password are required",
       });
     }
 
-    // 2️⃣ Prevent duplicate email
-    const existing = await User.findOne({ email });
+    // 2️⃣ Prevent duplicate username
+    const existing = await User.findOne({ username });
     if (existing) {
       return res.status(409).json({
-        message: "User with this email already exists",
+        message: "User with this username already exists",
       });
     }
 
     // 3️⃣ Create service center user
     const user = new User({
       name,
-      email,
+      username,
       role: "SERVICE_CENTER",
       active: true,
     });
@@ -52,7 +52,7 @@ export const createServiceCenter = async (req, res) => {
       serviceCenter: {
         id: user._id,
         name: user.name,
-        email: user.email,
+        username: user.username,
         role: user.role,
       },
     });
@@ -77,7 +77,7 @@ export const listServiceCenters = async (req, res) => {
     const serviceCenters = await User.find({
       role: "SERVICE_CENTER",
     })
-      .select("name email role active createdAt")
+      .select("name email username role active createdAt")
       .sort({ createdAt: -1 }); // Newest first
 
     return res.status(200).json({
@@ -85,6 +85,7 @@ export const listServiceCenters = async (req, res) => {
       serviceCenters: serviceCenters.map((sc) => ({
         id: sc._id,
         name: sc.name,
+        username: sc.username,
         email: sc.email,
         role: sc.role,
         active: sc.active,
