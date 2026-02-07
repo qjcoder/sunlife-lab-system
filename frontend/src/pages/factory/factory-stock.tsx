@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Loader2, Package, Warehouse, Truck, Users, ShoppingCart, Sun, Battery, Gauge, FileDown, Search } from 'lucide-react';
-import { cn, PAGE_HEADING_FIRST, PAGE_HEADING_SECOND, PAGE_SUBHEADING_CLASS, getModelDisplayName, getVariantDisplay, categorizeModel, extractPowerRating } from '@/lib/utils';
+import { cn, PAGE_HEADING_FIRST,PAGE_HEADING_CLASS, PAGE_HEADING_SECOND, PAGE_SUBHEADING_CLASS, getModelDisplayName, getVariantDisplay, categorizeModel, extractPowerRating } from '@/lib/utils';
 import { downloadStockPdf } from '@/lib/stock-pdf';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -181,7 +181,7 @@ export default function FactoryStock() {
         <header className="shrink-0 border-b bg-card">
           <div className="px-4 py-2 sm:px-5 sm:py-2.5">
             <div className="space-y-0.5">
-              <h1 className="inline"><span className={PAGE_HEADING_FIRST}>Factory </span><span className={PAGE_HEADING_SECOND}>Stock</span></h1>
+              <h1 className="inline"><span className={PAGE_HEADING_FIRST}>Factory </span><span className={PAGE_HEADING_CLASS}>Stock</span></h1>
               <p className={PAGE_SUBHEADING_CLASS}>Product inventory and distribution statistics</p>
             </div>
           </div>
@@ -200,7 +200,7 @@ export default function FactoryStock() {
       <header className="shrink-0 border-b bg-card">
         <div className="px-4 py-2 sm:px-5 sm:py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-0.5">
-            <h1 className="inline"><span className={PAGE_HEADING_FIRST}>Factory </span><span className={PAGE_HEADING_SECOND}>Stock</span></h1>
+            <h1 className="inline"><span className={PAGE_HEADING_FIRST}>Factory </span><span className={PAGE_HEADING_CLASS}>Stock</span></h1>
             <p className={PAGE_SUBHEADING_CLASS}>Product inventory and distribution statistics</p>
           </div>
           <Card className="w-full sm:w-auto">

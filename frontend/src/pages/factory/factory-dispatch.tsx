@@ -16,7 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { Loader2, Scan, Upload, X, Truck, Hash, Building2, Box, CheckCircle2, Sun, Battery, Gauge, FileDown, Search } from 'lucide-react';
-import { cn, PAGE_HEADING_FIRST, PAGE_HEADING_SECOND, PAGE_SUBHEADING_CLASS, categorizeModel, getModelDisplayName, getVariantDisplay, sortModelsByPowerAndActive, extractPowerRating } from '@/lib/utils';
+import { cn, PAGE_HEADING_FIRST, PAGE_HEADING_SECOND,PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS, categorizeModel, getModelDisplayName, getVariantDisplay, sortModelsByPowerAndActive, extractPowerRating } from '@/lib/utils';
 import { downloadDispatchPdf } from '@/lib/dispatch-pdf';
 
 const CATEGORY_OPTIONS: { key: 'inverter' | 'battery' | 'vfd'; label: string; icon: typeof Sun; activeClass: string }[] = [
@@ -423,7 +423,7 @@ export default function FactoryDispatch() {
       <header className="shrink-0 border-b bg-card py-2 px-4 sm:px-5">
         <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-0">
-            <h1 className="inline text-xl sm:text-2xl"><span className={PAGE_HEADING_FIRST}>Product </span><span className={PAGE_HEADING_SECOND}>Dispatch</span></h1>
+            <h1 className="inline text-xl sm:text-2xl"><span className={PAGE_HEADING_FIRST}>Product </span><span className={PAGE_HEADING_CLASS}>Dispatch</span></h1>
             <p className="text-sm text-muted-foreground">Dispatch products to dealers</p>
           </div>
         </div>

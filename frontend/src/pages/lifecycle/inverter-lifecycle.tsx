@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Package, ArrowRight, ArrowLeft, Search, Scan, History } from 'lucide-react';
-import { PAGE_HEADING_FIRST, PAGE_HEADING_SECOND, PAGE_SUBHEADING_CLASS, getModelDisplayName } from '@/lib/utils';
+import { PAGE_HEADING_FIRST, PAGE_HEADING_SECOND,PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS, getModelDisplayName } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 export default function InverterLifecycle() {
@@ -49,7 +49,7 @@ export default function InverterLifecycle() {
       <header className="shrink-0 border-b bg-card">
         <div className="px-4 py-2 sm:px-5 sm:py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-0.5">
-            <h1 className="inline"><span className={PAGE_HEADING_FIRST}>Product </span><span className={PAGE_HEADING_SECOND}>History</span></h1>
+            <h1 className="inline"><span className={PAGE_HEADING_FIRST}>Product </span><span className={PAGE_HEADING_CLASS}>History</span></h1>
             <p className={PAGE_SUBHEADING_CLASS}>View full lifecycle of a product by serial number</p>
           </div>
         </div>

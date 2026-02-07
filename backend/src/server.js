@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import app from './app.js';
 
 // 🔴 FORCE MODEL REGISTRATION (IMPORTANT)
-import './models/ProductLine.js';
 import './models/InverterModel.js';
 import './models/ModelPart.js';
 import './models/InverterUnit.js';

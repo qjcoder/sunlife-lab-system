@@ -21,7 +21,7 @@ import {
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { Plus, Trash2, Scan, Upload, Hash, Loader2, CheckCircle2, Box } from 'lucide-react';
-import { cn, PAGE_HEADING_FIRST, PAGE_HEADING_SECOND, getModelDisplayName, getVariantDisplay } from '@/lib/utils';
+import { cn, PAGE_HEADING_FIRST,PAGE_HEADING_CLASS, getModelDisplayName, getVariantDisplay } from '@/lib/utils';
 
 const dispatchSchema = z.object({
   serviceCenter: z.string().min(1, 'Service center is required'),
@@ -307,7 +307,7 @@ export default function PartDispatch() {
       <header className="shrink-0 border-b bg-card py-2 px-4 sm:px-5">
         <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-0">
-            <h1 className="inline text-xl sm:text-2xl"><span className={PAGE_HEADING_FIRST}>Service Center Parts </span><span className={PAGE_HEADING_SECOND}>Dispatch</span></h1>
+            <h1 className="inline text-xl sm:text-2xl"><span className={PAGE_HEADING_FIRST}>Service Center Parts </span><span className={PAGE_HEADING_CLASS}>Dispatch</span></h1>
             <p className="text-sm text-muted-foreground">Dispatch parts from factory to service center</p>
           </div>
         </div>

@@ -40,7 +40,7 @@ import {
   KeyRound,
   ShieldCheck,
 } from 'lucide-react';
-import { cn, PAGE_HEADING_FIRST, PAGE_HEADING_SECOND, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
+import { cn, PAGE_HEADING_FIRST, PAGE_HEADING_CLASS, PAGE_SUBHEADING_CLASS } from '@/lib/utils';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { resetPassword as apiResetPassword, createAdmin as apiCreateAdmin, listAdmins, deleteAdmin as apiDeleteAdmin } from '@/api/auth-api';
@@ -481,7 +481,7 @@ export default function AccountCreation() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-red-50/30 to-orange-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 space-y-1">
-        <h1 className="inline text-xl sm:text-2xl"><span className={PAGE_HEADING_FIRST}>Account </span><span className={PAGE_HEADING_SECOND}>Creation</span></h1>
+        <h1 className="inline text-xl sm:text-2xl"><span className={PAGE_HEADING_FIRST}>Account </span><span className={PAGE_HEADING_CLASS}>Creation</span></h1>
         <p className={PAGE_SUBHEADING_CLASS}>Create and manage accounts for different roles</p>
       </div>
       <div className="space-y-4 sm:space-y-5 px-4 sm:px-5 md:px-6 pb-4 pt-0">

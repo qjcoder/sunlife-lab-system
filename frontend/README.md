@@ -1,6 +1,6 @@
-# Solar Warranty & Inventory System - Frontend
+# SunLife Lab Software — Frontend
 
-Frontend application for the Solar Warranty & Inventory System built with React, Vite, TypeScript, and shadcn/ui.
+Frontend for the SunLife Lab product lifecycle management system: React, Vite, TypeScript, and shadcn/ui.
 
 ## Tech Stack
 
@@ -38,10 +38,11 @@ frontend/
 npm install
 ```
 
-2. Create a `.env` file in the root directory:
-```
-VITE_API_BASE_URL=http://localhost:5050
-```
+2. Create a `.env` file in the frontend root:
+   ```env
+   VITE_API_BASE_URL=http://localhost:5050
+   ```
+   Use the same port as the backend (default backend port is 5000; change to 5050 in backend `.env` if you use 5050).
 
 3. Start the development server:
 ```bash
@@ -57,20 +58,21 @@ npm run build
 
 ### Role-Based Access Control
 
-The application supports four user roles:
-- **FACTORY_ADMIN**: Manage dealers, models, inverter registration, and dispatch
-- **DEALER**: Manage stock, sub-dealers, transfers, and sales
-- **SUB_DEALER**: View stock and record sales
-- **SERVICE_CENTER**: Manage service jobs and view parts stock
+The application supports five roles:
+- **FACTORY_ADMIN**: Dealers, operators, service centers, models, parts, registration, dispatch, factory stock, account creation
+- **DEALER**: Stock, sub-dealers, transfers, sales
+- **SUB_DEALER**: Stock view and sales
+- **SERVICE_CENTER**: Service jobs, parts stock, part requests
+- **DATA_ENTRY_OPERATOR**: Registration and dispatch (limited)
 
 ### Key Pages
 
-- **Login**: Authentication page
-- **Factory Pages**: Dealer management, model management, inverter registration, dispatch, and stock
-- **Dealer Pages**: Stock management, sub-dealer management, transfers, and sales
-- **Sub-Dealer Pages**: Stock view and sales recording
-- **Service Center Pages**: Service job management and parts stock
-- **Lifecycle**: View complete inverter lifecycle timeline
+- **Login**: Authentication
+- **Factory**: Dealers, Operators, Service Centers, Inverter Models, Create Parts, Registration, Dispatch, Factory Stock, Parts Dispatch, Account Creation, Product History (lifecycle by serial, scanner support)
+- **Dealer**: Stock, sub-dealers, transfers, sales
+- **Sub-Dealer**: Stock and sales
+- **Service Center**: Service jobs and parts stock
+- **Product History**: Full lifecycle timeline for a unit by serial number (scanner-friendly)
 
 ## API Integration
 

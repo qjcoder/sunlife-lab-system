@@ -15,6 +15,7 @@ A comprehensive web application for managing the complete lifecycle of solar inv
 - [Development](#development)
 - [Deployment](#deployment)
 - [Contributing](#contributing)
+- [Documentation](#-documentation)
 
 ## 🎯 Overview
 
@@ -213,8 +214,9 @@ sunlife-lab-software/
 
    **Frontend .env Configuration:**
    ```env
-   VITE_API_URL=http://localhost:5000
+   VITE_API_BASE_URL=http://localhost:5000
    ```
+   (Backend default port is 5000; use the same port in `.env` if you run backend on 5000.)
 
 4. **Create Super Admin (removes all users, creates only Super Admin)**  
    From the backend folder, run:
@@ -239,7 +241,8 @@ sunlife-lab-software/
 5. **Seed Initial Data (Optional)**
    ```bash
    cd backend
-   node scripts/seedModels.js
+   npm run seed-models    # Product models
+   npm run seed-parts    # Parts catalog (optional)
    ```
 
 ### Running the Application
@@ -282,14 +285,16 @@ sunlife-lab-software/
 
 **Pages:**
 - Dashboard
-- Create New Product Model
+- Create Product Model (inverter-models)
+- Create Parts
 - Product Serial Entry
 - Factory Stock
 - Product Dispatch
+- Parts Dispatch
 - Dealers Network
 - Service Centers
-- Data Entry Operators
-- Service Center Parts Dispatch
+- Account Creation (Super Admin only)
+- Product History (lifecycle by serial)
 
 ### 2. Dealer (`DEALER`)
 **Color Scheme**: Blue
@@ -560,7 +565,7 @@ NODE_ENV=development
 
 **Frontend (.env)**
 ```env
-VITE_API_URL=http://localhost:5000
+VITE_API_BASE_URL=http://localhost:5000
 ```
 
 ### Building for Production
@@ -626,11 +631,12 @@ Currently, manual testing is used. Future plans include:
 
 ### Backend Scripts
 
-- `npm run dev` - Start development server with hot reload
+- `npm run dev` - Start development server with hot reload (nodemon)
 - `npm start` - Start production server
 - `npm run create-admin` - Remove all users and create only Super Admin
 - `npm run reset-super-admin-password` - Recover Super Admin: set new password by email (no user deletion)
 - `npm run seed-models` - Seed initial product models
+- `npm run seed-parts` - Seed sample parts catalog
 
 ### Frontend Scripts
 
@@ -665,8 +671,14 @@ This project is proprietary software for SunLife Lab.
 - MongoDB for database
 - Express.js for backend framework
 
+## 📚 Documentation
+
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — High-level architecture, data flow, and tech decisions
+- **[backend/README.md](backend/README.md)** — Backend setup, API overview, and scripts
+- **[frontend/README.md](frontend/README.md)** — Frontend setup, structure, and development
+
 ---
 
-**Last Updated**: January 2025
+**Last Updated**: February 2025
 
 **Version**: 1.0.0

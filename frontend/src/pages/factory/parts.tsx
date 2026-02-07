@@ -21,7 +21,7 @@ import {
 import { toast } from 'sonner';
 import { Plus, Package, Hash, Loader2, CheckCircle2, Trash2, X, Pencil, Boxes, Sun, Battery, Gauge, ChevronLeft, Search } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { cn, PAGE_HEADING_FIRST, PAGE_HEADING_SECOND, PAGE_SUBHEADING_CLASS, getModelDisplayName, categorizeModel, sortModelsByPowerAndActive, extractPowerRating } from '@/lib/utils';
+import { cn, PAGE_HEADING_FIRST,PAGE_HEADING_CLASS, PAGE_HEADING_SECOND, PAGE_SUBHEADING_CLASS, getModelDisplayName, categorizeModel, sortModelsByPowerAndActive, extractPowerRating } from '@/lib/utils';
 
 const CATEGORY_OPTIONS: { key: 'inverter' | 'battery' | 'vfd'; label: string; icon: typeof Sun; activeClass: string }[] = [
   { key: 'inverter', label: 'Inverters', icon: Sun, activeClass: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-500 hover:from-amber-600 hover:to-orange-600' },
@@ -255,7 +255,7 @@ export default function CreateParts() {
         <div className="px-4 py-2 sm:px-5 sm:py-2.5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-0.5">
-              <h1 className="inline text-xl sm:text-2xl"><span className={PAGE_HEADING_FIRST}>Create </span><span className={PAGE_HEADING_SECOND}>Parts</span></h1>
+              <h1 className="inline text-xl sm:text-2xl"><span className={PAGE_HEADING_FIRST}>Create </span><span className={PAGE_HEADING_CLASS}>Parts</span></h1>
               <p className={PAGE_SUBHEADING_CLASS}>Create and manage parts catalog for dispatch</p>
             </div>
             <Button
